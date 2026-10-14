@@ -11,45 +11,50 @@ from streamlit_cookies_controller import CookieController
 import db
 
 
-# Название cookie с токеном авторизации.
+# Имя cookie, в которой хранится случайный токен авторизации.
 AUTH_COOKIE_NAME = "travelmind_auth_token"
 
-# Сессия действует 30 дней.
+# Авторизация действует 30 дней.
 SESSION_DAYS = 30
 
 
-@st.cache_resource
 def _cookie_controller() -> CookieController:
     """
-    Создаёт единый контроллер cookie на время жизни приложения.
+    Создаёт контроллер cookie.
 
-    cache_resource нужен, чтобы компонент не создавался заново
-    во время каждого rerun Streamlit.
+    Нельзя применять @st.cache_resource или @st.cache_data:
+    CookieController использует Streamlit-компонент, аналогичный виджету,
+    а виджеты внутри кэшируемых функций запрещены.
     """
     return CookieController()
 
 
 def _hash(password: str) -> str:
-    """Превращает пароль в необратимый bcrypt-хэш."""
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    """Создаёт необратимый bcrypt-хэш пароля."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode(
+        "utf-8"
+    )
 
 
 def _verify(password: str, pw_hash: str) -> bool:
-    """Проверяет введённый пароль по bcrypt-хэшу."""
-    return bcrypt.checkpw(password.encode(), pw_hash.encode())
+    """Проверяет пароль по bcrypt-хэшу."""
+    return bcrypt.checkpw(
+        password.encode("utf-8"),
+        pw_hash.encode("utf-8"),
+    )
 
 
 def _token_hash(token: str) -> str:
     """
-    Возвращает SHA-256-хэш токена.
+    Хэширует токен для хранения в SQLite.
 
-    В SQLite хранится только хэш токена, а не сам секретный токен.
+    Исходный токен не сохраняется в базе: в БД остаётся только SHA-256-хэш.
     """
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _get_cookie_token() -> Optional[str]:
-    """Читает токен авторизации из cookie браузера."""
+    """Получает токен текущего пользователя из браузерной cookie."""
     controller = _cookie_controller()
     token = controller.get(AUTH_COOKIE_NAME)
 
@@ -60,14 +65,7 @@ def _get_cookie_token() -> Optional[str]:
 
 
 def _set_cookie_token(token: str):
-    """
-    Сохраняет токен в cookie браузера на 30 дней.
-
-    Cookie доступна на всех страницах приложения и переживает:
-    - F5 / Ctrl+R;
-    - переходы между страницами;
-    - закрытие и повторное открытие браузера.
-    """
+    """Сохраняет токен в браузерной cookie на 30 дней."""
     controller = _cookie_controller()
 
     expires_at = time.time() + SESSION_DAYS * 24 * 60 * 60
@@ -80,23 +78,24 @@ def _set_cookie_token(token: str):
 
 
 def _delete_cookie_token():
-    """Удаляет авторизационную cookie."""
+    """Удаляет токен авторизации из cookie браузера."""
     controller = _cookie_controller()
 
     try:
         controller.remove(AUTH_COOKIE_NAME)
     except Exception:
-        # Если cookie уже не существует, приложение не должно падать.
+        # Если cookie уже нет, выход всё равно должен завершиться корректно.
         pass
 
 
 def restore_session() -> bool:
     """
-    Восстанавливает авторизацию после перезагрузки браузера.
+    Восстанавливает вход после перезагрузки страницы.
 
-    1. Если текущий session_state сохранён — пользователь уже авторизован.
-    2. Если session_state очистился после F5:
-       читаем токен cookie, ищем его хэш в БД, восстанавливаем пользователя.
+    Если session_state очищен после F5 / Ctrl+R:
+    1. Берём токен из cookie;
+    2. Ищем хэш токена в SQLite;
+    3. Восстанавливаем user_id и username.
     """
     if "user_id" in st.session_state:
         return True
@@ -109,6 +108,7 @@ def restore_session() -> bool:
     user = db.get_user_by_session_token(_token_hash(token))
 
     if not user:
+        # Токен истёк, пользователь вышел ранее или БД была очищена.
         _delete_cookie_token()
         return False
 
@@ -120,7 +120,11 @@ def restore_session() -> bool:
 
 
 def register(username: str, password: str) -> Optional[str]:
-    """Создаёт пользователя. Возвращает ошибку либо None."""
+    """
+    Создаёт пользователя.
+
+    Возвращает текст ошибки или None, если регистрация успешна.
+    """
     username = username.strip()
 
     if len(username) < 3:
@@ -145,7 +149,10 @@ def login(username: str, password: str) -> Optional[str]:
     if not user or not _verify(password, user["password_hash"]):
         return "Неверный логин или пароль."
 
+    # Генерируем криптографически стойкий токен.
     raw_token = secrets.token_urlsafe(48)
+
+    # В SQLite храним только хэш токена.
     token_hash = _token_hash(raw_token)
 
     expires_at = int(
@@ -162,19 +169,29 @@ def login(username: str, password: str) -> Optional[str]:
     st.session_state["username"] = str(user["username"])
     st.session_state["auth_token"] = raw_token
 
+    # Cookie переживёт F5, Ctrl+R, переходы между страницами
+    # и повторное открытие браузера.
     _set_cookie_token(raw_token)
 
     return None
 
 
 def remember_trip(trip_id: int):
-    """Сохраняет ID текущей поездки в Streamlit-сессии."""
+    """Запоминает ID открытой поездки в текущей сессии."""
     st.session_state["current_trip_id"] = int(trip_id)
 
 
 def logout():
-    """Завершает авторизацию в БД, cookie и session_state."""
-    token = st.session_state.get("auth_token") or _get_cookie_token()
+    """
+    Завершает сессию:
+    - удаляет токен из SQLite;
+    - удаляет cookie браузера;
+    - очищает session_state.
+    """
+    token = st.session_state.get("auth_token")
+
+    if not token:
+        token = _get_cookie_token()
 
     if token:
         db.delete_auth_session(_token_hash(token))
@@ -192,7 +209,7 @@ def logout():
 
 
 def require_auth() -> int:
-    """Проверяет вход и при необходимости восстанавливает сессию."""
+    """Проверяет вход пользователя на внутренних страницах."""
     restore_session()
 
     if "user_id" not in st.session_state:
@@ -210,7 +227,7 @@ def require_auth() -> int:
 
 
 def render_main_menu_button():
-    """Выводит кнопку возврата в главное меню справа вверху страницы."""
+    """Выводит яркую кнопку возврата в главное меню справа сверху."""
     spacer, menu_column = st.columns([4.6, 1.8])
 
     with menu_column:
