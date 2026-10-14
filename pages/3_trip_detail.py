@@ -2,6 +2,7 @@
 import json
 from collections import defaultdict
 from datetime import date
+from html import escape
 from urllib.parse import quote_plus
 
 import folium
@@ -19,7 +20,9 @@ st.set_page_config(
     layout="wide",
 )
 
-# ---------- АВТОРИЗАЦИЯ И ПОЛУЧЕНИЕ ПОЕЗДКИ ----------
+# ==========================================================
+# АВТОРИЗАЦИЯ И ПОЛУЧЕНИЕ ДАННЫХ ПОЕЗДКИ
+# ==========================================================
 
 user_id = auth.require_auth()
 trip_id = st.session_state.get("current_trip_id")
@@ -52,7 +55,9 @@ except (json.JSONDecodeError, TypeError):
 
 curr = trip["currency"] or "RUB"
 
-# ---------- СТИЛИ ----------
+# ==========================================================
+# СТИЛИ TRAVELMIND
+# ==========================================================
 
 CSS = """
 <style>
@@ -95,29 +100,20 @@ h1, h2, h3, h4 {
     color: #F8FAFC !important;
 }
 
-.tm-eyebrow {
-    margin-bottom: 0.4rem;
-    color: #67E8F9;
-    font-size: 0.8rem;
-    font-weight: 750;
-    letter-spacing: 0.1rem;
-    text-transform: uppercase;
-}
-
 .tm-hero {
-    margin-bottom: 1.25rem;
-    padding: 1.8rem 2rem;
+    margin-bottom: 1.3rem;
+    padding: 1.85rem 2rem;
     border: 1px solid rgba(148, 163, 184, 0.20);
     border-radius: 24px;
     background:
         radial-gradient(
-            circle at 92% 15%,
+            circle at 92% 14%,
             rgba(34, 211, 238, 0.20),
             transparent 28%
         ),
         radial-gradient(
             circle at 82% 100%,
-            rgba(139, 92, 246, 0.24),
+            rgba(139, 92, 246, 0.25),
             transparent 36%
         ),
         linear-gradient(
@@ -128,11 +124,21 @@ h1, h2, h3, h4 {
     box-shadow: 0 20px 55px rgba(0, 0, 0, 0.22);
 }
 
-.tm-hero h1 {
-    margin: 0.2rem 0 0 !important;
-    color: #F8FAFC !important;
-    font-size: 2.35rem !important;
-    font-weight: 800 !important;
+.tm-eyebrow {
+    margin-bottom: 0.4rem;
+    color: #67E8F9;
+    font-size: 0.8rem;
+    font-weight: 750;
+    letter-spacing: 0.1rem;
+    text-transform: uppercase;
+}
+
+.tm-hero-title {
+    margin-top: 0.15rem;
+    color: #F8FAFC;
+    font-size: 2.35rem;
+    font-weight: 800;
+    line-height: 1.15;
     letter-spacing: -0.06rem;
 }
 
@@ -157,7 +163,7 @@ h1, h2, h3, h4 {
 }
 
 [data-testid="stMetric"] {
-    min-height: 115px;
+    min-height: 125px;
     padding: 1rem 1.1rem;
     border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 17px;
@@ -174,30 +180,67 @@ h1, h2, h3, h4 {
     color: #F8FAFC !important;
 }
 
+[data-testid="stMetricDelta"] {
+    font-size: 0.78rem !important;
+}
+
+/* ---------- ВКЛАДКИ МАРШРУТА ---------- */
+
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0.45rem;
-    margin-top: 1.5rem;
-    padding: 0.42rem;
-    border: 1px solid rgba(148, 163, 184, 0.17);
-    border-radius: 16px;
-    background: rgba(15, 23, 42, 0.58);
+    gap: 0.65rem;
+    margin-top: 1.7rem;
+    margin-bottom: 0.7rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(103, 232, 249, 0.20);
+    border-radius: 20px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(15, 23, 42, 0.92),
+            rgba(20, 29, 55, 0.88)
+        );
+    box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .stTabs [data-baseweb="tab"] {
-    height: 46px;
-    padding: 0 1rem;
-    border-radius: 11px;
-    color: #AAB8CE;
-    font-weight: 650;
+    min-height: 52px;
+    padding: 0.65rem 1.1rem;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 14px;
+    background: rgba(7, 11, 20, 0.42);
+    color: #C6D2E2;
+    font-size: 0.95rem;
+    font-weight: 720;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    border-color: rgba(103, 232, 249, 0.52);
+    background: rgba(34, 211, 238, 0.10);
+    color: #F8FAFC;
+    transform: translateY(-1px);
 }
 
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(
-        135deg,
-        rgba(34, 211, 238, 0.18),
-        rgba(139, 92, 246, 0.22)
-    ) !important;
-    color: #F8FAFC !important;
+    border-color: rgba(125, 211, 252, 0.62) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(6, 182, 212, 0.88) 0%,
+            rgba(34, 211, 238, 0.78) 48%,
+            rgba(139, 92, 246, 0.86) 100%
+        ) !important;
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+    box-shadow:
+        0 8px 20px rgba(34, 211, 238, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
 .stTabs [data-baseweb="tab-highlight"] {
@@ -294,6 +337,13 @@ h1, h2, h3, h4 {
     line-height: 1.55;
 }
 
+.tm-expense-status {
+    margin-top: 0.2rem;
+    color: #AAB8CE;
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
 .stButton > button,
 .stLinkButton > a,
 .stDownloadButton > button {
@@ -330,6 +380,22 @@ h1, h2, h3, h4 {
     border-radius: 14px;
 }
 
+@media (max-width: 900px) {
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.45rem;
+        overflow-x: auto;
+        padding: 0.48rem;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        flex: 0 0 auto;
+        min-height: 48px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.86rem;
+        white-space: nowrap;
+    }
+}
+
 @media (max-width: 760px) {
     .block-container {
         padding: 1.5rem 1rem 3rem;
@@ -339,12 +405,8 @@ h1, h2, h3, h4 {
         padding: 1.3rem;
     }
 
-    .tm-hero h1 {
-        font-size: 1.85rem !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto;
+    .tm-hero-title {
+        font-size: 1.85rem;
     }
 }
 </style>
@@ -352,7 +414,9 @@ h1, h2, h3, h4 {
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# ---------- СЛОВАРИ ----------
+# ==========================================================
+# СЛОВАРИ И НАСТРОЙКИ
+# ==========================================================
 
 ICONS = {
     "A": "🏛️",
@@ -407,8 +471,10 @@ TIER_STYLES = {
     },
 }
 
+# ==========================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ==========================================================
 
-# ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
 
 def as_float(value, default=0.0):
     """Безопасно преобразует число, None или строку в float."""
@@ -419,61 +485,57 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
-    """Безопасно преобразует значение в текст."""
+    """Возвращает строковое значение без ошибок при None."""
     if value is None:
         return default
     return str(value)
 
 
-# ---------- ШАПКА ПОЕЗДКИ ----------
+# ==========================================================
+# ШАПКА ПОЕЗДКИ
+# ==========================================================
 
-trip_title = data.get("title") or trip["title"] or "Поездка"
-destination = trip["destination"] or ""
-start_date_text = trip["start_date"] or ""
-end_date_text = trip["end_date"] or ""
+trip_title = text_value(data.get("title") or trip["title"], "Поездка")
+destination = text_value(trip["destination"])
+start_date_text = text_value(trip["start_date"])
+end_date_text = text_value(trip["end_date"])
 people = trip["people"] or 1
-overview = data.get("overview") or ""
+overview = text_value(data.get("overview"))
+mood_reason = text_value(data.get("mood_reason"))
 
 st.page_link(
     "pages/2_my_trips.py",
     label="← К моим путешествиям",
 )
 
-st.markdown(
-    """
-    <div class="tm-hero">
-        <div class="tm-eyebrow">TravelMind AI · Персональный маршрут</div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.title(f"🗺️ {trip_title}")
-
-st.markdown(
-    f"""
+hero_html = f"""
+<div class="tm-hero">
+    <div class="tm-eyebrow">TravelMind AI · Персональный маршрут</div>
+    <div class="tm-hero-title">🗺️ {escape(trip_title)}</div>
     <div class="tm-hero-meta">
-        📍 {destination}<br>
-        📅 {start_date_text} — {end_date_text} · 👥 {people} чел.
+        📍 {escape(destination)}<br>
+        📅 {escape(start_date_text)} — {escape(end_date_text)} ·
+        👥 {escape(str(people))} чел.
     </div>
-    """,
-    unsafe_allow_html=True,
-)
+"""
 
 if overview:
-    st.markdown(
-        f'<div class="tm-hero-overview">{overview}</div>',
-        unsafe_allow_html=True,
-    )
+    hero_html += f"""
+    <div class="tm-hero-overview">{escape(overview)}</div>
+    """
 
-if data.get("mood_reason"):
-    st.markdown(
-        f'<div class="tm-mood">🙂 {data["mood_reason"]}</div>',
-        unsafe_allow_html=True,
-    )
+if mood_reason:
+    hero_html += f"""
+    <div class="tm-mood">🙂 {escape(mood_reason)}</div>
+    """
 
-st.markdown("</div>", unsafe_allow_html=True)
+hero_html += "</div>"
 
-# ---------- ОСНОВНЫЕ МЕТРИКИ ----------
+st.markdown(hero_html, unsafe_allow_html=True)
+
+# ==========================================================
+# ОСНОВНЫЕ МЕТРИКИ И КАЛЬКУЛЯЦИЯ РАСХОДОВ
+# ==========================================================
 
 expenses = db.get_expenses(trip_id)
 
@@ -485,11 +547,9 @@ total_cost = as_float(data.get("total_cost"), plan_sum)
 if total_cost <= 0:
     total_cost = plan_sum
 
-# plan_sum — сумма всех строк «План» в таблице расходов.
-# actual_sum — сумма всех внесённых фактических расходов.
-# Они могут отличаться от общего бюджета поездки total_cost,
-# потому что общий бюджет AI может включать резерв, проживание
-# или другие траты, которых нет в строках таблицы.
+# Считаем остаток именно по строкам расходов.
+# Общий бюджет поездки может быть больше этой суммы: например,
+# если AI включил проживание, резерв или другие статьи.
 remaining_by_items = plan_sum - actual_sum
 
 if plan_sum <= 0:
@@ -541,7 +601,9 @@ with metric_4:
         len(data.get("days", [])),
     )
 
-# ---------- ВКЛАДКИ ----------
+# ==========================================================
+# ВКЛАДКИ
+# ==========================================================
 
 tabs = st.tabs(
     [
@@ -554,7 +616,7 @@ tabs = st.tabs(
 )
 
 # ==========================================================
-# ВКЛАДКА 1 — МАРШРУТ
+# ВКЛАДКА 1 — МАРШРУТ ПО ДНЯМ
 # ==========================================================
 
 with tabs[0]:
@@ -570,7 +632,7 @@ with tabs[0]:
             """
             <div class="tm-section-text">
                 Варианты проживания, подготовленные AI. Перед бронированием
-                обязательно уточните актуальную стоимость и наличие номеров.
+                уточните актуальную стоимость, рейтинг и наличие номеров.
             </div>
             """,
             unsafe_allow_html=True,
@@ -586,7 +648,8 @@ with tabs[0]:
         hotel_columns = st.columns(3)
 
         for index, hotel in enumerate(hotels[:3]):
-            tier = hotel.get("tier", "Оптимальный")
+            tier = text_value(hotel.get("tier"), "Оптимальный")
+
             tier_style = TIER_STYLES.get(
                 tier,
                 TIER_STYLES["Оптимальный"],
@@ -596,16 +659,18 @@ with tabs[0]:
                 hotel.get("name"),
                 "Вариант проживания",
             )
+
             hotel_area = text_value(
                 hotel.get("area"),
                 "Удобный район",
             )
+
             hotel_why = text_value(
                 hotel.get("why"),
-                "Подходит для маршрута и выбранного формата путешествия.",
+                "Подходит для выбранного формата путешествия.",
             )
-            rating = as_float(hotel.get("rating"), 0)
 
+            rating = as_float(hotel.get("rating"), 0)
             rooms = hotel.get("rooms") or {}
             standard_price = as_float(rooms.get("standard"), 0)
             total_stay = standard_price * nights
@@ -613,7 +678,7 @@ with tabs[0]:
             map_query = text_value(
                 hotel.get(
                     "map_query",
-                    f"{hotel_name} {trip['destination']}",
+                    f"{hotel_name} {destination}",
                 )
             )
 
@@ -623,7 +688,8 @@ with tabs[0]:
             )
 
             with hotel_columns[index]:
-                # Нативный контейнер Streamlit — без HTML-тегов
+                # Используются нативные компоненты Streamlit.
+                # HTML в карточках не применяется — теги не появятся текстом.
                 with st.container(border=True):
                     st.caption(
                         f"{tier_style['emoji']} "
@@ -660,7 +726,8 @@ with tabs[0]:
 
         st.divider()
 
-    # Поддержка старых маршрутов с полем accommodation
+    # Поддержка старого формата маршрута:
+    # в нём проживание могло храниться в поле accommodation.
     accommodation = data.get("accommodation") or {}
 
     if not hotels and isinstance(accommodation, dict) and accommodation:
@@ -696,18 +763,24 @@ with tabs[0]:
                             "Вариант проживания",
                         )
                     )
+
                     st.caption(
                         f"Категория: {text_value(hotel.get('tier'))}"
                     )
+
                     st.write(
                         f"📍 Район: {text_value(hotel.get('area'))}"
                     )
+
                     st.write(text_value(hotel.get("why")))
 
                 with hotel_right:
                     st.metric(
                         "За ночь",
-                        f"{as_float(hotel.get('price_per_night')):.0f} {curr}",
+                        (
+                            f"{as_float(hotel.get('price_per_night')):.0f} "
+                            f"{curr}"
+                        ),
                     )
 
     st.markdown(
@@ -718,8 +791,8 @@ with tabs[0]:
     st.markdown(
         """
         <div class="tm-section-text">
-            План сформирован с учётом времени, интересов и последовательности
-            активностей в течение каждого дня.
+            План составлен с учётом последовательности активностей,
+            интересов путешественника и времени в пути.
         </div>
         """,
         unsafe_allow_html=True,
@@ -727,9 +800,9 @@ with tabs[0]:
 
     for day in data.get("days", []):
         day_number = day.get("day", "")
-        day_date = day.get("date", "")
-        day_theme = day.get("theme", "")
-        day_vibe = day.get("vibe", "")
+        day_date = text_value(day.get("date"))
+        day_theme = text_value(day.get("theme"))
+        day_vibe = text_value(day.get("vibe"))
 
         header = f"День {day_number} · {day_date}"
 
@@ -747,7 +820,7 @@ with tabs[0]:
                 continue
 
             for activity in activities:
-                activity_type = activity.get("type", "")
+                activity_type = text_value(activity.get("type"))
                 icon = ICONS.get(activity_type, "📍")
 
                 time_value = text_value(activity.get("time"))
@@ -762,16 +835,18 @@ with tabs[0]:
                     f"""
                     <div class="tm-activity">
                         <div class="tm-activity-time">
-                            {time_value} · {icon} · ~{cost:.0f} {curr}
+                            {escape(time_value)} · {icon} ·
+                            ~{cost:.0f} {escape(curr)}
                         </div>
                         <div class="tm-activity-title">
-                            {activity_title}
+                            {escape(activity_title)}
                         </div>
                         <div class="tm-activity-info">
-                            ⏱️ {duration} мин · 📍 {location}
+                            ⏱️ {escape(duration)} мин ·
+                            📍 {escape(location)}
                         </div>
                         <div class="tm-activity-description">
-                            {description}
+                            {escape(description)}
                         </div>
                     </div>
                     """,
@@ -786,14 +861,14 @@ with tabs[0]:
             st.markdown(
                 f"""
                 <div class="tm-day-total">
-                    Итого за день: ~{day_cost:.0f} {curr}
+                    Итого за день: ~{day_cost:.0f} {escape(curr)}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
 # ==========================================================
-# ВКЛАДКА 2 — КАРТА
+# ВКЛАДКА 2 — КАРТА ПОЕЗДКИ
 # ==========================================================
 
 with tabs[1]:
@@ -806,7 +881,7 @@ with tabs[1]:
         """
         <div class="tm-section-text">
             Метки обозначают рекомендованные места. Линии соединяют точки
-            одного дня, чтобы визуально показать последовательность маршрута.
+            одного дня и показывают последовательность маршрута.
         </div>
         """,
         unsafe_allow_html=True,
@@ -851,19 +926,20 @@ with tabs[1]:
         )
 
         for lat, lon, activity, day_number in points:
-            activity_type = activity.get("type", "")
+            activity_type = text_value(activity.get("type"))
             marker_color = COLORS.get(activity_type, "blue")
 
             popup_html = (
-                f"День {day_number} · {activity.get('time', '')}<br>"
-                f"<b>{activity.get('title', '')}</b><br>"
-                f"{activity.get('location', '')}"
+                f"День {escape(str(day_number))} · "
+                f"{escape(text_value(activity.get('time')))}<br>"
+                f"<b>{escape(text_value(activity.get('title')))}</b><br>"
+                f"{escape(text_value(activity.get('location')))}"
             )
 
             folium.Marker(
                 location=[lat, lon],
                 popup=popup_html,
-                tooltip=activity.get("title", ""),
+                tooltip=text_value(activity.get("title")),
                 icon=folium.Icon(
                     color=marker_color,
                     icon="info-sign",
@@ -901,7 +977,7 @@ with tabs[1]:
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
-# ВКЛАДКА 3 — БЮДЖЕТ
+# ВКЛАДКА 3 — БЮДЖЕТ И РАСХОДЫ
 # ==========================================================
 
 with tabs[2]:
@@ -913,8 +989,8 @@ with tabs[2]:
     st.markdown(
         """
         <div class="tm-section-text">
-            Добавляйте реальные траты во время путешествия. Сервис покажет,
-            насколько фактические расходы отличаются от первоначального плана.
+            Вносите реальные траты во время поездки. Для каждой строки
+            отображается сравнение с её первоначальным планом.
         </div>
         """,
         unsafe_allow_html=True,
@@ -925,11 +1001,11 @@ with tabs[2]:
 
     else:
         for expense in expenses:
-            expense_columns = st.columns([4, 1.2, 1.8, 0.8])
+            expense_columns = st.columns([4, 1.35, 1.8, 0.8])
 
             day_number = expense["day"]
             category = expense["category"]
-            expense_title = expense["title"]
+            expense_title = text_value(expense["title"])
 
             plan_cost = as_float(expense["cost_plan"], 0)
             actual_cost = as_float(expense["cost_actual"], 0)
@@ -954,16 +1030,19 @@ with tabs[2]:
 
                 elif item_difference < 0:
                     st.caption(
-                        f"🟢 Экономия: {abs(item_difference):.0f} {curr}"
+                        f"🟢 Экономия: "
+                        f"{abs(item_difference):.0f} {curr}"
                     )
 
                 else:
                     st.caption(
-                        f"🔴 Превышение: {item_difference:.0f} {curr}"
+                        f"🔴 Превышение: "
+                        f"{item_difference:.0f} {curr}"
                     )
 
             with expense_columns[2]:
-                # Все параметры float. Это устраняет StreamlitMixedNumericTypesError.
+                # Все значения передаются как float:
+                # это исключает StreamlitMixedNumericTypesError.
                 actual_value = st.number_input(
                     "Факт",
                     min_value=0.0,
@@ -1048,7 +1127,7 @@ with tabs[3]:
 
         for moment in wow_moments:
             st.markdown(
-                f'<div class="tm-tip-card">✨ {moment}</div>',
+                f'<div class="tm-tip-card">✨ {escape(text_value(moment))}</div>',
                 unsafe_allow_html=True,
             )
 
@@ -1059,7 +1138,7 @@ with tabs[3]:
 
         for index, item in enumerate(packing):
             st.checkbox(
-                str(item),
+                text_value(item),
                 key=f"packing_{trip_id}_{index}",
             )
 
@@ -1087,8 +1166,8 @@ with tabs[3]:
             st.markdown(
                 f"""
                 <div class="tm-tip-card">
-                    <b>{tip_title}</b><br>
-                    {text_value(value)}
+                    <b>{escape(text_value(tip_title))}</b><br>
+                    {escape(text_value(value))}
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1107,8 +1186,8 @@ with tabs[4]:
     st.markdown(
         """
         <div class="tm-section-text">
-            Структурированный результат генерации нейросети. Эти данные можно
-            использовать в отчёте по проекту или скачать для анализа.
+            Структурированный результат работы нейросети. Его можно скачать
+            для отчёта по учебному проекту или дальнейшей обработки.
         </div>
         """,
         unsafe_allow_html=True,
