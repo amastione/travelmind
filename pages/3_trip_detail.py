@@ -49,7 +49,6 @@ if not trip:
     )
     st.stop()
 
-# Запоминаем текущую поездку для переходов и перезагрузок.
 auth.remember_trip(trip_id)
 
 try:
@@ -66,6 +65,8 @@ curr = trip["currency"] or "RUB"
 
 CSS = """
 <style>
+/* ---------- Основа ---------- */
+
 .stApp {
     background:
         radial-gradient(
@@ -85,7 +86,12 @@ CSS = """
             #0E1325 100%
         );
     color: #F8FAFC;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 .block-container {
@@ -99,9 +105,20 @@ footer {
     visibility: hidden;
 }
 
-h1, h2, h3, h4, p, label, button,
+h1,
+h2,
+h3,
+h4,
+p,
+label,
+button,
 [data-testid="stMarkdownContainer"] {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
 }
 
 .material-symbols-rounded,
@@ -112,9 +129,10 @@ h1, h2, h3, h4, p, label, button,
         "Material Symbols Rounded",
         "Material Symbols Outlined",
         "Material Icons" !important;
+    font-style: normal !important;
 }
 
-/* ---------- Шапка ---------- */
+/* ---------- Шапка поездки ---------- */
 
 .tm-hero-label {
     color: #7DEBFA;
@@ -216,24 +234,30 @@ h1, h2, h3, h4, p, label, button,
     line-height: 1.55;
 }
 
-/* ---------- Метрики ---------- */
+/* ---------- Карточки ---------- */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-color: rgba(148, 163, 184, 0.23) !important;
     border-radius: 22px !important;
     background: rgba(15, 23, 42, 0.70) !important;
+    box-shadow:
+        0 14px 32px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
+
+/* ---------- Метрики ---------- */
 
 [data-testid="stMetric"] {
     min-height: 126px;
     padding: 1rem 1.12rem;
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 19px;
-    background: linear-gradient(
-        145deg,
-        rgba(22, 33, 58, 0.78),
-        rgba(10, 18, 34, 0.75)
-    );
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22, 33, 58, 0.78),
+            rgba(10, 18, 34, 0.75)
+        );
 }
 
 [data-testid="stMetricLabel"] {
@@ -263,11 +287,12 @@ h1, h2, h3, h4, p, label, button,
     padding: 0.65rem !important;
     border: 1px solid rgba(177, 204, 235, 0.30) !important;
     border-radius: 24px !important;
-    background: linear-gradient(
-        135deg,
-        rgba(29, 43, 71, 0.86),
-        rgba(10, 18, 34, 0.84)
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(29, 43, 71, 0.86),
+            rgba(10, 18, 34, 0.84)
+        ) !important;
 }
 
 .stTabs [data-baseweb="tab"] {
@@ -289,17 +314,16 @@ h1, h2, h3, h4, p, label, button,
     font-weight: 800 !important;
 }
 
-.stTabs [data-baseweb="tab"][aria-selected="true"],
-.stTabs [data-baseweb="tab"][aria-selected="true"]:hover,
-.stTabs [data-baseweb="tab"][aria-selected="true"]:focus {
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
     border: 1px solid rgba(230, 250, 255, 0.92) !important;
-    background: linear-gradient(
-        135deg,
-        #0598B7 0%,
-        #18CAE4 45%,
-        #548AF0 74%,
-        #7551DE 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #0598B7 0%,
+            #18CAE4 45%,
+            #548AF0 74%,
+            #7551DE 100%
+        ) !important;
     color: #FFFFFF !important;
 }
 
@@ -307,7 +331,7 @@ h1, h2, h3, h4, p, label, button,
     display: none !important;
 }
 
-/* ---------- Секции ---------- */
+/* ---------- Заголовки секций ---------- */
 
 .tm-section-title {
     margin-top: 1.75rem;
@@ -325,114 +349,31 @@ h1, h2, h3, h4, p, label, button,
     line-height: 1.68;
 }
 
-/* ---------- Раскрываемые дни ---------- */
+/* ==========================================================
+   СОБСТВЕННЫЕ КАРТОЧКИ ДНЕЙ
+   Здесь нет st.expander, поэтому белый фон исключён.
+   ========================================================== */
 
-/* ---------- Раскрываемые дни маршрута ---------- */
-
-/* Внешняя карточка дня */
-details[data-testid="stExpander"] {
-    overflow: hidden !important;
-    margin-bottom: 0.9rem !important;
-    border: 1px solid rgba(103, 232, 249, 0.24) !important;
-    border-radius: 18px !important;
-    background: rgba(8, 18, 35, 0.92) !important;
-    box-shadow:
-        0 12px 28px rgba(0, 0, 0, 0.14),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+.tm-day-header {
+    margin: 0.15rem 0 0.75rem;
+    padding: 0.1rem 0;
+    color: #F8FAFC;
+    font-size: 1.08rem;
+    font-weight: 800;
+    line-height: 1.45;
 }
 
-/* Заголовок дня в закрытом состоянии */
-details[data-testid="stExpander"] > summary {
-    min-height: 64px !important;
-    padding: 1.05rem 1.2rem !important;
-    border: 0 !important;
-    border-radius: 17px !important;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(29, 49, 77, 0.98),
-            rgba(14, 25, 47, 0.98)
-        ) !important;
-    color: #F8FAFC !important;
-    cursor: pointer !important;
+.tm-day-header-open {
+    color: #BDF7FF;
 }
 
-/* Текст заголовка: День 1 · дата · тема */
-details[data-testid="stExpander"] > summary p,
-details[data-testid="stExpander"] > summary div,
-details[data-testid="stExpander"] > summary span {
-    margin: 0 !important;
-    background: transparent !important;
-    color: #F8FAFC !important;
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif !important;
-    font-size: 1.04rem !important;
-    font-weight: 750 !important;
+.tm-day-description {
+    margin: 0.25rem 0 0.8rem;
+    color: #AFC4DD;
+    font-size: 0.91rem;
 }
 
-/* Заголовок открытого дня */
-details[data-testid="stExpander"][open] > summary {
-    border-bottom: 1px solid rgba(103, 232, 249, 0.25) !important;
-    border-radius: 17px 17px 0 0 !important;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(8, 142, 175, 0.58),
-            rgba(75, 69, 177, 0.50)
-        ) !important;
-    color: #FFFFFF !important;
-}
-
-/* Текст даты и названия открытого дня */
-details[data-testid="stExpander"][open] > summary p,
-details[data-testid="stExpander"][open] > summary div,
-details[data-testid="stExpander"][open] > summary span {
-    background: transparent !important;
-    color: #FFFFFF !important;
-}
-
-/* Hover заголовка */
-details[data-testid="stExpander"] > summary:hover {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(19, 104, 137, 0.72),
-            rgba(75, 62, 153, 0.62)
-        ) !important;
-}
-
-/* Иконка-стрелка справа */
-details[data-testid="stExpander"] > summary svg {
-    fill: #7DEBFA !important;
-    color: #7DEBFA !important;
-}
-
-/*
-  Streamlit может создавать несколько вложенных контейнеров
-  внутри expander. Принудительно оставляем их тёмными,
-  чтобы не появлялся белый прямоугольник.
-*/
-details[data-testid="stExpander"] > div,
-details[data-testid="stExpander"] [data-testid="stExpanderDetails"],
-details[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
-details[data-testid="stExpander"] [data-testid="stVerticalBlock"],
-details[data-testid="stExpander"] [data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(8, 18, 35, 0.92) !important;
-    color: #F8FAFC !important;
-}
-
-/* Убираем потенциальный светлый фон у внутренних блоков Markdown */
-details[data-testid="stExpander"] [data-testid="stMarkdownContainer"],
-details[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
-    background: transparent !important;
-    color: inherit !important;
-}
-
-/* ---------- Маршрут ---------- */
+/* ---------- Активности ---------- */
 
 .tm-activity {
     margin: 0.85rem 0;
@@ -503,11 +444,12 @@ details[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
     padding: 1rem 1.1rem;
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 18px;
-    background: linear-gradient(
-        135deg,
-        rgba(27, 42, 68, 0.78),
-        rgba(11, 20, 39, 0.74)
-    );
+    background:
+        linear-gradient(
+            135deg,
+            rgba(27, 42, 68, 0.78),
+            rgba(11, 20, 39, 0.74)
+        );
 }
 
 .tm-budget-category {
@@ -564,15 +506,23 @@ details[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
     min-height: 46px;
     border: 0 !important;
     border-radius: 14px !important;
-    background: linear-gradient(
-        135deg,
-        #06B6D4 0%,
-        #22D3EE 47%,
-        #8B5CF6 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #06B6D4 0%,
+            #22D3EE 47%,
+            #8B5CF6 100%
+        ) !important;
     color: #FFFFFF !important;
     font-size: 0.97rem;
     font-weight: 750;
+}
+
+.stButton > button:hover,
+.stLinkButton > a:hover,
+.stDownloadButton > button:hover {
+    filter: brightness(1.09);
+    transform: translateY(-1px);
 }
 
 .stNumberInput input {
@@ -590,13 +540,14 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
     padding: 0.7rem 1rem !important;
     border: 1px solid rgba(234, 252, 255, 0.60) !important;
     border-radius: 14px !important;
-    background: linear-gradient(
-        135deg,
-        #069FBE 0%,
-        #1DCDE6 46%,
-        #568DF0 72%,
-        #8057E9 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #069FBE 0%,
+            #1DCDE6 46%,
+            #568DF0 72%,
+            #8057E9 100%
+        ) !important;
     color: #FFFFFF !important;
     text-decoration: none !important;
     font-size: 0.96rem !important;
@@ -626,114 +577,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p {
     .tm-budget-amount {
         text-align: left;
     }
-}
-/* ==========================================================
-   ЖЁСТКОЕ ИСПРАВЛЕНИЕ ФОНА ЗАГОЛОВКА st.expander
-   Для разных версий Streamlit
-   ========================================================== */
-
-/* Внешняя карточка раскрывающегося дня */
-div[data-testid="stExpander"],
-div[data-testid="stExpander"] > details,
-details[data-testid="stExpander"] {
-    overflow: hidden !important;
-    margin-bottom: 0.9rem !important;
-    border: 1px solid rgba(103, 232, 249, 0.25) !important;
-    border-radius: 18px !important;
-    background: rgba(8, 18, 35, 0.94) !important;
-    box-shadow:
-        0 12px 28px rgba(0, 0, 0, 0.14),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-}
-
-/*
-  В вашей версии Streamlit белый фон задаётся этому summary
-  или вложенному контейнеру внутри него.
-*/
-div[data-testid="stExpander"] summary,
-div[data-testid="stExpander"] > details > summary,
-details[data-testid="stExpander"] > summary {
-    display: flex !important;
-    align-items: center !important;
-    min-height: 68px !important;
-    padding: 1.05rem 1.2rem !important;
-    border: 0 !important;
-    border-radius: 17px !important;
-
-    background-color: #172B45 !important;
-    background-image: linear-gradient(
-        135deg,
-        #1D314D 0%,
-        #0E192F 100%
-    ) !important;
-
-    color: #F8FAFC !important;
-    cursor: pointer !important;
-}
-
-/* Все внутренние элементы заголовка дня */
-div[data-testid="stExpander"] summary *,
-div[data-testid="stExpander"] > details > summary *,
-details[data-testid="stExpander"] > summary * {
-    background: transparent !important;
-    background-color: transparent !important;
-    color: #F8FAFC !important;
-    fill: #7DEBFA !important;
-
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif !important;
-
-    font-size: 1.04rem !important;
-    font-weight: 750 !important;
-}
-
-/* Открытое состояние дня */
-div[data-testid="stExpander"] details[open] > summary,
-details[data-testid="stExpander"][open] > summary {
-    border-bottom: 1px solid rgba(103, 232, 249, 0.28) !important;
-    border-radius: 17px 17px 0 0 !important;
-
-    background-color: #126B88 !important;
-    background-image: linear-gradient(
-        135deg,
-        #087B9A 0%,
-        #305EA4 55%,
-        #5145A0 100%
-    ) !important;
-
-    color: #FFFFFF !important;
-}
-
-/* Текст заголовка в открытом состоянии */
-div[data-testid="stExpander"] details[open] > summary *,
-details[data-testid="stExpander"][open] > summary * {
-    background: transparent !important;
-    color: #FFFFFF !important;
-    fill: #D5FBFF !important;
-}
-
-/* Наведение */
-div[data-testid="stExpander"] summary:hover,
-details[data-testid="stExpander"] > summary:hover {
-    background-color: #1A4965 !important;
-    background-image: linear-gradient(
-        135deg,
-        #175B75 0%,
-        #31457E 100%
-    ) !important;
-}
-
-/* Контент раскрытого дня: сохраняем тёмный фон */
-div[data-testid="stExpander"] [data-testid="stExpanderDetails"],
-div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
-div[data-testid="stExpander"] details > div,
-details[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-    background: rgba(8, 18, 35, 0.94) !important;
-    color: #F8FAFC !important;
 }
 </style>
 """
@@ -815,7 +658,7 @@ def format_money(value, currency):
     return f"{as_float(value):,.0f} {currency}".replace(",", " ")
 
 
-def format_date_ru(value) -> str:
+def format_date_ru(value):
     """Отображает дату как DD/MM/YYYY."""
     if not value:
         return ""
@@ -830,12 +673,7 @@ def format_date_ru(value) -> str:
 
 
 def build_booking_links(destination, start_date, end_date):
-    """
-    Формирует внешние ссылки для TravelMind 1.1.
-
-    Оплата не происходит внутри TravelMind: пользователь переходит
-    на внешний сервис, где самостоятельно выбирает и бронирует услугу.
-    """
+    """Создаёт ссылки внешних сервисов для версии TravelMind 1.1."""
     destination_query = quote_plus(str(destination))
     checkin = str(start_date)[:10]
     checkout = str(end_date)[:10]
@@ -913,7 +751,7 @@ with st.container(border=True):
         )
 
 # ==========================================================
-# БИЛЕТЫ И БРОНИРОВАНИЕ — ВЕРСИЯ 1.1
+# БИЛЕТЫ И БРОНИРОВАНИЕ
 # ==========================================================
 
 booking_links = build_booking_links(
@@ -972,9 +810,8 @@ with booking_col_4:
 st.markdown(
     """
     <div class="tm-booking-note">
-        ℹ️ TravelMind помогает спланировать путешествие и не принимает оплату.
-        Поиск, бронирование и покупка происходят на сайтах внешних сервисов.
-        Стоимость билетов и проживания может меняться.
+        ℹ️ TravelMind не принимает оплату. Бронирование и покупка происходят
+        на сайтах внешних сервисов. Стоимость может меняться.
     </div>
     """,
     unsafe_allow_html=True,
@@ -993,8 +830,6 @@ total_cost = as_float(data.get("total_cost"), plan_sum)
 if total_cost <= 0:
     total_cost = plan_sum
 
-remaining = plan_sum - actual_sum
-
 metric_1, metric_2, metric_3, metric_4 = st.columns(4)
 
 with metric_1:
@@ -1004,7 +839,7 @@ with metric_2:
     st.metric("Внесено по факту", format_money(actual_sum, curr))
 
 with metric_3:
-    st.metric("План по строкам расходов", format_money(plan_sum, curr))
+    st.metric("План по расходам", format_money(plan_sum, curr))
 
 with metric_4:
     st.metric("Дней в маршруте", len(data.get("days", [])))
@@ -1024,7 +859,7 @@ tab_route, tab_map, tab_budget, tab_tips, tab_ai = st.tabs(
 )
 
 # ==========================================================
-# МАРШРУТ ПО ДНЯМ
+# ВКЛАДКА: МАРШРУТ
 # ==========================================================
 
 with tab_route:
@@ -1035,11 +870,14 @@ with tab_route:
             '<div class="tm-section-title">🏨 Где остановиться</div>',
             unsafe_allow_html=True,
         )
+
         st.markdown(
-            '<div class="tm-section-text">'
-            'Варианты проживания подготовлены AI. Перед бронированием '
-            'уточните актуальную стоимость и наличие номеров.'
-            '</div>',
+            (
+                '<div class="tm-section-text">'
+                'Варианты проживания подготовлены AI. Перед бронированием '
+                'уточните актуальную стоимость и наличие номеров.'
+                '</div>'
+            ),
             unsafe_allow_html=True,
         )
 
@@ -1055,18 +893,21 @@ with tab_route:
         for index, hotel in enumerate(hotels[:3]):
             tier = text_value(hotel.get("tier"), "Оптимальный")
             tier_style = TIER_STYLES.get(tier, TIER_STYLES["Оптимальный"])
+
             hotel_name = text_value(hotel.get("name"), "Вариант проживания")
             hotel_area = text_value(hotel.get("area"), "Удобный район")
             hotel_why = text_value(
                 hotel.get("why"),
                 "Подходит для выбранного формата путешествия.",
             )
+
             rating = as_float(hotel.get("rating"), 0)
             standard_price = as_float(
                 (hotel.get("rooms") or {}).get("standard"),
                 0,
             )
             total_stay = standard_price * nights
+
             map_query = text_value(
                 hotel.get("map_query", f"{hotel_name} {destination}")
             )
@@ -1109,11 +950,20 @@ with tab_route:
     )
 
     st.markdown(
-        '<div class="tm-section-text">'
-        'План составлен с учётом интересов, логистики и темпа поездки.'
-        '</div>',
+        (
+            '<div class="tm-section-text">'
+            'План составлен с учётом интересов, логистики и темпа поездки.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
+
+    # Вместо st.expander используем собственные карточки.
+    # Это устраняет белый фон и проблему с нечитаемым заголовком.
+    route_day_state_key = f"opened_route_day_{trip_id}"
+
+    if route_day_state_key not in st.session_state:
+        st.session_state[route_day_state_key] = 1
 
     for day in data.get("days", []):
         day_number = day.get("day", "")
@@ -1121,74 +971,117 @@ with tab_route:
         day_theme = text_value(day.get("theme"))
         day_vibe = text_value(day.get("vibe"))
 
-        header = f"День {day_number} · {day_date}"
+        day_header = f"День {day_number} · {day_date}"
 
         if day_theme:
-            header += f" — {day_theme}"
+            day_header += f" — {day_theme}"
 
         if day_vibe:
-            header += f" · {day_vibe}"
+            day_header += f" · {day_vibe}"
 
-        with st.expander(header, expanded=(day_number == 1)):
-            activities = day.get("activities") or []
+        is_open = st.session_state[route_day_state_key] == day_number
 
-            if not activities:
-                st.info("Для этого дня пока нет активностей.")
-                continue
+        with st.container(border=True):
+            header_class = (
+                "tm-day-header tm-day-header-open"
+                if is_open
+                else "tm-day-header"
+            )
 
-            for activity in activities:
-                activity_type = text_value(activity.get("type"))
-                icon = ICONS.get(activity_type, "📍")
+            st.markdown(
+                f'<div class="{header_class}">{escape(day_header)}</div>',
+                unsafe_allow_html=True,
+            )
 
-                time_value = text_value(activity.get("time"))
-                title = text_value(activity.get("title"))
-                duration = text_value(activity.get("duration_min"), "?")
-                cost = as_float(activity.get("cost"), 0)
-                location = text_value(activity.get("location"))
-                description = text_value(activity.get("description"))
-                tip = text_value(activity.get("tip"))
+            toggle_label = (
+                "⌃ Скрыть план дня"
+                if is_open
+                else "⌄ Открыть план дня"
+            )
+
+            if st.button(
+                toggle_label,
+                key=f"toggle_day_{trip_id}_{day_number}",
+                use_container_width=True,
+            ):
+                if is_open:
+                    st.session_state[route_day_state_key] = None
+                else:
+                    st.session_state[route_day_state_key] = day_number
+
+                st.rerun()
+
+            if is_open:
+                activities = day.get("activities") or []
+
+                if not activities:
+                    st.info("Для этого дня пока нет активностей.")
+
+                for activity in activities:
+                    activity_type = text_value(activity.get("type"))
+                    icon = ICONS.get(activity_type, "📍")
+
+                    time_value = text_value(activity.get("time"))
+                    title = text_value(activity.get("title"))
+                    duration = text_value(activity.get("duration_min"), "?")
+                    cost = as_float(activity.get("cost"), 0)
+                    location = text_value(activity.get("location"))
+                    description = text_value(activity.get("description"))
+                    tip = text_value(activity.get("tip"))
+
+                    st.markdown(
+                        (
+                            '<div class="tm-activity">'
+                            '<div class="tm-activity-time">'
+                            f'{escape(time_value)} · {icon} · '
+                            f'~{format_money(cost, curr)}'
+                            '</div>'
+                            '<div class="tm-activity-title">'
+                            f'{escape(title)}'
+                            '</div>'
+                            '<div class="tm-activity-info">'
+                            f'⏱️ {escape(duration)} мин · '
+                            f'⌖ {escape(location)}'
+                            '</div>'
+                            '<div class="tm-activity-description">'
+                            f'{escape(description)}'
+                            '</div>'
+                            '</div>'
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
+                    if tip:
+                        st.caption(f"✦ {tip}")
+
+                day_cost = as_float(day.get("day_cost"), 0)
 
                 st.markdown(
                     (
-                        '<div class="tm-activity">'
-                        '<div class="tm-activity-time">'
-                        f'{escape(time_value)} · {icon} · '
-                        f'~{format_money(cost, curr)}'
-                        '</div>'
-                        '<div class="tm-activity-title">'
-                        f'{escape(title)}'
-                        '</div>'
-                        '<div class="tm-activity-info">'
-                        f'⏱️ {escape(duration)} мин · '
-                        f'⌖ {escape(location)}'
-                        '</div>'
-                        '<div class="tm-activity-description">'
-                        f'{escape(description)}'
-                        '</div>'
+                        '<div class="tm-day-total">'
+                        f'Итого за день: ~{format_money(day_cost, curr)}'
                         '</div>'
                     ),
                     unsafe_allow_html=True,
                 )
 
-                if tip:
-                    st.caption(f"✦ {tip}")
-
-            day_cost = as_float(day.get("day_cost"), 0)
-
-            st.markdown(
-                f'<div class="tm-day-total">'
-                f'Итого за день: ~{format_money(day_cost, curr)}'
-                '</div>',
-                unsafe_allow_html=True,
-            )
-
 # ==========================================================
-# КАРТА
+# ВКЛАДКА: КАРТА
 # ==========================================================
 
 with tab_map:
     st.markdown(
         '<div class="tm-section-title">⌖ Карта маршрута</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'Метки показывают рекомендованные места, а линии соединяют '
+            'точки одного дня в порядке следования маршрута.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -1249,22 +1142,33 @@ with tab_map:
                     color="#22D3EE",
                 ).add_to(fmap)
 
-        st_folium(
-            fmap,
-            use_container_width=True,
-            height=520,
-            returned_objects=[],
-        )
+        with st.container(border=True):
+            st_folium(
+                fmap,
+                use_container_width=True,
+                height=520,
+                returned_objects=[],
+            )
 
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
-# БЮДЖЕТ И РАСХОДЫ
+# ВКЛАДКА: БЮДЖЕТ
 # ==========================================================
 
 with tab_budget:
     st.markdown(
         '<div class="tm-section-title">◫ Бюджет и фактические расходы</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'Вносите реальные траты во время поездки. Для каждой позиции '
+            'отображается сравнение с первоначальным планом.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -1289,6 +1193,21 @@ with tab_budget:
         with columns[1]:
             st.caption("План")
             st.write(format_money(plan_cost, curr))
+
+            difference = actual_cost - plan_cost
+
+            if actual_cost == 0:
+                st.caption("Факт пока не внесён")
+            elif abs(difference) < 0.01:
+                st.caption("✅ Совпадает с планом")
+            elif difference < 0:
+                st.caption(
+                    f"🟢 Экономия: {format_money(abs(difference), curr)}"
+                )
+            else:
+                st.caption(
+                    f"🔴 Превышение: {format_money(difference, curr)}"
+                )
 
         with columns[2]:
             actual_value = st.number_input(
@@ -1338,6 +1257,7 @@ with tab_budget:
 
             chart_data = pd.DataFrame(budget_rows)
             total_breakdown = chart_data["План"].sum()
+
             chart_data["Доля"] = (
                 chart_data["План"] / total_breakdown * 100
             ).round(1)
@@ -1393,10 +1313,21 @@ with tab_budget:
                 .configure(background="transparent")
             )
 
-            st.altair_chart(
-                final_chart,
-                use_container_width=True,
-                theme=None,
+            with st.container(border=True):
+                st.altair_chart(
+                    final_chart,
+                    use_container_width=True,
+                    theme=None,
+                )
+
+                st.caption(
+                    "Общий плановый бюджет: "
+                    f"**{format_money(total_breakdown, curr)}**"
+                )
+
+            st.markdown(
+                '<div class="tm-section-title">Детализация бюджета</div>',
+                unsafe_allow_html=True,
             )
 
             for index, row in enumerate(chart_data.to_dict("records")):
@@ -1417,7 +1348,8 @@ with tab_budget:
                         '<div class="tm-budget-progress">'
                         '<div class="tm-budget-progress-value" '
                         f'style="width:{percent:.1f}%;'
-                        f'background:{color};"></div>'
+                        f'background:linear-gradient(90deg,{color},'
+                        f'rgba(255,255,255,0.9));"></div>'
                         '</div>'
                         '<div class="tm-budget-percent">'
                         f'{percent:.1f}% от бюджета'
@@ -1432,7 +1364,7 @@ with tab_budget:
                 )
 
 # ==========================================================
-# СОВЕТЫ
+# ВКЛАДКА: СОВЕТЫ
 # ==========================================================
 
 with tab_tips:
@@ -1448,8 +1380,11 @@ with tab_tips:
 
         for moment in wow_moments:
             st.markdown(
-                f'<div class="tm-tip-card">✦ '
-                f'{escape(text_value(moment))}</div>',
+                (
+                    '<div class="tm-tip-card">'
+                    f'✦ {escape(text_value(moment))}'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
@@ -1471,7 +1406,9 @@ with tab_tips:
 
         for phrase in phrases:
             with st.container(border=True):
-                st.markdown(f"**{text_value(phrase.get('ru'))}**")
+                st.markdown(
+                    f"**{text_value(phrase.get('ru'))}**"
+                )
                 st.caption(text_value(phrase.get("local")))
 
     tips = data.get("tips") or {}
@@ -1483,14 +1420,17 @@ with tab_tips:
             title = TIP_RU.get(key, key)
 
             st.markdown(
-                f'<div class="tm-tip-card"><b>'
-                f'{escape(text_value(title))}</b><br>'
-                f'{escape(text_value(value))}</div>',
+                (
+                    '<div class="tm-tip-card">'
+                    f'<b>{escape(text_value(title))}</b><br>'
+                    f'{escape(text_value(value))}'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
 # ==========================================================
-# AI-ДАННЫЕ И ЭКСПОРТ
+# ВКЛАДКА: AI-ДАННЫЕ И ЭКСПОРТ
 # ==========================================================
 
 with tab_ai:
