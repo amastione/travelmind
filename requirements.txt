@@ -4,3 +4,4 @@ pandas
 bcrypt
 folium
 streamlit-folium
+streamlit-cookies-manager==0.2.0
