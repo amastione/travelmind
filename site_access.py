@@ -23,10 +23,10 @@ import streamlit as st
 # ==========================================================
 
 MASTER_PASSWORD_HASH = (
-    "52c9f50e1b1219e86b6d08e1de6ba202737a2c26c5b58218c1b61b9f4b3a91b0"
+    "TravelMind2026"
 )
 
-ACCESS_VERSION = "2026-10-14-v1"
+ACCESS_VERSION = "2026-10-14-v2"
 
 
 def _hash_password(password: str) -> str:
@@ -197,11 +197,9 @@ def require_site_access() -> None:
             submitted = st.form_submit_button("Открыть TravelMind →")
 
             if submitted:
-                entered_hash = _hash_password(password.strip())
-
                 if hmac.compare_digest(
-                    entered_hash,
-                    MASTER_PASSWORD_HASH,
+                    password.strip(),
+                    MASTER_PASSWORD,
                 ):
                     st.session_state["site_access_granted"] = True
                     st.session_state["site_access_version"] = ACCESS_VERSION
