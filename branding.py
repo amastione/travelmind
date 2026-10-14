@@ -1,6 +1,48 @@
 import streamlit as st
 
 
+def apply_clean_layout() -> None:
+    """Скрывает стандартные элементы Streamlit: шапку и боковую панель."""
+    st.markdown(
+        """
+        <style>
+        /* Верхняя служебная панель Streamlit */
+        [data-testid="stHeader"] {
+            display: none !important;
+        }
+
+        /* Меню с тремя точками и служебная панель */
+        [data-testid="stToolbar"] {
+            display: none !important;
+        }
+
+        /* Левая боковая панель Streamlit */
+        [data-testid="stSidebar"] {
+            display: none !important;
+        }
+
+        /* Кнопка открытия скрытой боковой панели */
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+
+        /* Убираем пустой отступ, который остаётся после скрытия шапки */
+        .block-container {
+            padding-top: 2.2rem !important;
+        }
+
+        /* На телефонах чуть уменьшаем верхний отступ */
+        @media (max-width: 700px) {
+            .block-container {
+                padding-top: 1.4rem !important;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def show_author_mark() -> None:
     """Небольшая подпись автора в левом нижнем углу."""
     st.markdown(
@@ -30,7 +72,6 @@ def show_author_mark() -> None:
             user-select: none !important;
         }
 
-        /* Защита от глобальных CSS-стилей приложения */
         div.tm-author-mark,
         div.tm-author-mark * {
             color: rgba(148, 163, 184, 0.62) !important;
