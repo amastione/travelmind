@@ -1,4 +1,4 @@
-"""SQLite-хранилище TravelMind: пользователи, поездки, расходы."""
+"""SQLite-хранилище TravelMind: пользователи, сессии, поездки, расходы."""
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -12,6 +12,21 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id
+ON auth_sessions(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at
+ON auth_sessions(expires_at);
+
 CREATE TABLE IF NOT EXISTS trips (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -26,6 +41,7 @@ CREATE TABLE IF NOT EXISTS trips (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER NOT NULL,
@@ -43,114 +59,243 @@ CREATE TABLE IF NOT EXISTS expenses (
 @contextmanager
 def _conn():
     """Открывает соединение с БД, сохраняет изменения и закрывает его."""
-    c = sqlite3.connect(DB_PATH)
-    c.row_factory = sqlite3.Row
+    connection = sqlite3.connect(DB_PATH)
+    connection.row_factory = sqlite3.Row
+
     try:
-        yield c
-        c.commit()
+        yield connection
+        connection.commit()
     finally:
-        c.close()
+        connection.close()
 
 
 def init():
-    with _conn() as c:
-        c.executescript(SCHEMA)
+    """Создаёт таблицы, если их ещё нет."""
+    with _conn() as connection:
+        connection.executescript(SCHEMA)
 
 
-# ---------- Пользователи ----------
+# ==========================================================
+# ПОЛЬЗОВАТЕЛИ
+# ==========================================================
 
 def create_user(username: str, pw_hash: str):
-    with _conn() as c:
-        c.execute(
+    with _conn() as connection:
+        connection.execute(
             "INSERT INTO users(username, password_hash) VALUES (?, ?)",
             (username, pw_hash),
         )
 
 
 def get_user(username: str):
-    with _conn() as c:
-        return c.execute(
-            "SELECT * FROM users WHERE username = ?", (username,)
+    with _conn() as connection:
+        return connection.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (username,),
         ).fetchone()
 
 
-# ---------- Поездки ----------
+# ==========================================================
+# ПОСТОЯННЫЕ СЕССИИ АВТОРИЗАЦИИ
+# ==========================================================
+
+def create_auth_session(
+    user_id: int,
+    token_hash: str,
+    expires_at: int,
+):
+    """Сохраняет хэш токена авторизации и время окончания сессии."""
+    with _conn() as connection:
+        connection.execute(
+            """
+            INSERT INTO auth_sessions(token_hash, user_id, expires_at)
+            VALUES (?, ?, ?)
+            """,
+            (token_hash, user_id, expires_at),
+        )
+
+
+def get_user_by_session_token(token_hash: str):
+    """
+    Находит пользователя по токену активной сессии.
+
+    Просроченные сессии удаляются при каждой проверке.
+    """
+    with _conn() as connection:
+        connection.execute(
+            """
+            DELETE FROM auth_sessions
+            WHERE expires_at < CAST(strftime('%s', 'now') AS INTEGER)
+            """
+        )
+
+        return connection.execute(
+            """
+            SELECT users.*
+            FROM auth_sessions
+            INNER JOIN users ON users.id = auth_sessions.user_id
+            WHERE auth_sessions.token_hash = ?
+              AND auth_sessions.expires_at >=
+                  CAST(strftime('%s', 'now') AS INTEGER)
+            """,
+            (token_hash,),
+        ).fetchone()
+
+
+def delete_auth_session(token_hash: str):
+    """Удаляет сессию при выходе из аккаунта."""
+    with _conn() as connection:
+        connection.execute(
+            "DELETE FROM auth_sessions WHERE token_hash = ?",
+            (token_hash,),
+        )
+
+
+# ==========================================================
+# ПОЕЗДКИ
+# ==========================================================
 
 def save_trip(user_id: int, meta: dict, data_json: str) -> int:
-    with _conn() as c:
-        cur = c.execute(
-            """INSERT INTO trips(user_id, title, destination, start_date,
-               end_date, budget, currency, people, data)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (user_id, meta["title"], meta["destination"], meta["start_date"],
-             meta["end_date"], meta["budget"], meta["currency"],
-             meta["people"], data_json),
+    with _conn() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO trips(
+                user_id,
+                title,
+                destination,
+                start_date,
+                end_date,
+                budget,
+                currency,
+                people,
+                data
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                meta["title"],
+                meta["destination"],
+                meta["start_date"],
+                meta["end_date"],
+                meta["budget"],
+                meta["currency"],
+                meta["people"],
+                data_json,
+            ),
         )
-        return cur.lastrowid
+
+        return cursor.lastrowid
 
 
 def list_trips(user_id: int):
-    with _conn() as c:
-        return c.execute(
-            "SELECT * FROM trips WHERE user_id = ? ORDER BY created_at DESC",
+    with _conn() as connection:
+        return connection.execute(
+            """
+            SELECT *
+            FROM trips
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            """,
             (user_id,),
         ).fetchall()
 
 
 def get_trip(trip_id: int, user_id: int):
-    with _conn() as c:
-        return c.execute(
-            "SELECT * FROM trips WHERE id = ? AND user_id = ?",
+    with _conn() as connection:
+        return connection.execute(
+            """
+            SELECT *
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
             (trip_id, user_id),
         ).fetchone()
 
 
 def delete_trip(trip_id: int, user_id: int):
-    with _conn() as c:
-        c.execute("DELETE FROM expenses WHERE trip_id = ?", (trip_id,))
-        c.execute(
-            "DELETE FROM trips WHERE id = ? AND user_id = ?",
+    with _conn() as connection:
+        connection.execute(
+            "DELETE FROM expenses WHERE trip_id = ?",
+            (trip_id,),
+        )
+
+        connection.execute(
+            """
+            DELETE FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
             (trip_id, user_id),
         )
 
 
-# ---------- Расходы (план / факт) ----------
+# ==========================================================
+# РАСХОДЫ: ПЛАН / ФАКТ
+# ==========================================================
 
 def init_expenses_from_plan(trip_id: int, data: dict):
-    """Создаёт строки расходов из плана, если их ещё нет."""
-    with _conn() as c:
-        existing = c.execute(
-            "SELECT COUNT(*) FROM expenses WHERE trip_id = ?", (trip_id,)
+    """Создаёт строки расходов из AI-плана, если их ещё нет."""
+    with _conn() as connection:
+        existing = connection.execute(
+            "SELECT COUNT(*) FROM expenses WHERE trip_id = ?",
+            (trip_id,),
         ).fetchone()[0]
+
         if existing:
             return
-        for d in data.get("days", []):
-            for i, a in enumerate(d.get("activities", [])):
-                c.execute(
-                    """INSERT INTO expenses(trip_id, day, activity_idx,
-                       category, title, cost_plan, cost_actual)
-                       VALUES (?, ?, ?, ?, ?, ?, NULL)""",
-                    (trip_id, d.get("day"), i, a.get("type"),
-                     a.get("title"), float(a.get("cost") or 0)),
+
+        for day_data in data.get("days", []):
+            for index, activity in enumerate(
+                day_data.get("activities", [])
+            ):
+                connection.execute(
+                    """
+                    INSERT INTO expenses(
+                        trip_id,
+                        day,
+                        activity_idx,
+                        category,
+                        title,
+                        cost_plan,
+                        cost_actual
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        trip_id,
+                        day_data.get("day"),
+                        index,
+                        activity.get("type"),
+                        activity.get("title"),
+                        float(activity.get("cost") or 0),
+                    ),
                 )
 
 
 def get_expenses(trip_id: int):
-    with _conn() as c:
-        return c.execute(
-            """SELECT * FROM expenses WHERE trip_id = ?
-               ORDER BY day, activity_idx""",
+    with _conn() as connection:
+        return connection.execute(
+            """
+            SELECT *
+            FROM expenses
+            WHERE trip_id = ?
+            ORDER BY day, activity_idx
+            """,
             (trip_id,),
         ).fetchall()
 
 
 def update_expense_actual(expense_id: int, actual: float):
-    with _conn() as c:
-        c.execute(
-            "UPDATE expenses SET cost_actual = ? WHERE id = ?",
+    with _conn() as connection:
+        connection.execute(
+            """
+            UPDATE expenses
+            SET cost_actual = ?
+            WHERE id = ?
+            """,
             (actual, expense_id),
         )
 
 
-# База создаётся автоматически при импорте этого файла
+# База создаётся автоматически при импорте.
 init()
