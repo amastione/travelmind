@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# АВТОРИЗАЦИЯ И ДАННЫЕ ПОЕЗДКИ
+# АВТОРИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ
 # ==========================================================
 
 user_id = auth.require_auth()
@@ -216,54 +216,45 @@ button {
 }
 
 /* ==========================================================
-   ВКЛАДКИ — ЕДИНАЯ СКРУГЛЁННАЯ NAVIGATION PANEL
-
-   Важно: ниже есть несколько селекторов одновременно:
-   Streamlit меняет внутреннюю разметку между версиями.
+   ВКЛАДКИ — КРУПНЫЕ, СВЕТЛЫЕ, ЖИРНЫЕ, СКРУГЛЁННЫЕ
    ========================================================== */
 
 .stTabs {
     margin-top: 2rem;
 }
 
-/* Общая стеклянная панель */
+/* Общая панель вкладок */
 .stTabs [data-baseweb="tab-list"],
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
     display: flex !important;
     align-items: center !important;
-    gap: 0.6rem !important;
+    gap: 0.7rem !important;
     width: 100% !important;
-    min-height: 74px !important;
+    min-height: 76px !important;
     overflow-x: auto !important;
-    padding: 0.55rem !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 22px !important;
+    padding: 0.65rem !important;
+    border: 1px solid rgba(177, 204, 235, 0.30) !important;
+    border-radius: 24px !important;
     background:
         linear-gradient(
             135deg,
-            rgba(27, 40, 67, 0.84),
-            rgba(10, 18, 34, 0.82)
+            rgba(29, 43, 71, 0.86),
+            rgba(10, 18, 34, 0.84)
         ) !important;
     box-shadow:
         0 16px 34px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     scrollbar-width: none;
 }
 
-/* Убираем горизонтальный scrollbar */
 .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
 [data-testid="stTabs"] [data-baseweb="tab-list"]::-webkit-scrollbar {
     display: none;
 }
 
-/*
-   ОБЫЧНАЯ ВКЛАДКА:
-   светлый и заметный текст;
-   одинаковые скругления у всех вкладок;
-   лёгкая отдельная поверхность.
-*/
+/* Все вкладки */
 .stTabs [data-baseweb="tab"],
 [data-testid="stTabs"] button[data-baseweb="tab"],
 [data-testid="stTabs"] button[role="tab"] {
@@ -272,108 +263,124 @@ button {
     align-items: center !important;
     justify-content: center !important;
     flex: 0 0 auto !important;
-    min-height: 56px !important;
+    min-height: 60px !important;
     margin: 0 !important;
-    padding: 0.9rem 1.2rem !important;
-    border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    border-radius: 17px !important;
+    padding: 0.95rem 1.45rem !important;
+    border: 1px solid rgba(228, 240, 255, 0.24) !important;
+    border-radius: 19px !important;
     outline: none !important;
-    background: rgba(255, 255, 255, 0.075) !important;
-    color: #E8F0FA !important;
-    font-size: 1.08rem !important;
-    font-weight: 750 !important;
-    letter-spacing: -0.018rem !important;
-    line-height: 1 !important;
+    background: rgba(255, 255, 255, 0.085) !important;
+
+    /* ЯРКИЙ ПОЧТИ БЕЛЫЙ ТЕКСТ */
+    color: #F4F8FE !important;
     opacity: 1 !important;
+
+    /* КРУПНЫЙ ЖИРНЫЙ ШРИФТ */
+    font-size: 1.24rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025rem !important;
+    line-height: 1.1 !important;
+
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        0 4px 10px rgba(0, 0, 0, 0.09) !important;
+
     transition:
         background 200ms ease,
         border-color 200ms ease,
         color 200ms ease,
-        box-shadow 200ms ease,
-        transform 200ms ease !important;
+        transform 200ms ease,
+        box-shadow 200ms ease !important;
 }
 
-/* Текст внутри каждой вкладки */
+/* Надпись и значок внутри каждой вкладки */
 .stTabs [data-baseweb="tab"] p,
 [data-testid="stTabs"] button[data-baseweb="tab"] p,
 [data-testid="stTabs"] button[role="tab"] p {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 0.5rem !important;
+    gap: 0.55rem !important;
     margin: 0 !important;
-    color: inherit !important;
-    font-size: inherit !important;
-    font-weight: inherit !important;
-    letter-spacing: inherit !important;
-    line-height: 1 !important;
+    color: #F4F8FE !important;
+    font-size: 1.24rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025rem !important;
+    line-height: 1.1 !important;
     white-space: nowrap !important;
 }
 
-/* Неактивная вкладка при наведении */
+/* Наведение на неактивную вкладку */
 .stTabs [data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[role="tab"]:hover {
     z-index: 2 !important;
-    border-color: rgba(125, 211, 252, 0.46) !important;
+    border-color: rgba(165, 235, 250, 0.66) !important;
     background:
         linear-gradient(
             135deg,
-            rgba(103, 232, 249, 0.16),
-            rgba(139, 92, 246, 0.13)
+            rgba(103, 232, 249, 0.20),
+            rgba(139, 92, 246, 0.16)
         ) !important;
     color: #FFFFFF !important;
     box-shadow:
-        0 7px 17px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+        0 8px 18px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
     transform: translateY(-1px) !important;
 }
 
-/* Focus-состояние для доступности */
+.stTabs [data-baseweb="tab"]:hover p,
+[data-testid="stTabs"] button[data-baseweb="tab"]:hover p,
+[data-testid="stTabs"] button[role="tab"]:hover p {
+    color: #FFFFFF !important;
+}
+
+/* Focus для доступности */
 .stTabs [data-baseweb="tab"]:focus-visible,
 [data-testid="stTabs"] button[data-baseweb="tab"]:focus-visible,
 [data-testid="stTabs"] button[role="tab"]:focus-visible {
-    outline: 3px solid rgba(103, 232, 249, 0.58) !important;
+    outline: 3px solid rgba(103, 232, 249, 0.62) !important;
     outline-offset: 2px !important;
 }
 
-/*
-   АКТИВНАЯ ВКЛАДКА:
-   Та же высота и те же скругления, что у других.
-   Она выделена цветом, но не становится большой карточкой.
-*/
+/* Активная вкладка */
 .stTabs [data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
     z-index: 3 !important;
-    border: 1px solid rgba(224, 249, 255, 0.76) !important;
-    border-radius: 17px !important;
+    border: 1px solid rgba(230, 250, 255, 0.92) !important;
+    border-radius: 19px !important;
     background:
         radial-gradient(
-            circle at 25% 5%,
-            rgba(255, 255, 255, 0.20),
-            transparent 38%
+            circle at 24% 0%,
+            rgba(255, 255, 255, 0.24),
+            transparent 40%
         ),
         linear-gradient(
             135deg,
-            #078FAE 0%,
-            #17CBE3 46%,
-            #578BF0 73%,
-            #7652DF 100%
+            #0598B7 0%,
+            #18CAE4 45%,
+            #548AF0 74%,
+            #7551DE 100%
         ) !important;
     color: #FFFFFF !important;
-    font-size: 1.08rem !important;
-    font-weight: 800 !important;
+    font-size: 1.24rem !important;
+    font-weight: 850 !important;
     box-shadow:
-        0 8px 20px rgba(34, 211, 238, 0.20),
-        0 5px 14px rgba(91, 74, 208, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
-    transform: none !important;
+        0 8px 22px rgba(34, 211, 238, 0.20),
+        0 5px 16px rgba(91, 74, 208, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
 }
 
-/* Небольшой световой акцент внизу активной вкладки */
+.stTabs [data-baseweb="tab"][aria-selected="true"] p,
+[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p {
+    color: #FFFFFF !important;
+    font-size: 1.24rem !important;
+    font-weight: 850 !important;
+}
+
+/* Акцентная белая линия снизу у активной вкладки */
 .stTabs [data-baseweb="tab"][aria-selected="true"]::after,
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]::after,
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"]::after {
@@ -544,19 +551,27 @@ button {
 @media (max-width: 900px) {
     .stTabs [data-baseweb="tab-list"],
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        gap: 0.45rem !important;
-        min-height: 68px !important;
-        padding: 0.45rem !important;
-        border-radius: 19px !important;
+        gap: 0.5rem !important;
+        min-height: 71px !important;
+        padding: 0.55rem !important;
+        border-radius: 21px !important;
     }
 
     .stTabs [data-baseweb="tab"],
     [data-testid="stTabs"] button[data-baseweb="tab"],
     [data-testid="stTabs"] button[role="tab"] {
-        min-height: 53px !important;
-        padding: 0.82rem 1.05rem !important;
-        border-radius: 16px !important;
-        font-size: 1rem !important;
+        min-height: 57px !important;
+        padding: 0.88rem 1.18rem !important;
+        border-radius: 18px !important;
+        font-size: 1.12rem !important;
+        font-weight: 800 !important;
+    }
+
+    .stTabs [data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] p {
+        font-size: 1.12rem !important;
+        font-weight: 800 !important;
     }
 }
 
@@ -580,14 +595,23 @@ button {
     .stTabs [data-baseweb="tab-list"],
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
         margin: 0 -0.1rem;
-        border-radius: 18px !important;
+        border-radius: 19px !important;
     }
 
     .stTabs [data-baseweb="tab"],
     [data-testid="stTabs"] button[data-baseweb="tab"],
     [data-testid="stTabs"] button[role="tab"] {
-        padding: 0.8rem 1rem !important;
-        font-size: 0.98rem !important;
+        min-height: 55px !important;
+        padding: 0.84rem 1.08rem !important;
+        font-size: 1.05rem !important;
+        font-weight: 800 !important;
+    }
+
+    .stTabs [data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] p {
+        font-size: 1.05rem !important;
+        font-weight: 800 !important;
     }
 }
 </style>
@@ -650,7 +674,7 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
-    """Безопасно приводит значение к тексту."""
+    """Безопасно приводит значение к строке."""
     if value is None:
         return default
     return str(value)
@@ -725,6 +749,7 @@ plan_sum = sum(as_float(expense["cost_plan"]) for expense in expenses)
 actual_sum = sum(as_float(expense["cost_actual"]) for expense in expenses)
 
 total_cost = as_float(data.get("total_cost"), plan_sum)
+
 if total_cost <= 0:
     total_cost = plan_sum
 
@@ -733,15 +758,18 @@ remaining_by_items = plan_sum - actual_sum
 if plan_sum <= 0:
     expense_status = "Плановые статьи расходов пока не сформированы."
     expense_status_icon = "ℹ️"
+
 elif abs(remaining_by_items) < 0.01:
     expense_status = "Все внесённые расходы совпадают с планом."
     expense_status_icon = "✅"
+
 elif remaining_by_items > 0:
     expense_status = (
         f"По плановым статьям ещё не внесено: "
         f"{remaining_by_items:.0f} {curr}"
     )
     expense_status_icon = "⏳"
+
 else:
     expense_status = (
         f"Превышение плана по внесённым расходам: "
@@ -821,10 +849,12 @@ with tab_route:
                 hotel.get("name"),
                 "Вариант проживания",
             )
+
             hotel_area = text_value(
                 hotel.get("area"),
                 "Удобный район",
             )
+
             hotel_why = text_value(
                 hotel.get("why"),
                 "Подходит для выбранного формата путешествия.",
@@ -852,6 +882,7 @@ with tab_route:
                     st.caption(
                         f"{tier_style['emoji']} {tier_style['label']}"
                     )
+
                     st.subheader(hotel_name)
                     st.caption(f"📍 {hotel_area}")
 
@@ -899,6 +930,40 @@ with tab_route:
             f"{accommodation_price:.0f} {curr}/ночь. "
             f"{accommodation_why}"
         )
+
+    elif not hotels and isinstance(accommodation, list) and accommodation:
+        st.markdown(
+            '<div class="tm-section-title">🏨 Варианты проживания</div>',
+            unsafe_allow_html=True,
+        )
+
+        for hotel in accommodation:
+            with st.container(border=True):
+                hotel_left, hotel_right = st.columns([3, 1])
+
+                with hotel_left:
+                    st.subheader(
+                        text_value(
+                            hotel.get("name"),
+                            "Вариант проживания",
+                        )
+                    )
+                    st.caption(
+                        f"Категория: {text_value(hotel.get('tier'))}"
+                    )
+                    st.write(
+                        f"📍 Район: {text_value(hotel.get('area'))}"
+                    )
+                    st.write(text_value(hotel.get("why")))
+
+                with hotel_right:
+                    st.metric(
+                        "За ночь",
+                        (
+                            f"{as_float(hotel.get('price_per_night')):.0f} "
+                            f"{curr}"
+                        ),
+                    )
 
     st.markdown(
         '<div class="tm-section-title">📅 План путешествия</div>',
@@ -1010,15 +1075,14 @@ with tab_map:
             lon = activity.get("lon")
 
             if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                points.append(
-                    (lat, lon, activity, day.get("day"))
-                )
+                points.append((lat, lon, activity, day.get("day")))
 
     if not points:
         st.info(
             "Для этой поездки AI не вернул координаты "
             "для построения карты."
         )
+
     else:
         center = [
             sum(point[0] for point in points) / len(points),
@@ -1082,6 +1146,7 @@ with tab_map:
         )
 
         st.markdown("</div>", unsafe_allow_html=True)
+
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
@@ -1106,6 +1171,7 @@ with tab_budget:
 
     if not expenses:
         st.info("Для этой поездки пока нет запланированных расходов.")
+
     else:
         for expense in expenses:
             expense_columns = st.columns([4, 1.35, 1.8, 0.8])
@@ -1298,6 +1364,7 @@ with tab_ai:
     download_markdown, download_json = st.columns(2)
 
     markdown_content = ai.to_markdown(data, curr)
+
     json_content = json.dumps(
         data,
         ensure_ascii=False,
