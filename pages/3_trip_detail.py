@@ -5,6 +5,7 @@ from datetime import date
 from html import escape
 from urllib.parse import quote_plus
 
+import altair as alt
 import folium
 import pandas as pd
 import streamlit as st
@@ -22,7 +23,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# АВТОРИЗАЦИЯ И ДАННЫЕ
+# АВТОРИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ
 # ==========================================================
 
 user_id = auth.require_auth()
@@ -57,18 +58,41 @@ except (json.JSONDecodeError, TypeError):
 curr = trip["currency"] or "RUB"
 
 # ==========================================================
-# СТИЛИ
+# СТИЛИ ПРОЕКТА
 # ==========================================================
 
 CSS = """
 <style>
+/* ----------------------------------------------------------
+   ОСНОВА
+   ---------------------------------------------------------- */
+
 .stApp {
     background:
-        radial-gradient(circle at 8% 8%, rgba(34, 211, 238, 0.13), transparent 29%),
-        radial-gradient(circle at 92% 88%, rgba(124, 92, 232, 0.16), transparent 34%),
-        linear-gradient(135deg, #060B15 0%, #0A1427 52%, #0E1325 100%);
+        radial-gradient(
+            circle at 8% 8%,
+            rgba(34, 211, 238, 0.13),
+            transparent 29%
+        ),
+        radial-gradient(
+            circle at 92% 88%,
+            rgba(124, 92, 232, 0.16),
+            transparent 34%
+        ),
+        linear-gradient(
+            135deg,
+            #060B15 0%,
+            #0A1427 52%,
+            #0E1325 100%
+        );
     color: #F8FAFC;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
 }
 
 .block-container {
@@ -83,10 +107,10 @@ footer {
 }
 
 /*
-  ВАЖНО:
-  Здесь намеренно НЕТ span.
-  Streamlit использует span для технических Material Icons.
-  Если назначить им Inter, появляются надписи _arrow_right и т. п.
+ ВАЖНО:
+ Не добавляем span в общий селектор.
+ Streamlit использует span для Material Icons.
+ Иначе могут возникать артефакты вида _arrow_right.
 */
 h1,
 h2,
@@ -96,21 +120,29 @@ p,
 label,
 button,
 [data-testid="stMarkdownContainer"] {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display",
-        "Segoe UI", sans-serif !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif !important;
 }
 
-/* Возвращаем шрифт системным иконкам Streamlit */
 .material-symbols-rounded,
 .material-symbols-outlined,
 .material-icons,
 [data-testid="stIconMaterial"] {
-    font-family: "Material Symbols Rounded", "Material Symbols Outlined",
+    font-family:
+        "Material Symbols Rounded",
+        "Material Symbols Outlined",
         "Material Icons" !important;
     font-style: normal !important;
 }
 
-/* ---------------- ШАПКА ---------------- */
+/* ----------------------------------------------------------
+   ШАПКА ПОЕЗДКИ
+   ---------------------------------------------------------- */
 
 .tm-hero-label {
     color: #7DEBFA;
@@ -157,7 +189,9 @@ button,
     font-weight: 650;
 }
 
-/* ---------------- КАРТОЧКИ ---------------- */
+/* ----------------------------------------------------------
+   КАРТОЧКИ И МЕТРИКИ
+   ---------------------------------------------------------- */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-color: rgba(148, 163, 184, 0.23) !important;
@@ -179,6 +213,9 @@ button,
             rgba(22, 33, 58, 0.78),
             rgba(10, 18, 34, 0.75)
         );
+    box-shadow:
+        0 13px 28px rgba(0, 0, 0, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 [data-testid="stMetricLabel"] {
@@ -194,7 +231,9 @@ button,
     letter-spacing: -0.05rem !important;
 }
 
-/* ---------------- ВКЛАДКИ ---------------- */
+/* ----------------------------------------------------------
+   ВКЛАДКИ
+   ---------------------------------------------------------- */
 
 .stTabs {
     margin-top: 2rem;
@@ -285,13 +324,6 @@ button,
     transform: translateY(-1px) !important;
 }
 
-.stTabs [data-baseweb="tab"]:focus-visible,
-[data-testid="stTabs"] button[data-baseweb="tab"]:focus-visible,
-[data-testid="stTabs"] button[role="tab"]:focus-visible {
-    outline: 3px solid rgba(103, 232, 249, 0.62) !important;
-    outline-offset: 2px !important;
-}
-
 .stTabs [data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
@@ -325,7 +357,9 @@ button,
     display: none !important;
 }
 
-/* ---------------- КОНТЕНТ ---------------- */
+/* ----------------------------------------------------------
+   ОСНОВНОЙ КОНТЕНТ
+   ---------------------------------------------------------- */
 
 .tm-section-title {
     margin-top: 1.75rem;
@@ -427,6 +461,10 @@ button,
     line-height: 1.62;
 }
 
+/* ----------------------------------------------------------
+   КНОПКИ И ПОЛЯ ВВОДА
+   ---------------------------------------------------------- */
+
 .stButton > button,
 .stLinkButton > a,
 .stDownloadButton > button {
@@ -442,6 +480,16 @@ button,
     color: #FFFFFF !important;
     font-size: 0.97rem;
     font-weight: 750;
+    box-shadow:
+        0 10px 23px rgba(34, 211, 238, 0.17),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+.stButton > button:hover,
+.stLinkButton > a:hover,
+.stDownloadButton > button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.07);
 }
 
 .stNumberInput input {
@@ -452,8 +500,41 @@ button,
     font-weight: 650 !important;
 }
 
+/* ----------------------------------------------------------
+   ГРАФИК И ТАБЛИЦА БЮДЖЕТА
+   ---------------------------------------------------------- */
+
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.66);
+}
+
+[data-testid="stDataFrame"] [role="grid"] {
+    background: rgba(15, 23, 42, 0.66) !important;
+    color: #E8F1FA !important;
+}
+
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: rgba(34, 211, 238, 0.09) !important;
+    color: #F8FAFC !important;
+    font-weight: 750 !important;
+}
+
+[data-testid="stDataFrame"] [role="gridcell"] {
+    background: rgba(15, 23, 42, 0.60) !important;
+    color: #D9E5F3 !important;
+    border-color: rgba(148, 163, 184, 0.13) !important;
+}
+
+/* ----------------------------------------------------------
+   МОБИЛЬНАЯ АДАПТАЦИЯ
+   ---------------------------------------------------------- */
+
 @media (max-width: 900px) {
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"],
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
         gap: 0.5rem !important;
         min-height: 71px !important;
         padding: 0.55rem !important;
@@ -469,7 +550,9 @@ button,
         font-weight: 800 !important;
     }
 
-    .stTabs [data-baseweb="tab"] p {
+    .stTabs [data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] p {
         font-size: 1.12rem !important;
         font-weight: 800 !important;
     }
@@ -488,13 +571,21 @@ button,
         font-size: 1.65rem !important;
     }
 
-    .stTabs [data-baseweb="tab"] {
+    .stTabs {
+        margin-top: 1.55rem;
+    }
+
+    .stTabs [data-baseweb="tab"],
+    [data-testid="stTabs"] button[data-baseweb="tab"],
+    [data-testid="stTabs"] button[role="tab"] {
         min-height: 55px !important;
         padding: 0.84rem 1.08rem !important;
         font-size: 1.05rem !important;
     }
 
-    .stTabs [data-baseweb="tab"] p {
+    .stTabs [data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[data-baseweb="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] p {
         font-size: 1.05rem !important;
     }
 }
@@ -550,7 +641,7 @@ TIER_STYLES = {
 
 
 def as_float(value, default=0.0):
-    """Безопасно преобразует значение в float."""
+    """Безопасно преобразует значение в число."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -616,7 +707,7 @@ with st.container(border=True):
         )
 
 # ==========================================================
-# МЕТРИКИ И РАСХОДЫ
+# МЕТРИКИ
 # ==========================================================
 
 expenses = db.get_expenses(trip_id)
@@ -625,6 +716,7 @@ plan_sum = sum(as_float(expense["cost_plan"]) for expense in expenses)
 actual_sum = sum(as_float(expense["cost_actual"]) for expense in expenses)
 
 total_cost = as_float(data.get("total_cost"), plan_sum)
+
 if total_cost <= 0:
     total_cost = plan_sum
 
@@ -690,6 +782,7 @@ with tab_route:
             '<div class="tm-section-title">🏨 Где остановиться</div>',
             unsafe_allow_html=True,
         )
+
         st.markdown(
             """
             <div class="tm-section-text">
@@ -728,6 +821,7 @@ with tab_route:
             map_query = text_value(
                 hotel.get("map_query", f"{hotel_name} {destination}")
             )
+
             google_maps_url = (
                 "https://www.google.com/maps/search/?api=1&query="
                 + quote_plus(map_query)
@@ -964,7 +1058,7 @@ with tab_map:
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
-# ВКЛАДКА 3 — БЮДЖЕТ
+# ВКЛАДКА 3 — БЮДЖЕТ И РАСХОДЫ
 # ==========================================================
 
 with tab_budget:
@@ -1039,6 +1133,10 @@ with tab_budget:
 
             st.divider()
 
+    # ------------------------------------------------------
+    # КАСТОМНЫЙ ГРАФИК БЮДЖЕТА
+    # ------------------------------------------------------
+
     budget_breakdown = data.get("budget_breakdown") or {}
 
     if budget_breakdown:
@@ -1047,26 +1145,208 @@ with tab_budget:
             unsafe_allow_html=True,
         )
 
-        chart_data = pd.DataFrame(
-            {
-                "Категория": [
-                    BUDGET_RU.get(key, key)
-                    for key in budget_breakdown.keys()
-                ],
-                "План": [
-                    as_float(value)
-                    for value in budget_breakdown.values()
-                ],
-            }
-        ).set_index("Категория")
-
-        st.bar_chart(chart_data)
-        st.dataframe(chart_data, use_container_width=True)
-
-        st.caption(
-            f"Сумма по категориям: "
-            f"{chart_data['План'].sum():.0f} {curr}"
+        st.markdown(
+            """
+            <div class="tm-section-text">
+                Распределение ориентировочного бюджета по основным категориям поездки.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
+
+        budget_rows = []
+
+        for key, value in budget_breakdown.items():
+            category_name = BUDGET_RU.get(key, key)
+            amount = as_float(value)
+
+            if amount > 0:
+                budget_rows.append(
+                    {
+                        "Категория": category_name,
+                        "План": amount,
+                        "Сумма": (
+                            f"{amount:,.0f} {curr}"
+                        ).replace(",", " "),
+                    }
+                )
+
+        if budget_rows:
+            chart_data = pd.DataFrame(budget_rows)
+
+            total_budget_breakdown = chart_data["План"].sum()
+
+            chart_data["Доля"] = (
+                chart_data["План"] / total_budget_breakdown * 100
+            ).round(1)
+
+            chart_data["Подпись"] = chart_data["План"].apply(
+                lambda value: f"{value:,.0f}".replace(",", " ")
+            )
+
+            palette = [
+                "#22D3EE",
+                "#38BDF8",
+                "#818CF8",
+                "#A78BFA",
+                "#C084FC",
+            ]
+
+            base_chart = (
+                alt.Chart(chart_data)
+                .mark_bar(
+                    cornerRadiusTopLeft=12,
+                    cornerRadiusTopRight=12,
+                    size=72,
+                )
+                .encode(
+                    x=alt.X(
+                        "Категория:N",
+                        sort="-y",
+                        axis=alt.Axis(
+                            title=None,
+                            labelColor="#D8E5F5",
+                            labelFontSize=14,
+                            labelFontWeight=650,
+                            labelAngle=0,
+                            labelPadding=14,
+                            domain=False,
+                            ticks=False,
+                        ),
+                    ),
+                    y=alt.Y(
+                        "План:Q",
+                        axis=alt.Axis(
+                            title=None,
+                            labelColor="#B9C9DC",
+                            labelFontSize=13,
+                            labelPadding=10,
+                            domain=False,
+                            ticks=False,
+                            grid=True,
+                            gridColor="#314158",
+                            gridOpacity=0.6,
+                        ),
+                    ),
+                    color=alt.Color(
+                        "Категория:N",
+                        scale=alt.Scale(range=palette),
+                        legend=None,
+                    ),
+                    tooltip=[
+                        alt.Tooltip(
+                            "Категория:N",
+                            title="Категория",
+                        ),
+                        alt.Tooltip(
+                            "Сумма:N",
+                            title="План",
+                        ),
+                        alt.Tooltip(
+                            "Доля:Q",
+                            title="Доля бюджета",
+                            format=".1f",
+                        ),
+                    ],
+                )
+                .properties(
+                    height=330,
+                    padding={
+                        "top": 25,
+                        "right": 16,
+                        "bottom": 8,
+                        "left": 6,
+                    },
+                )
+            )
+
+            value_labels = (
+                alt.Chart(chart_data)
+                .mark_text(
+                    align="center",
+                    baseline="bottom",
+                    dy=-9,
+                    color="#F8FAFC",
+                    font="Inter",
+                    fontSize=13,
+                    fontWeight=700,
+                )
+                .encode(
+                    x=alt.X(
+                        "Категория:N",
+                        sort="-y",
+                    ),
+                    y=alt.Y("План:Q"),
+                    text=alt.Text("Подпись:N"),
+                )
+            )
+
+            final_chart = (
+                base_chart + value_labels
+            ).configure_view(
+                strokeOpacity=0,
+                fill="transparent",
+            ).configure_axis(
+                labelFont="Inter",
+                titleFont="Inter",
+            ).configure(
+                background="transparent",
+            )
+
+            with st.container(border=True):
+                st.altair_chart(
+                    final_chart,
+                    use_container_width=True,
+                    theme=None,
+                )
+
+                formatted_total = (
+                    f"{total_budget_breakdown:,.0f} {curr}"
+                ).replace(",", " ")
+
+                st.caption(
+                    f"Общий плановый бюджет: **{formatted_total}**"
+                )
+
+            table_rows = []
+
+            for item in chart_data.to_dict("records"):
+                table_rows.append(
+                    {
+                        "Категория": item["Категория"],
+                        "План": item["Сумма"],
+                        "Доля бюджета": f"{item['Доля']:.1f}%",
+                    }
+                )
+
+            budget_table = pd.DataFrame(table_rows)
+
+            st.markdown(
+                '<div class="tm-section-title">Детализация бюджета</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.dataframe(
+                budget_table,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Категория": st.column_config.TextColumn(
+                        "Категория",
+                        width="large",
+                    ),
+                    "План": st.column_config.TextColumn(
+                        "План",
+                        width="medium",
+                    ),
+                    "Доля бюджета": st.column_config.TextColumn(
+                        "Доля бюджета",
+                        width="medium",
+                    ),
+                },
+            )
+        else:
+            st.info("В структуре бюджета нет положительных значений.")
 
 # ==========================================================
 # ВКЛАДКА 4 — СОВЕТЫ
@@ -1146,7 +1426,7 @@ with tab_tips:
             )
 
 # ==========================================================
-# ВКЛАДКА 5 — ДАННЫЕ AI
+# ВКЛАДКА 5 — ДАННЫЕ AI И ЭКСПОРТ
 # ==========================================================
 
 with tab_ai:
