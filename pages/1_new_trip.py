@@ -14,6 +14,8 @@ st.set_page_config(
     page_icon="✈️",
     layout="wide",
 )
+branding.apply_clean_layout()
+branding.show_author_mark()
 site_access.require_site_access()
 # Защита страницы: без входа сюда не пустим.
 user_id = auth.require_auth()
