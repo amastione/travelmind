@@ -16,7 +16,6 @@ st.set_page_config(
     layout="wide",
 )
 branding.apply_clean_layout()
-branding.show_author_mark()
 site_access.require_site_access()
 # Без авторизации не пускаем на страницу.
 user_id = auth.require_auth()
