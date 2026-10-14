@@ -8,13 +8,14 @@ import streamlit as st
 import auth
 import db
 
+
 st.set_page_config(
     page_title="Мои путешествия",
     page_icon="🧳",
     layout="wide",
 )
 
-# Без авторизации не пускаем на страницу
+# Без авторизации не пускаем на страницу.
 user_id = auth.require_auth()
 
 CSS = """
@@ -46,15 +47,14 @@ CSS = """
     padding-bottom: 4rem;
 }
 
-#MainMenu {
-    visibility: hidden;
-}
-
+#MainMenu,
 footer {
     visibility: hidden;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     color: #F8FAFC !important;
 }
 
@@ -189,30 +189,25 @@ h1, h2, h3 {
     font-size: 0.95rem;
     font-weight: 700;
     box-shadow: 0 10px 22px rgba(34, 211, 238, 0.16);
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease;
 }
 
 .stButton > button:hover,
 .stLinkButton > a:hover {
     transform: translateY(-2px);
     filter: brightness(1.08);
+    box-shadow: 0 15px 28px rgba(34, 211, 238, 0.25);
 }
 
 [data-testid="stAlert"] {
     border-radius: 14px;
 }
 
-@media (max-width: 640px) {
-    .block-container {
-        padding: 1.8rem 1rem 3rem;
-    }
-
-    .tm-page-title {
-        font-size: 2rem !important;
-    }
-}
 /* ----------------------------------------------------------
    ЯРКИЕ КНОПКИ НАВИГАЦИИ STREAMLIT
-   Главное меню / К моим путешествиям
    ---------------------------------------------------------- */
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
@@ -247,7 +242,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
         box-shadow 180ms ease !important;
 }
 
-/* Текст внутри яркой page_link-кнопки */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 [data-testid="stPageLink-NavLink"] p {
     margin: 0 !important;
@@ -256,7 +250,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
     font-weight: 800 !important;
 }
 
-/* Hover-состояние */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
 [data-testid="stPageLink-NavLink"]:hover {
     transform: translateY(-2px) !important;
@@ -267,11 +260,20 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
         inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
 }
 
-/* Фокус с клавиатуры */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 [data-testid="stPageLink-NavLink"]:focus-visible {
     outline: 3px solid rgba(125, 235, 250, 0.88) !important;
     outline-offset: 3px !important;
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding: 1.8rem 1rem 3rem;
+    }
+
+    .tm-page-title {
+        font-size: 2rem !important;
+    }
 }
 </style>
 """
@@ -280,7 +282,10 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 auth.render_main_menu_button()
 
-# Темы обложек. Внешние изображения не используются.
+# ==========================================================
+# ТЕМЫ КАРТОЧЕК ПОЕЗДОК
+# ==========================================================
+
 THEMES = {
     "city": {
         "icon": "🏙️",
@@ -342,12 +347,7 @@ THEMES = {
 
 
 def trip_value(trip, key, default=None):
-    """
-    Безопасно получает значение из sqlite3.Row или dict.
-
-    db.list_trips() может вернуть sqlite3.Row. У такого объекта есть доступ
-    через trip["title"], но отсутствует метод trip.get("title").
-    """
+    """Безопасно получает значение из sqlite3.Row или dict."""
     try:
         value = trip[key]
     except (KeyError, IndexError, TypeError):
@@ -356,12 +356,30 @@ def trip_value(trip, key, default=None):
     return default if value is None else value
 
 
+def format_date_ru(value) -> str:
+    """
+    Преобразует дату YYYY-MM-DD в DD/MM/YYYY для интерфейса.
+
+    Пример:
+    2026-11-05 → 05/11/2026
+    """
+    if not value:
+        return ""
+
+    text = str(value)
+
+    try:
+        return datetime.strptime(
+            text[:10],
+            "%Y-%m-%d",
+        ).strftime("%d/%m/%Y")
+    except ValueError:
+        return text
+
+
 def get_trip_theme(trip):
     """
-    Определяет стиль карточки.
-
-    Если list_trips возвращает JSON маршрута в поле data, берём cover_theme
-    от AI. Если этого поля нет, выбираем тему по названию и направлению.
+    Определяет тему карточки по AI cover_theme или названию поездки.
     """
     theme_key = ""
     raw_data = trip_value(trip, "data", "")
@@ -463,23 +481,11 @@ def get_trip_theme(trip):
         return THEMES["adventure"]
 
     return THEMES["city"]
-    def format_date_ru(value) -> str:
-    """
-    Преобразует дату из формата YYYY-MM-DD в DD/MM/YYYY.
-    Если значение имеет неожиданный формат, возвращает его без ошибки.
-    """
-    if not value:
-        return ""
-
-    text = str(value)
-
-    try:
-        return datetime.strptime(text[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
-    except ValueError:
-        return text
 
 
-# ---------- ШАПКА СТРАНИЦЫ ----------
+# ==========================================================
+# ШАПКА СТРАНИЦЫ
+# ==========================================================
 
 st.markdown(
     '<div class="tm-page-eyebrow">TravelMind AI</div>',
@@ -500,7 +506,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- ПОЛУЧЕНИЕ ПОЕЗДОК ----------
+# ==========================================================
+# ПОЛУЧЕНИЕ ПОЕЗДОК
+# ==========================================================
 
 trips = db.list_trips(user_id)
 
@@ -533,7 +541,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- СПИСОК ПОЕЗДОК ----------
+# ==========================================================
+# СПИСОК ПОЕЗДОК
+# ==========================================================
 
 for trip in trips:
     theme = get_trip_theme(trip)
@@ -544,12 +554,14 @@ for trip in trips:
 
     title = escape(title_raw)
     destination = escape(destination_raw)
+
     start_date = escape(
         format_date_ru(trip_value(trip, "start_date", ""))
     )
     end_date = escape(
         format_date_ru(trip_value(trip, "end_date", ""))
     )
+
     people = trip_value(trip, "people", 1)
     budget = float(trip_value(trip, "budget", 0) or 0)
     currency = escape(str(trip_value(trip, "currency", "")))
