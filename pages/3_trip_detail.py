@@ -1,6 +1,7 @@
 """Детали поездки: маршрут, карта, расходы, советы и экспорт."""
 import json
 from collections import defaultdict
+from urllib.parse import quote_plus
 
 import folium
 import pandas as pd
@@ -132,6 +133,199 @@ tabs = st.tabs(
 # ---------- ВКЛАДКА 1. ПЛАН ПОЕЗДКИ ----------
 
 with tabs[0]:
+        hotels = data.get("hotels") or []
+
+    if hotels:
+        st.subheader("🏨 Где остановиться")
+
+        st.caption(
+            "Цены ориентировочные и указаны за один номер на одну ночь. "
+            "Перед бронированием уточните стоимость, условия и наличие "
+            "на официальном сайте отеля или в сервисе бронирования."
+        )
+
+        # Количество ночей: дата окончания минус дата начала.
+        # Для поездки с 10 по 13 июля — 3 ночи.
+        try:
+            from datetime import date
+
+            start_date = date.fromisoformat(str(trip["start_date"]))
+            end_date = date.fromisoformat(str(trip["end_date"]))
+            nights = max((end_date - start_date).days, 1)
+        except (TypeError, ValueError):
+            nights = max(len(data.get("days", [])) - 1, 1)
+
+        tier_styles = {
+            "Эконом": {
+                "label": "ЭКОНОМ",
+                "color": "#38bdf8",
+                "emoji": "💎",
+            },
+            "Оптимальный": {
+                "label": "ОПТИМАЛЬНЫЙ",
+                "color": "#34d399",
+                "emoji": "⭐",
+            },
+            "Премиум": {
+                "label": "ПРЕМИУМ",
+                "color": "#a78bfa",
+                "emoji": "👑",
+            },
+        }
+
+        # Демонстрационные изображения для учебного MVP.
+        # Это тематические фото: фасад, холл и интерьер номера.
+        hotel_images = {
+            "Эконом": {
+                "exterior": (
+                    "https://images.unsplash.com/"
+                    "photo-1566073771259-6a8506099945"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "lobby": (
+                    "https://images.unsplash.com/"
+                    "photo-1551882547-ff40c63fe5fa"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "room": (
+                    "https://images.unsplash.com/"
+                    "photo-1590490360182-c33d57733427"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+            },
+            "Оптимальный": {
+                "exterior": (
+                    "https://images.unsplash.com/"
+                    "photo-1542314831-068cd1dbfeeb"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "lobby": (
+                    "https://images.unsplash.com/"
+                    "photo-1600607687920-4e2a09cf159d"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "room": (
+                    "https://images.unsplash.com/"
+                    "photo-1618773928121-c32242e63f39"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+            },
+            "Премиум": {
+                "exterior": (
+                    "https://images.unsplash.com/"
+                    "photo-1571896349842-33c89424de2d"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "lobby": (
+                    "https://images.unsplash.com/"
+                    "photo-1582719508461-905c673771fd"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+                "room": (
+                    "https://images.unsplash.com/"
+                    "photo-1584132967334-10e028bd69f7"
+                    "?auto=format&fit=crop&w=900&q=80"
+                ),
+            },
+        }
+
+        hotel_columns = st.columns(3)
+
+        for index, hotel in enumerate(hotels[:3]):
+            tier = hotel.get("tier", "Оптимальный")
+            style = tier_styles.get(
+                tier,
+                tier_styles["Оптимальный"],
+            )
+            images = hotel_images.get(
+                tier,
+                hotel_images["Оптимальный"],
+            )
+
+            rooms = hotel.get("rooms") or {}
+            economy_price = float(rooms.get("economy", 0) or 0)
+            standard_price = float(rooms.get("standard", 0) or 0)
+            luxury_price = float(rooms.get("luxury", 0) or 0)
+
+            # За основу общей цены берём стандартный номер.
+            total_stay = standard_price * nights
+
+            with hotel_columns[index]:
+                st.markdown(
+                    f"""
+                    <div style="
+                        border: 1px solid {style['color']};
+                        border-radius: 16px;
+                        padding: 12px 14px;
+                        margin-bottom: 10px;
+                        background: rgba(17, 24, 39, 0.55);
+                    ">
+                        <span style="
+                            color: {style['color']};
+                            font-size: 12px;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                        ">
+                            {style['emoji']} {style['label']}
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                st.markdown(f"#### {hotel.get('name', 'Вариант проживания')}")
+                st.caption(f"📍 {hotel.get('area', 'Удобный район')}")
+
+                rating = hotel.get("rating", 0)
+                if rating and float(rating) > 0:
+                    st.write(f"⭐ Рейтинг: **{rating}/10**")
+
+                # Три фото: фасад, холл, номер.
+                photo_1, photo_2, photo_3 = st.columns(3)
+
+                with photo_1:
+                    st.image(images["exterior"], use_container_width=True)
+                    st.caption("Фасад")
+
+                with photo_2:
+                    st.image(images["lobby"], use_container_width=True)
+                    st.caption("Холл")
+
+                with photo_3:
+                    st.image(images["room"], use_container_width=True)
+                    st.caption("Номер")
+
+                st.write(hotel.get("why", ""))
+
+                st.markdown("**Ориентировочная цена за ночь**")
+
+                price_col_1, price_col_2, price_col_3 = st.columns(3)
+                price_col_1.metric("Эконом", f"{economy_price:.0f} {curr}")
+                price_col_2.metric("Стандарт", f"{standard_price:.0f} {curr}")
+                price_col_3.metric("Люкс", f"{luxury_price:.0f} {curr}")
+
+                st.info(
+                    f"Стандартный номер: примерно "
+                    f"**{total_stay:.0f} {curr}** за {nights} ноч."
+                )
+
+                map_query = hotel.get(
+                    "map_query",
+                    f"{hotel.get('name', '')} {trip['destination']}",
+                )
+
+                google_maps_url = (
+                    "https://www.google.com/maps/search/?api=1&query="
+                    + quote_plus(map_query)
+                )
+
+                st.link_button(
+                    "📍 Найти на карте",
+                    google_maps_url,
+                    use_container_width=True,
+                )
+
+        st.divider()
     accommodation = data.get("accommodation") or {}
 
     # Поддержка старого формата: один объект проживания
