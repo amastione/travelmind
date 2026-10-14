@@ -93,6 +93,18 @@ def show_author_mark() -> None:
                 font-size: 10px !important;
             }
         }
+        /* Скрываем элементы управления Streamlit Cloud */
+            [data-testid="stStatusWidget"] {
+                display: none !important;
+            }
+            
+            [data-testid="stDeployButton"] {
+                display: none !important;
+            }
+            
+            [data-testid="manage-app-button"] {
+                display: none !important;
+            }
         </style>
 
         <div class="tm-author-mark">Designed by Michael Degtyarev</div>
