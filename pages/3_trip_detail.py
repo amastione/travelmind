@@ -485,27 +485,54 @@ total_cost = as_float(data.get("total_cost"), plan_sum)
 if total_cost <= 0:
     total_cost = plan_sum
 
-actual_delta = None
+# plan_sum — сумма всех строк «План» в таблице расходов.
+# actual_sum — сумма всех внесённых фактических расходов.
+# Они могут отличаться от общего бюджета поездки total_cost,
+# потому что общий бюджет AI может включать резерв, проживание
+# или другие траты, которых нет в строках таблицы.
+remaining_by_items = plan_sum - actual_sum
 
-if actual_sum > 0:
-    actual_delta = f"{actual_sum - plan_sum:+.0f} {curr}"
+if plan_sum <= 0:
+    expense_status = "Плановые статьи расходов пока не сформированы."
+    expense_status_icon = "ℹ️"
+
+elif abs(remaining_by_items) < 0.01:
+    expense_status = "Все внесённые расходы совпадают с планом."
+    expense_status_icon = "✅"
+
+elif remaining_by_items > 0:
+    expense_status = (
+        f"По плановым статьям ещё не внесено: "
+        f"{remaining_by_items:.0f} {curr}"
+    )
+    expense_status_icon = "⏳"
+
+else:
+    expense_status = (
+        f"Превышение плана по внесённым расходам: "
+        f"{abs(remaining_by_items):.0f} {curr}"
+    )
+    expense_status_icon = "⚠️"
 
 metric_1, metric_2, metric_3, metric_4 = st.columns(4)
 
 with metric_1:
-    st.metric("Плановый бюджет", f"{total_cost:.0f} {curr}")
+    st.metric(
+        "Общий бюджет поездки",
+        f"{total_cost:.0f} {curr}",
+    )
 
 with metric_2:
     st.metric(
-        "Фактические расходы",
+        "Внесено по факту",
         f"{actual_sum:.0f} {curr}",
-        delta=actual_delta,
     )
+    st.caption(f"{expense_status_icon} {expense_status}")
 
 with metric_3:
     st.metric(
-        "Ожидаемые эмоции",
-        f"{data.get('mood_score', '—')}/10",
+        "План по строкам расходов",
+        f"{plan_sum:.0f} {curr}",
     )
 
 with metric_4:
@@ -916,6 +943,24 @@ with tabs[2]:
             with expense_columns[1]:
                 st.caption("План")
                 st.write(f"{plan_cost:.0f} {curr}")
+
+                item_difference = actual_cost - plan_cost
+
+                if actual_cost == 0:
+                    st.caption("Факт пока не внесён")
+
+                elif abs(item_difference) < 0.01:
+                    st.caption("✅ Совпадает с планом")
+
+                elif item_difference < 0:
+                    st.caption(
+                        f"🟢 Экономия: {abs(item_difference):.0f} {curr}"
+                    )
+
+                else:
+                    st.caption(
+                        f"🔴 Превышение: {item_difference:.0f} {curr}"
+                    )
 
             with expense_columns[2]:
                 # Все параметры float. Это устраняет StreamlitMixedNumericTypesError.
