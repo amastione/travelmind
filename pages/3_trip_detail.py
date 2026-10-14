@@ -627,6 +627,114 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p {
         text-align: left;
     }
 }
+/* ==========================================================
+   ЖЁСТКОЕ ИСПРАВЛЕНИЕ ФОНА ЗАГОЛОВКА st.expander
+   Для разных версий Streamlit
+   ========================================================== */
+
+/* Внешняя карточка раскрывающегося дня */
+div[data-testid="stExpander"],
+div[data-testid="stExpander"] > details,
+details[data-testid="stExpander"] {
+    overflow: hidden !important;
+    margin-bottom: 0.9rem !important;
+    border: 1px solid rgba(103, 232, 249, 0.25) !important;
+    border-radius: 18px !important;
+    background: rgba(8, 18, 35, 0.94) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+/*
+  В вашей версии Streamlit белый фон задаётся этому summary
+  или вложенному контейнеру внутри него.
+*/
+div[data-testid="stExpander"] summary,
+div[data-testid="stExpander"] > details > summary,
+details[data-testid="stExpander"] > summary {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 68px !important;
+    padding: 1.05rem 1.2rem !important;
+    border: 0 !important;
+    border-radius: 17px !important;
+
+    background-color: #172B45 !important;
+    background-image: linear-gradient(
+        135deg,
+        #1D314D 0%,
+        #0E192F 100%
+    ) !important;
+
+    color: #F8FAFC !important;
+    cursor: pointer !important;
+}
+
+/* Все внутренние элементы заголовка дня */
+div[data-testid="stExpander"] summary *,
+div[data-testid="stExpander"] > details > summary *,
+details[data-testid="stExpander"] > summary * {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #F8FAFC !important;
+    fill: #7DEBFA !important;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
+
+    font-size: 1.04rem !important;
+    font-weight: 750 !important;
+}
+
+/* Открытое состояние дня */
+div[data-testid="stExpander"] details[open] > summary,
+details[data-testid="stExpander"][open] > summary {
+    border-bottom: 1px solid rgba(103, 232, 249, 0.28) !important;
+    border-radius: 17px 17px 0 0 !important;
+
+    background-color: #126B88 !important;
+    background-image: linear-gradient(
+        135deg,
+        #087B9A 0%,
+        #305EA4 55%,
+        #5145A0 100%
+    ) !important;
+
+    color: #FFFFFF !important;
+}
+
+/* Текст заголовка в открытом состоянии */
+div[data-testid="stExpander"] details[open] > summary *,
+details[data-testid="stExpander"][open] > summary * {
+    background: transparent !important;
+    color: #FFFFFF !important;
+    fill: #D5FBFF !important;
+}
+
+/* Наведение */
+div[data-testid="stExpander"] summary:hover,
+details[data-testid="stExpander"] > summary:hover {
+    background-color: #1A4965 !important;
+    background-image: linear-gradient(
+        135deg,
+        #175B75 0%,
+        #31457E 100%
+    ) !important;
+}
+
+/* Контент раскрытого дня: сохраняем тёмный фон */
+div[data-testid="stExpander"] [data-testid="stExpanderDetails"],
+div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
+div[data-testid="stExpander"] details > div,
+details[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    background: rgba(8, 18, 35, 0.94) !important;
+    color: #F8FAFC !important;
+}
 </style>
 """
 
