@@ -239,37 +239,112 @@ h3 {
 }
 
 /* ----------------------------------------------------------
-   ВКЛАДКИ АВТОРИЗАЦИИ
+   ПЕРЕКЛЮЧАТЕЛЬ «ВХОД / РЕГИСТРАЦИЯ»
    ---------------------------------------------------------- */
 
+.stTabs {
+    margin-top: 0.4rem;
+}
+
+/* Общий контейнер переключателя */
+[data-testid="stTabs"] [data-baseweb="tab-list"],
 .stTabs [data-baseweb="tab-list"] {
-    gap: 0.5rem;
-    padding: 0.4rem;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 16px;
-    background: rgba(15, 23, 42, 0.55);
+    display: flex !important;
+    gap: 0.45rem !important;
+    width: 100% !important;
+    min-height: 64px !important;
+    padding: 0.42rem !important;
+    border: 1px solid rgba(103, 232, 249, 0.20) !important;
+    border-radius: 18px !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(19, 34, 56, 0.88),
+            rgba(15, 21, 45, 0.86)
+        ) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-.stTabs [data-baseweb="tab"] {
-    flex: 1;
-    justify-content: center;
-    height: 46px;
-    border-radius: 11px;
-    color: #AAB8CE;
-    font-weight: 600;
-}
-
-.stTabs [aria-selected="true"] {
-    background: linear-gradient(
-        135deg,
-        rgba(34, 211, 238, 0.20),
-        rgba(139, 92, 246, 0.22)
-    ) !important;
-    color: #F8FAFC !important;
-}
-
+/* Убираем стандартную линию Streamlit */
+[data-testid="stTabs"] [data-baseweb="tab-border"],
+[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"],
 .stTabs [data-baseweb="tab-highlight"] {
-    display: none;
+    display: none !important;
+}
+
+/* Неактивная вкладка */
+[data-testid="stTabs"] button[role="tab"],
+.stTabs button[role="tab"],
+.stTabs [data-baseweb="tab"] {
+    display: inline-flex !important;
+    flex: 1 1 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 52px !important;
+    margin: 0 !important;
+    padding: 0.75rem 1rem !important;
+    border: 1px solid transparent !important;
+    border-radius: 13px !important;
+    background: transparent !important;
+    color: #AFC1D7 !important;
+    font-size: 1rem !important;
+    font-weight: 750 !important;
+    letter-spacing: -0.01rem !important;
+    white-space: nowrap !important;
+    transition:
+        background 180ms ease,
+        color 180ms ease,
+        border-color 180ms ease,
+        transform 180ms ease !important;
+}
+
+/* Текст внутри вкладки */
+[data-testid="stTabs"] button[role="tab"] p,
+.stTabs button[role="tab"] p,
+.stTabs [data-baseweb="tab"] p {
+    margin: 0 !important;
+    color: inherit !important;
+    font-size: 1rem !important;
+    font-weight: 750 !important;
+}
+
+/* Hover неактивной вкладки */
+[data-testid="stTabs"] button[role="tab"]:hover,
+.stTabs button[role="tab"]:hover,
+.stTabs [data-baseweb="tab"]:hover {
+    border-color: rgba(103, 232, 249, 0.28) !important;
+    background: rgba(103, 232, 249, 0.08) !important;
+    color: #DFFBFF !important;
+}
+
+/* Активная вкладка */
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"],
+.stTabs button[role="tab"][aria-selected="true"],
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    border: 1px solid rgba(233, 253, 255, 0.70) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #06B6D4 0%,
+            #22D3EE 44%,
+            #4D8CF2 74%,
+            #8656E8 100%
+        ) !important;
+    color: #FFFFFF !important;
+    box-shadow:
+        0 8px 18px rgba(34, 211, 238, 0.21),
+        0 5px 15px rgba(139, 92, 246, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+}
+
+/* Фокус с клавиатуры */
+[data-testid="stTabs"] button[role="tab"]:focus-visible,
+.stTabs button[role="tab"]:focus-visible {
+    outline: 3px solid rgba(125, 235, 250, 0.78) !important;
+    outline-offset: 3px !important;
 }
 
 /* ----------------------------------------------------------
@@ -281,30 +356,52 @@ h3 {
     padding: 1.7rem;
     border: 1px solid rgba(148, 163, 184, 0.20);
     border-radius: 22px;
-    background: rgba(15, 23, 42, 0.72);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(17, 30, 53, 0.80),
+            rgba(14, 22, 43, 0.78)
+        );
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 [data-testid="stWidgetLabel"] p {
     color: #D6E0EF !important;
-    font-weight: 600;
+    font-weight: 650 !important;
 }
 
-.stTextInput input {
-    min-height: 48px;
-    border: 1px solid rgba(148, 163, 184, 0.30) !important;
+/* Поля: несколько селекторов для совместимости с версиями Streamlit */
+.stTextInput input,
+[data-testid="stTextInput"] input,
+[data-baseweb="input"] input {
+    min-height: 50px !important;
+    border: 1px solid rgba(148, 163, 184, 0.36) !important;
     border-radius: 12px !important;
-    background: rgba(7, 11, 20, 0.65) !important;
+    background: rgba(7, 13, 26, 0.78) !important;
     color: #F8FAFC !important;
+    font-size: 1rem !important;
 }
 
-.stTextInput input::placeholder {
-    color: #72819A !important;
+.stTextInput input::placeholder,
+[data-testid="stTextInput"] input::placeholder,
+[data-baseweb="input"] input::placeholder {
+    color: #71839F !important;
 }
 
-.stTextInput input:focus {
+.stTextInput input:focus,
+[data-testid="stTextInput"] input:focus,
+[data-baseweb="input"] input:focus {
     border-color: #22D3EE !important;
     box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
+}
+
+/* Кнопка показа пароля */
+[data-testid="stTextInput"] button {
+    border-radius: 0 12px 12px 0 !important;
+    background: rgba(16, 29, 50, 0.92) !important;
+    color: #BDEFF7 !important;
 }
 
 /* ----------------------------------------------------------
@@ -314,18 +411,19 @@ h3 {
 .stButton > button,
 .stFormSubmitButton > button {
     width: 100%;
-    min-height: 48px;
+    min-height: 50px;
     border: 0 !important;
-    border-radius: 12px !important;
-    background: linear-gradient(
-        135deg,
-        #06B6D4 0%,
-        #22D3EE 45%,
-        #8B5CF6 100%
-    ) !important;
+    border-radius: 13px !important;
+    background:
+        linear-gradient(
+            135deg,
+            #06B6D4 0%,
+            #22D3EE 45%,
+            #8B5CF6 100%
+        ) !important;
     color: #FFFFFF !important;
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 750;
     box-shadow: 0 10px 25px rgba(34, 211, 238, 0.18);
     transition:
         transform 180ms ease,
@@ -376,7 +474,6 @@ h3 {
    ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
    ---------------------------------------------------------- */
 
-/* Общая структура ссылок на страницы */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
     display: flex !important;
     align-items: center !important;
@@ -396,7 +493,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
         box-shadow 190ms ease !important;
 }
 
-/* Текст и иконки внутри ссылок */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
     color: #FFFFFF !important;
@@ -404,10 +500,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
     font-weight: 800 !important;
 }
 
-/*
- Основная кнопка: Спланировать поездку.
- href содержит имя файла страницы 1_new_trip.
-*/
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"] {
     border: 1px solid rgba(236, 254, 255, 0.62) !important;
     background:
@@ -429,10 +521,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_t
         inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
 }
 
-/*
- Вторичная кнопка: Мои путешествия.
- Хорошо заметна, но визуально слабее основной CTA.
-*/
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"] {
     border: 1px solid rgba(103, 232, 249, 0.46) !important;
     background:
@@ -446,17 +534,11 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_tr
         inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Hover: основное действие */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"]:hover {
     transform: translateY(-3px) !important;
     filter: brightness(1.08) saturate(1.07) !important;
-    box-shadow:
-        0 20px 35px rgba(34, 211, 238, 0.29),
-        0 12px 27px rgba(139, 92, 246, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.40) !important;
 }
 
-/* Hover: вторичное действие */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"]:hover {
     transform: translateY(-3px) !important;
     border-color: rgba(167, 139, 250, 0.82) !important;
@@ -466,13 +548,8 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_tr
             rgba(27, 73, 96, 0.98),
             rgba(57, 43, 106, 0.98)
         ) !important;
-    box-shadow:
-        0 18px 33px rgba(34, 211, 238, 0.13),
-        0 12px 26px rgba(139, 92, 246, 0.17),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
-/* Доступность: фокус клавиатурой */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible {
     outline: 3px solid rgba(103, 232, 249, 0.78) !important;
     outline-offset: 3px !important;
@@ -522,6 +599,26 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible 
 
     [data-testid="stForm"] {
         padding: 1.2rem;
+    }
+
+    [data-testid="stTabs"] [data-baseweb="tab-list"],
+    .stTabs [data-baseweb="tab-list"] {
+        min-height: 58px !important;
+        border-radius: 15px !important;
+    }
+
+    [data-testid="stTabs"] button[role="tab"],
+    .stTabs button[role="tab"],
+    .stTabs [data-baseweb="tab"] {
+        min-height: 46px !important;
+        padding: 0.65rem 0.7rem !important;
+        font-size: 0.92rem !important;
+    }
+
+    [data-testid="stTabs"] button[role="tab"] p,
+    .stTabs button[role="tab"] p,
+    .stTabs [data-baseweb="tab"] p {
+        font-size: 0.92rem !important;
     }
 
     section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
@@ -649,14 +746,16 @@ if "user_id" in st.session_state:
 
 tab_login, tab_register = st.tabs(
     [
-        "🔐 Войти",
-        "✨ Создать аккаунт",
+        "Вход",
+        "Регистрация",
     ]
 )
 
 with tab_login:
-    st.markdown("#### С возвращением!")
-    st.caption("Введите данные аккаунта, чтобы продолжить.")
+    st.markdown("#### С возвращением")
+    st.caption(
+        "Войдите, чтобы открыть сохранённые маршруты, карту и бюджет поездок."
+    )
 
     with st.form("login_form"):
         username = st.text_input(
@@ -670,7 +769,7 @@ with tab_login:
             placeholder="Введите пароль",
         )
 
-        submitted = st.form_submit_button("Войти в TravelMind")
+        submitted = st.form_submit_button("Продолжить →")
 
         if submitted:
             error = auth.login(username, password)
@@ -681,8 +780,10 @@ with tab_login:
                 st.rerun()
 
 with tab_register:
-    st.markdown("#### Начните планировать путешествия")
-    st.caption("Создание аккаунта займёт меньше минуты.")
+    st.markdown("#### Создайте аккаунт")
+    st.caption(
+        "Сохраняйте маршруты, отслеживайте бюджет и возвращайтесь к планам."
+    )
 
     with st.form("register_form"):
         username = st.text_input(
@@ -705,7 +806,7 @@ with tab_register:
             placeholder="Введите пароль ещё раз",
         )
 
-        submitted = st.form_submit_button("Создать аккаунт")
+        submitted = st.form_submit_button("Создать аккаунт →")
 
         if submitted:
             if password != password_repeat:
