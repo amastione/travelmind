@@ -104,18 +104,20 @@ with tabs[1]:
             if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
                 points.append((lat, lon, a, d.get("day")))
 
-    if not points:
+        if not points:
         st.info("Для этой поездки модель не вернула координаты.")
     else:
         center = [
             sum(p[0] for p in points) / len(points),
             sum(p[1] for p in points) / len(points),
         ]
+
         fmap = folium.Map(
             location=center,
             zoom_start=12,
-            tiles="CartoDB dark_matter",
+            tiles="https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
             attr="© OpenStreetMap contributors © CARTO",
+            max_zoom=19,
         )
 
         for lat, lon, a, day in points:
