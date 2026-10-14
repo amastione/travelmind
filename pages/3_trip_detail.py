@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# АВТОРИЗАЦИЯ И ДАННЫЕ ПОЕЗДКИ
+# АВТОРИЗАЦИЯ И ДАННЫЕ
 # ==========================================================
 
 user_id = auth.require_auth()
@@ -62,37 +62,13 @@ curr = trip["currency"] or "RUB"
 
 CSS = """
 <style>
-/* ----------------------------------------------------------
-   ОСНОВА
-   ---------------------------------------------------------- */
-
 .stApp {
     background:
-        radial-gradient(
-            circle at 8% 8%,
-            rgba(34, 211, 238, 0.13),
-            transparent 29%
-        ),
-        radial-gradient(
-            circle at 92% 88%,
-            rgba(124, 92, 232, 0.16),
-            transparent 34%
-        ),
-        linear-gradient(
-            135deg,
-            #060B15 0%,
-            #0A1427 52%,
-            #0E1325 100%
-        );
+        radial-gradient(circle at 8% 8%, rgba(34, 211, 238, 0.13), transparent 29%),
+        radial-gradient(circle at 92% 88%, rgba(124, 92, 232, 0.16), transparent 34%),
+        linear-gradient(135deg, #060B15 0%, #0A1427 52%, #0E1325 100%);
     color: #F8FAFC;
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "SF Pro Text",
-        "Segoe UI",
-        sans-serif;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .block-container {
@@ -106,27 +82,35 @@ footer {
     visibility: hidden;
 }
 
+/*
+  ВАЖНО:
+  Здесь намеренно НЕТ span.
+  Streamlit использует span для технических Material Icons.
+  Если назначить им Inter, появляются надписи _arrow_right и т. п.
+*/
 h1,
 h2,
 h3,
 h4,
 p,
-span,
 label,
-button {
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "SF Pro Text",
-        "Segoe UI",
-        sans-serif !important;
+button,
+[data-testid="stMarkdownContainer"] {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+        "Segoe UI", sans-serif !important;
 }
 
-/* ----------------------------------------------------------
-   ШАПКА ПОЕЗДКИ
-   ---------------------------------------------------------- */
+/* Возвращаем шрифт системным иконкам Streamlit */
+.material-symbols-rounded,
+.material-symbols-outlined,
+.material-icons,
+[data-testid="stIconMaterial"] {
+    font-family: "Material Symbols Rounded", "Material Symbols Outlined",
+        "Material Icons" !important;
+    font-style: normal !important;
+}
+
+/* ---------------- ШАПКА ---------------- */
 
 .tm-hero-label {
     color: #7DEBFA;
@@ -173,9 +157,7 @@ button {
     font-weight: 650;
 }
 
-/* ----------------------------------------------------------
-   МЕТРИКИ И КАРТОЧКИ
-   ---------------------------------------------------------- */
+/* ---------------- КАРТОЧКИ ---------------- */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-color: rgba(148, 163, 184, 0.23) !important;
@@ -197,9 +179,6 @@ button {
             rgba(22, 33, 58, 0.78),
             rgba(10, 18, 34, 0.75)
         );
-    box-shadow:
-        0 13px 28px rgba(0, 0, 0, 0.13),
-        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 [data-testid="stMetricLabel"] {
@@ -215,55 +194,39 @@ button {
     letter-spacing: -0.05rem !important;
 }
 
-/* ==========================================================
-   ВКЛАДКИ — ЕДИНАЯ СКРУГЛЁННАЯ NAVIGATION PANEL
-
-   Важно: ниже есть несколько селекторов одновременно:
-   Streamlit меняет внутреннюю разметку между версиями.
-   ========================================================== */
+/* ---------------- ВКЛАДКИ ---------------- */
 
 .stTabs {
     margin-top: 2rem;
 }
 
-/* Общая стеклянная панель */
 .stTabs [data-baseweb="tab-list"],
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
     display: flex !important;
     align-items: center !important;
-    gap: 0.6rem !important;
+    gap: 0.7rem !important;
     width: 100% !important;
-    min-height: 74px !important;
+    min-height: 76px !important;
     overflow-x: auto !important;
-    padding: 0.55rem !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 22px !important;
+    padding: 0.65rem !important;
+    border: 1px solid rgba(177, 204, 235, 0.30) !important;
+    border-radius: 24px !important;
     background:
         linear-gradient(
             135deg,
-            rgba(27, 40, 67, 0.84),
-            rgba(10, 18, 34, 0.82)
+            rgba(29, 43, 71, 0.86),
+            rgba(10, 18, 34, 0.84)
         ) !important;
     box-shadow:
         0 16px 34px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
     scrollbar-width: none;
 }
 
-/* Убираем горизонтальный scrollbar */
-.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar,
-[data-testid="stTabs"] [data-baseweb="tab-list"]::-webkit-scrollbar {
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
     display: none;
 }
 
-/*
-   ОБЫЧНАЯ ВКЛАДКА:
-   светлый и заметный текст;
-   одинаковые скругления у всех вкладок;
-   лёгкая отдельная поверхность.
-*/
 .stTabs [data-baseweb="tab"],
 [data-testid="stTabs"] button[data-baseweb="tab"],
 [data-testid="stTabs"] button[role="tab"] {
@@ -272,131 +235,97 @@ button {
     align-items: center !important;
     justify-content: center !important;
     flex: 0 0 auto !important;
-    min-height: 56px !important;
+    min-height: 60px !important;
     margin: 0 !important;
-    padding: 0.9rem 1.2rem !important;
-    border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    border-radius: 17px !important;
-    outline: none !important;
-    background: rgba(255, 255, 255, 0.075) !important;
-    color: #E8F0FA !important;
-    font-size: 1.08rem !important;
-    font-weight: 750 !important;
-    letter-spacing: -0.018rem !important;
-    line-height: 1 !important;
+    padding: 0.95rem 1.45rem !important;
+    border: 1px solid rgba(228, 240, 255, 0.24) !important;
+    border-radius: 19px !important;
+    background: rgba(255, 255, 255, 0.085) !important;
+    color: #F4F8FE !important;
+    font-size: 1.24rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025rem !important;
+    line-height: 1.1 !important;
     opacity: 1 !important;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        0 4px 10px rgba(0, 0, 0, 0.09) !important;
     transition:
         background 200ms ease,
         border-color 200ms ease,
         color 200ms ease,
-        box-shadow 200ms ease,
-        transform 200ms ease !important;
+        transform 200ms ease,
+        box-shadow 200ms ease !important;
 }
 
-/* Текст внутри каждой вкладки */
 .stTabs [data-baseweb="tab"] p,
 [data-testid="stTabs"] button[data-baseweb="tab"] p,
 [data-testid="stTabs"] button[role="tab"] p {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.5rem !important;
     margin: 0 !important;
-    color: inherit !important;
-    font-size: inherit !important;
-    font-weight: inherit !important;
-    letter-spacing: inherit !important;
-    line-height: 1 !important;
+    color: #F4F8FE !important;
+    font-size: 1.24rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025rem !important;
+    line-height: 1.1 !important;
     white-space: nowrap !important;
 }
 
-/* Неактивная вкладка при наведении */
 .stTabs [data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[role="tab"]:hover {
     z-index: 2 !important;
-    border-color: rgba(125, 211, 252, 0.46) !important;
+    border-color: rgba(165, 235, 250, 0.66) !important;
     background:
         linear-gradient(
             135deg,
-            rgba(103, 232, 249, 0.16),
-            rgba(139, 92, 246, 0.13)
+            rgba(103, 232, 249, 0.20),
+            rgba(139, 92, 246, 0.16)
         ) !important;
     color: #FFFFFF !important;
-    box-shadow:
-        0 7px 17px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
     transform: translateY(-1px) !important;
 }
 
-/* Focus-состояние для доступности */
 .stTabs [data-baseweb="tab"]:focus-visible,
 [data-testid="stTabs"] button[data-baseweb="tab"]:focus-visible,
 [data-testid="stTabs"] button[role="tab"]:focus-visible {
-    outline: 3px solid rgba(103, 232, 249, 0.58) !important;
+    outline: 3px solid rgba(103, 232, 249, 0.62) !important;
     outline-offset: 2px !important;
 }
 
-/*
-   АКТИВНАЯ ВКЛАДКА:
-   Та же высота и те же скругления, что у других.
-   Она выделена цветом, но не становится большой карточкой.
-*/
 .stTabs [data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
     z-index: 3 !important;
-    border: 1px solid rgba(224, 249, 255, 0.76) !important;
-    border-radius: 17px !important;
+    border: 1px solid rgba(230, 250, 255, 0.92) !important;
+    border-radius: 19px !important;
     background:
         radial-gradient(
-            circle at 25% 5%,
-            rgba(255, 255, 255, 0.20),
-            transparent 38%
+            circle at 24% 0%,
+            rgba(255, 255, 255, 0.24),
+            transparent 40%
         ),
         linear-gradient(
             135deg,
-            #078FAE 0%,
-            #17CBE3 46%,
-            #578BF0 73%,
-            #7652DF 100%
+            #0598B7 0%,
+            #18CAE4 45%,
+            #548AF0 74%,
+            #7551DE 100%
         ) !important;
     color: #FFFFFF !important;
-    font-size: 1.08rem !important;
-    font-weight: 800 !important;
+    font-size: 1.24rem !important;
+    font-weight: 850 !important;
     box-shadow:
-        0 8px 20px rgba(34, 211, 238, 0.20),
-        0 5px 14px rgba(91, 74, 208, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
-    transform: none !important;
+        0 8px 22px rgba(34, 211, 238, 0.20),
+        0 5px 16px rgba(91, 74, 208, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
 }
 
-/* Небольшой световой акцент внизу активной вкладки */
-.stTabs [data-baseweb="tab"][aria-selected="true"]::after,
-[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]::after,
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"]::after {
-    content: "" !important;
-    position: absolute !important;
-    right: 18px !important;
-    bottom: 7px !important;
-    left: 18px !important;
-    height: 2px !important;
-    border-radius: 999px !important;
-    background: rgba(255, 255, 255, 0.94) !important;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.38) !important;
-}
-
-/* Убираем стандартный индикатор Streamlit */
 .stTabs [data-baseweb="tab-highlight"],
 [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
     display: none !important;
 }
 
-/* ----------------------------------------------------------
-   КОНТЕНТ
-   ---------------------------------------------------------- */
+/* ---------------- КОНТЕНТ ---------------- */
 
 .tm-section-title {
     margin-top: 1.75rem;
@@ -513,16 +442,6 @@ button {
     color: #FFFFFF !important;
     font-size: 0.97rem;
     font-weight: 750;
-    box-shadow:
-        0 10px 23px rgba(34, 211, 238, 0.17),
-        inset 0 1px 0 rgba(255, 255, 255, 0.20);
-}
-
-.stButton > button:hover,
-.stLinkButton > a:hover,
-.stDownloadButton > button:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.07);
 }
 
 .stNumberInput input {
@@ -533,30 +452,26 @@ button {
     font-weight: 650 !important;
 }
 
-[data-testid="stAlert"] {
-    border-radius: 14px;
-}
-
-/* ----------------------------------------------------------
-   АДАПТИВНОСТЬ
-   ---------------------------------------------------------- */
-
 @media (max-width: 900px) {
-    .stTabs [data-baseweb="tab-list"],
-    [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        gap: 0.45rem !important;
-        min-height: 68px !important;
-        padding: 0.45rem !important;
-        border-radius: 19px !important;
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem !important;
+        min-height: 71px !important;
+        padding: 0.55rem !important;
+        border-radius: 21px !important;
     }
 
     .stTabs [data-baseweb="tab"],
     [data-testid="stTabs"] button[data-baseweb="tab"],
     [data-testid="stTabs"] button[role="tab"] {
-        min-height: 53px !important;
-        padding: 0.82rem 1.05rem !important;
-        border-radius: 16px !important;
-        font-size: 1rem !important;
+        min-height: 57px !important;
+        padding: 0.88rem 1.18rem !important;
+        font-size: 1.12rem !important;
+        font-weight: 800 !important;
+    }
+
+    .stTabs [data-baseweb="tab"] p {
+        font-size: 1.12rem !important;
+        font-weight: 800 !important;
     }
 }
 
@@ -573,21 +488,14 @@ button {
         font-size: 1.65rem !important;
     }
 
-    .stTabs {
-        margin-top: 1.55rem;
+    .stTabs [data-baseweb="tab"] {
+        min-height: 55px !important;
+        padding: 0.84rem 1.08rem !important;
+        font-size: 1.05rem !important;
     }
 
-    .stTabs [data-baseweb="tab-list"],
-    [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        margin: 0 -0.1rem;
-        border-radius: 18px !important;
-    }
-
-    .stTabs [data-baseweb="tab"],
-    [data-testid="stTabs"] button[data-baseweb="tab"],
-    [data-testid="stTabs"] button[role="tab"] {
-        padding: 0.8rem 1rem !important;
-        font-size: 0.98rem !important;
+    .stTabs [data-baseweb="tab"] p {
+        font-size: 1.05rem !important;
     }
 }
 </style>
@@ -596,7 +504,7 @@ button {
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ==========================================================
-# СЛОВАРИ И УТИЛИТЫ
+# СЛОВАРИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ==========================================================
 
 ICONS = {
@@ -650,7 +558,7 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
-    """Безопасно приводит значение к тексту."""
+    """Безопасно преобразует значение в строку."""
     if value is None:
         return default
     return str(value)
@@ -697,21 +605,13 @@ with st.container(border=True):
 
     if overview:
         st.markdown(
-            (
-                '<div class="tm-overview-box">'
-                f'{escape(overview)}'
-                '</div>'
-            ),
+            f'<div class="tm-overview-box">{escape(overview)}</div>',
             unsafe_allow_html=True,
         )
 
     if mood_reason:
         st.markdown(
-            (
-                '<div class="tm-mood-box">'
-                f'🙂 {escape(mood_reason)}'
-                '</div>'
-            ),
+            f'<div class="tm-mood-box">🙂 {escape(mood_reason)}</div>',
             unsafe_allow_html=True,
         )
 
@@ -790,7 +690,6 @@ with tab_route:
             '<div class="tm-section-title">🏨 Где остановиться</div>',
             unsafe_allow_html=True,
         )
-
         st.markdown(
             """
             <div class="tm-section-text">
@@ -812,19 +711,10 @@ with tab_route:
 
         for index, hotel in enumerate(hotels[:3]):
             tier = text_value(hotel.get("tier"), "Оптимальный")
-            tier_style = TIER_STYLES.get(
-                tier,
-                TIER_STYLES["Оптимальный"],
-            )
+            tier_style = TIER_STYLES.get(tier, TIER_STYLES["Оптимальный"])
 
-            hotel_name = text_value(
-                hotel.get("name"),
-                "Вариант проживания",
-            )
-            hotel_area = text_value(
-                hotel.get("area"),
-                "Удобный район",
-            )
+            hotel_name = text_value(hotel.get("name"), "Вариант проживания")
+            hotel_area = text_value(hotel.get("area"), "Удобный район")
             hotel_why = text_value(
                 hotel.get("why"),
                 "Подходит для выбранного формата путешествия.",
@@ -836,12 +726,8 @@ with tab_route:
             total_stay = standard_price * nights
 
             map_query = text_value(
-                hotel.get(
-                    "map_query",
-                    f"{hotel_name} {destination}",
-                )
+                hotel.get("map_query", f"{hotel_name} {destination}")
             )
-
             google_maps_url = (
                 "https://www.google.com/maps/search/?api=1&query="
                 + quote_plus(map_query)
@@ -849,9 +735,7 @@ with tab_route:
 
             with hotel_columns[index]:
                 with st.container(border=True):
-                    st.caption(
-                        f"{tier_style['emoji']} {tier_style['label']}"
-                    )
+                    st.caption(f"{tier_style['emoji']} {tier_style['label']}")
                     st.subheader(hotel_name)
                     st.caption(f"📍 {hotel_area}")
 
@@ -1010,9 +894,7 @@ with tab_map:
             lon = activity.get("lon")
 
             if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                points.append(
-                    (lat, lon, activity, day.get("day"))
-                )
+                points.append((lat, lon, activity, day.get("day")))
 
     if not points:
         st.info(
@@ -1069,10 +951,7 @@ with tab_map:
                     color="#22D3EE",
                 ).add_to(fmap)
 
-        st.markdown(
-            '<div class="tm-map-card">',
-            unsafe_allow_html=True,
-        )
+        st.markdown('<div class="tm-map-card">', unsafe_allow_html=True)
 
         st_folium(
             fmap,
@@ -1113,7 +992,6 @@ with tab_budget:
             day_number = expense["day"]
             category = expense["category"]
             expense_title = text_value(expense["title"])
-
             plan_cost = as_float(expense["cost_plan"], 0)
             actual_cost = as_float(expense["cost_actual"], 0)
 
@@ -1127,22 +1005,16 @@ with tab_budget:
                 st.caption("План")
                 st.write(f"{plan_cost:.0f} {curr}")
 
-                item_difference = actual_cost - plan_cost
+                difference = actual_cost - plan_cost
 
                 if actual_cost == 0:
                     st.caption("Факт пока не внесён")
-                elif abs(item_difference) < 0.01:
+                elif abs(difference) < 0.01:
                     st.caption("✅ Совпадает с планом")
-                elif item_difference < 0:
-                    st.caption(
-                        f"🟢 Экономия: "
-                        f"{abs(item_difference):.0f} {curr}"
-                    )
+                elif difference < 0:
+                    st.caption(f"🟢 Экономия: {abs(difference):.0f} {curr}")
                 else:
-                    st.caption(
-                        f"🔴 Превышение: "
-                        f"{item_difference:.0f} {curr}"
-                    )
+                    st.caption(f"🔴 Превышение: {difference:.0f} {curr}")
 
             with expense_columns[2]:
                 actual_value = st.number_input(
@@ -1298,11 +1170,7 @@ with tab_ai:
     download_markdown, download_json = st.columns(2)
 
     markdown_content = ai.to_markdown(data, curr)
-    json_content = json.dumps(
-        data,
-        ensure_ascii=False,
-        indent=2,
-    )
+    json_content = json.dumps(data, ensure_ascii=False, indent=2)
 
     with download_markdown:
         st.download_button(
