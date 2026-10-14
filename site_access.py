@@ -1,46 +1,41 @@
-"""Общий пароль для закрытого тестового доступа к TravelMind."""
-import hashlib
+"""Общий пароль для доступа к закрытой бета-версии TravelMind."""
+
 import hmac
 
 import streamlit as st
 
 
 # ==========================================================
-# НАСТРОЙКИ ДОСТУПА
+# НАСТРОЙКИ ЗАКРЫТОГО ДОСТУПА
 # ==========================================================
 #
-# 1. MASTER_PASSWORD_HASH — SHA-256 хеш мастер-пароля.
-# 2. ACCESS_VERSION — версия доступа.
+# ТЕКУЩИЙ ПАРОЛЬ:
+# TravelMind2026
 #
-# Чтобы отозвать доступ у всех тестировщиков:
-# - смените пароль;
-# - обновите хеш;
-# - измените ACCESS_VERSION;
-# - сделайте Commit changes в GitHub.
+# Чтобы поменять пароль и забрать доступ у всех пользователей:
 #
-# Пример:
-# ACCESS_VERSION = "2026-10-14-v2"
+# 1. Измените MASTER_PASSWORD на новый пароль.
+# 2. Измените ACCESS_VERSION, например v2 → v3.
+# 3. Нажмите Commit changes в GitHub.
+#
+# После автоматического обновления Streamlit старый доступ
+# перестанет работать, а пользователям понадобится новый пароль.
+#
+# ВАЖНО:
+# Если GitHub-репозиторий публичный, пароль будет виден в коде.
+# Для учебного проекта это допустимо. Для публичного релиза
+# пароль следует хранить в Streamlit Secrets.
 # ==========================================================
 
-MASTER_PASSWORD_HASH = (
-    "TravelMind2026"
-)
+MASTER_PASSWORD = "TravelMind2026"
 
 ACCESS_VERSION = "2026-10-14-v2"
 
 
-def _hash_password(password: str) -> str:
-    """Возвращает SHA-256 хеш пароля."""
-    return hashlib.sha256(
-        password.encode("utf-8")
-    ).hexdigest()
-
-
 def _access_is_current() -> bool:
     """
-    Проверяет, что доступ был подтверждён для текущей версии доступа.
-    Если ACCESS_VERSION изменится после деплоя, старый доступ станет
-    недействительным при следующем перезапуске Streamlit.
+    Проверяет, прошёл ли пользователь общий пароль
+    именно для текущей версии доступа.
     """
     return (
         st.session_state.get("site_access_granted") is True
@@ -50,8 +45,11 @@ def _access_is_current() -> bool:
 
 def require_site_access() -> None:
     """
-    Показывает страницу ввода общего пароля, если доступ не подтверждён.
-    После успешного ввода выполнение текущей страницы продолжается.
+    Проверяет доступ к закрытой версии TravelMind.
+
+    Если пользователь ещё не ввёл верный мастер-пароль,
+    отображается экран закрытой бета-версии и работа страницы
+    останавливается через st.stop().
     """
     if _access_is_current():
         return
@@ -79,6 +77,10 @@ def require_site_access() -> None:
                 );
         }
 
+        [data-testid="stHeader"] {
+            background: transparent !important;
+        }
+
         [data-testid="stForm"] {
             padding: 1.65rem;
             border: 1px solid rgba(103, 232, 249, 0.26);
@@ -95,7 +97,7 @@ def require_site_access() -> None:
         }
 
         .tm-access-card {
-            margin: 5vh auto 1.1rem;
+            margin: 7vh auto 1.2rem;
             max-width: 560px;
             text-align: center;
         }
@@ -129,8 +131,8 @@ def require_site_access() -> None:
         }
 
         .tm-access-text {
-            margin: 0.7rem auto 0;
-            max-width: 470px;
+            margin: 0.75rem auto 0;
+            max-width: 480px;
             color: #B6C6DB;
             font-size: 1rem;
             line-height: 1.65;
@@ -149,6 +151,11 @@ def require_site_access() -> None:
             color: #F8FAFC !important;
         }
 
+        .stTextInput input:focus {
+            border-color: rgba(34, 211, 238, 0.85) !important;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.13) !important;
+        }
+
         .stFormSubmitButton > button {
             width: 100%;
             min-height: 50px;
@@ -164,6 +171,19 @@ def require_site_access() -> None:
             color: #FFFFFF !important;
             font-size: 1rem;
             font-weight: 750;
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+
+        .stFormSubmitButton > button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.07);
+        }
+
+        .tm-access-note {
+            margin-top: 1rem;
+            color: #71829A;
+            font-size: 0.82rem;
+            text-align: center;
         }
         </style>
         """,
@@ -197,20 +217,36 @@ def require_site_access() -> None:
             submitted = st.form_submit_button("Открыть TravelMind →")
 
             if submitted:
+                entered_password = password.strip()
+
                 if hmac.compare_digest(
-                    password.strip(),
+                    entered_password,
                     MASTER_PASSWORD,
                 ):
                     st.session_state["site_access_granted"] = True
                     st.session_state["site_access_version"] = ACCESS_VERSION
                     st.rerun()
+                else:
+                    st.error("Неверный код доступа. Попробуйте ещё раз.")
 
-                st.error("Неверный код доступа.")
+        st.markdown(
+            """
+            <div class="tm-access-note">
+                Доступ предоставляется только участникам тестирования.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
+    # Не позволяет открыть содержимое остальных страниц,
+    # пока пользователь не введёт корректный общий пароль.
     st.stop()
 
 
 def revoke_site_access() -> None:
-    """Очищает доступ к закрытой бета-версии в текущем браузере."""
+    """
+    Удаляет доступ к закрытой бета-версии в текущем браузере.
+    Используется при полном выходе из сервиса.
+    """
     st.session_state.pop("site_access_granted", None)
     st.session_state.pop("site_access_version", None)
