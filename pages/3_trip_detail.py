@@ -63,13 +63,34 @@ curr = trip["currency"] or "RUB"
 
 CSS = """
 <style>
+/* ---------------- ОСНОВА ---------------- */
+
 .stApp {
     background:
-        radial-gradient(circle at 8% 8%, rgba(34, 211, 238, 0.13), transparent 29%),
-        radial-gradient(circle at 92% 88%, rgba(124, 92, 232, 0.16), transparent 34%),
-        linear-gradient(135deg, #060B15 0%, #0A1427 52%, #0E1325 100%);
+        radial-gradient(
+            circle at 8% 8%,
+            rgba(34, 211, 238, 0.13),
+            transparent 29%
+        ),
+        radial-gradient(
+            circle at 92% 88%,
+            rgba(124, 92, 232, 0.16),
+            transparent 34%
+        ),
+        linear-gradient(
+            135deg,
+            #060B15 0%,
+            #0A1427 52%,
+            #0E1325 100%
+        );
     color: #F8FAFC;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
 }
 
 .block-container {
@@ -84,26 +105,39 @@ footer {
 }
 
 /*
- Важно: span намеренно не используется.
- Streamlit применяет span для Material Icons.
- Иначе появляются технические надписи _arrow_right.
+ Важно: span специально не добавляется в список.
+ Streamlit использует span для технических Material Icons.
+ Иначе появляются надписи _arrow_right и double_arrow_right.
 */
-h1, h2, h3, h4, p, label, button,
+h1,
+h2,
+h3,
+h4,
+p,
+label,
+button,
 [data-testid="stMarkdownContainer"] {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display",
-        "Segoe UI", sans-serif !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif !important;
 }
 
 .material-symbols-rounded,
 .material-symbols-outlined,
 .material-icons,
 [data-testid="stIconMaterial"] {
-    font-family: "Material Symbols Rounded", "Material Symbols Outlined",
+    font-family:
+        "Material Symbols Rounded",
+        "Material Symbols Outlined",
         "Material Icons" !important;
     font-style: normal !important;
 }
 
-/* Шапка */
+/* ---------------- ШАПКА ---------------- */
 
 .tm-hero-label {
     color: #7DEBFA;
@@ -149,7 +183,7 @@ h1, h2, h3, h4, p, label, button,
     font-weight: 650;
 }
 
-/* Карточки */
+/* ---------------- КАРТОЧКИ И МЕТРИКИ ---------------- */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border-color: rgba(148, 163, 184, 0.23) !important;
@@ -165,11 +199,15 @@ h1, h2, h3, h4, p, label, button,
     padding: 1rem 1.12rem;
     border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 19px;
-    background: linear-gradient(
-        145deg,
-        rgba(22, 33, 58, 0.78),
-        rgba(10, 18, 34, 0.75)
-    );
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22, 33, 58, 0.78),
+            rgba(10, 18, 34, 0.75)
+        );
+    box-shadow:
+        0 13px 28px rgba(0, 0, 0, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 [data-testid="stMetricLabel"] {
@@ -185,7 +223,7 @@ h1, h2, h3, h4, p, label, button,
     letter-spacing: -0.05rem !important;
 }
 
-/* Вкладки */
+/* ---------------- ВКЛАДКИ ---------------- */
 
 .stTabs {
     margin-top: 2rem;
@@ -202,11 +240,15 @@ h1, h2, h3, h4, p, label, button,
     padding: 0.65rem !important;
     border: 1px solid rgba(177, 204, 235, 0.30) !important;
     border-radius: 24px !important;
-    background: linear-gradient(
-        135deg,
-        rgba(29, 43, 71, 0.86),
-        rgba(10, 18, 34, 0.84)
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(29, 43, 71, 0.86),
+            rgba(10, 18, 34, 0.84)
+        ) !important;
+    box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
     scrollbar-width: none;
 }
 
@@ -231,8 +273,13 @@ h1, h2, h3, h4, p, label, button,
     color: #F4F8FE !important;
     font-size: 1.24rem !important;
     font-weight: 800 !important;
+    letter-spacing: -0.025rem !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
+    transition:
+        background 200ms ease,
+        border-color 200ms ease,
+        transform 200ms ease !important;
 }
 
 .stTabs [data-baseweb="tab"] p,
@@ -246,29 +293,35 @@ h1, h2, h3, h4, p, label, button,
 }
 
 .stTabs [data-baseweb="tab"]:hover,
-[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+[data-testid="stTabs"] button[data-baseweb="tab"]:hover,
+[data-testid="stTabs"] button[role="tab"]:hover {
     border-color: rgba(165, 235, 250, 0.66) !important;
-    background: linear-gradient(
-        135deg,
-        rgba(103, 232, 249, 0.20),
-        rgba(139, 92, 246, 0.16)
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(103, 232, 249, 0.20),
+            rgba(139, 92, 246, 0.16)
+        ) !important;
+    transform: translateY(-1px) !important;
 }
 
 .stTabs [data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
     border: 1px solid rgba(230, 250, 255, 0.92) !important;
-    background: linear-gradient(
-        135deg,
-        #0598B7 0%,
-        #18CAE4 45%,
-        #548AF0 74%,
-        #7551DE 100%
-    ) !important;
+    border-radius: 19px !important;
+    background:
+        linear-gradient(
+            135deg,
+            #0598B7 0%,
+            #18CAE4 45%,
+            #548AF0 74%,
+            #7551DE 100%
+        ) !important;
     color: #FFFFFF !important;
     font-weight: 800 !important;
-    box-shadow: 0 8px 22px rgba(34, 211, 238, 0.20) !important;
+    box-shadow:
+        0 8px 22px rgba(34, 211, 238, 0.20) !important;
 }
 
 .stTabs [data-baseweb="tab-highlight"],
@@ -276,7 +329,7 @@ h1, h2, h3, h4, p, label, button,
     display: none !important;
 }
 
-/* Контент */
+/* ---------------- КОНТЕНТ ---------------- */
 
 .tm-section-title {
     margin-top: 1.75rem;
@@ -350,14 +403,6 @@ h1, h2, h3, h4, p, label, button,
     font-weight: 750;
 }
 
-.tm-map-card {
-    margin-top: 1rem;
-    padding: 0.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.20);
-    border-radius: 20px;
-    background: rgba(15, 23, 42, 0.68);
-}
-
 .tm-tip-card {
     margin: 0.7rem 0;
     padding: 1.05rem;
@@ -369,7 +414,7 @@ h1, h2, h3, h4, p, label, button,
     line-height: 1.62;
 }
 
-/* Кнопки и ввод */
+/* ---------------- КНОПКИ, ПОЛЯ, ТАБЛИЦЫ ---------------- */
 
 .stButton > button,
 .stLinkButton > a,
@@ -377,12 +422,13 @@ h1, h2, h3, h4, p, label, button,
     min-height: 46px;
     border: 0 !important;
     border-radius: 14px !important;
-    background: linear-gradient(
-        135deg,
-        #06B6D4 0%,
-        #22D3EE 47%,
-        #8B5CF6 100%
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #06B6D4 0%,
+            #22D3EE 47%,
+            #8B5CF6 100%
+        ) !important;
     color: #FFFFFF !important;
     font-size: 0.97rem;
     font-weight: 750;
@@ -395,8 +441,6 @@ h1, h2, h3, h4, p, label, button,
     color: #FFFFFF !important;
     font-weight: 650 !important;
 }
-
-/* Таблица бюджета */
 
 [data-testid="stDataFrame"] {
     border: 1px solid rgba(148, 163, 184, 0.22);
@@ -421,6 +465,8 @@ h1, h2, h3, h4, p, label, button,
     color: #D9E5F3 !important;
     border-color: rgba(148, 163, 184, 0.13) !important;
 }
+
+/* ---------------- МОБИЛЬНАЯ ВЕРСИЯ ---------------- */
 
 @media (max-width: 760px) {
     .block-container {
@@ -448,7 +494,7 @@ h1, h2, h3, h4, p, label, button,
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ==========================================================
-# СЛОВАРИ И УТИЛИТЫ
+# СЛОВАРИ И ФУНКЦИИ
 # ==========================================================
 
 ICONS = {
@@ -494,6 +540,7 @@ TIER_STYLES = {
 
 
 def as_float(value, default=0.0):
+    """Безопасно приводит значение к float."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -501,13 +548,14 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
+    """Безопасно приводит значение к строке."""
     if value is None:
         return default
     return str(value)
 
 
 # ==========================================================
-# ШАПКА
+# ШАПКА ПОЕЗДКИ
 # ==========================================================
 
 trip_title = text_value(data.get("title") or trip["title"], "Поездка")
@@ -518,17 +566,22 @@ people = trip["people"] or 1
 overview = text_value(data.get("overview"))
 mood_reason = text_value(data.get("mood_reason"))
 
-st.page_link("pages/2_my_trips.py", label="← К моим путешествиям")
+st.page_link(
+    "pages/2_my_trips.py",
+    label="← К моим путешествиям",
+)
 
 with st.container(border=True):
     st.markdown(
         '<div class="tm-hero-label">TravelMind AI · Персональный маршрут</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         f'<h1 class="tm-hero-title">🗺️ {escape(trip_title)}</h1>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         (
             '<div class="tm-hero-meta">'
@@ -557,6 +610,7 @@ with st.container(border=True):
 # ==========================================================
 
 expenses = db.get_expenses(trip_id)
+
 plan_sum = sum(as_float(item["cost_plan"]) for item in expenses)
 actual_sum = sum(as_float(item["cost_actual"]) for item in expenses)
 total_cost = as_float(data.get("total_cost"), plan_sum)
@@ -573,22 +627,27 @@ elif abs(remaining) < 0.01:
     status_text = "Все внесённые расходы совпадают с планом."
     status_icon = "✅"
 elif remaining > 0:
-    status_text = f"По плановым статьям ещё не внесено: {remaining:.0f} {curr}"
+    status_text = (
+        f"По плановым статьям ещё не внесено: {remaining:.0f} {curr}"
+    )
     status_icon = "⏳"
 else:
     status_text = f"Превышение плана: {abs(remaining):.0f} {curr}"
     status_icon = "⚠️"
 
-m1, m2, m3, m4 = st.columns(4)
+metric_1, metric_2, metric_3, metric_4 = st.columns(4)
 
-with m1:
+with metric_1:
     st.metric("Общий бюджет поездки", f"{total_cost:.0f} {curr}")
-with m2:
+
+with metric_2:
     st.metric("Внесено по факту", f"{actual_sum:.0f} {curr}")
     st.caption(f"{status_icon} {status_text}")
-with m3:
+
+with metric_3:
     st.metric("План по строкам расходов", f"{plan_sum:.0f} {curr}")
-with m4:
+
+with metric_4:
     st.metric("Дней в маршруте", len(data.get("days", [])))
 
 # ==========================================================
@@ -606,7 +665,7 @@ tab_route, tab_map, tab_budget, tab_tips, tab_ai = st.tabs(
 )
 
 # ==========================================================
-# МАРШРУТ
+# ВКЛАДКА 1 — МАРШРУТ
 # ==========================================================
 
 with tab_route:
@@ -617,10 +676,14 @@ with tab_route:
             '<div class="tm-section-title">🏨 Где остановиться</div>',
             unsafe_allow_html=True,
         )
+
         st.markdown(
-            '<div class="tm-section-text">'
-            'Варианты проживания подготовлены AI. Перед бронированием '
-            'уточните актуальную стоимость и наличие номеров.</div>',
+            (
+                '<div class="tm-section-text">'
+                'Варианты проживания подготовлены AI. Перед бронированием '
+                'уточните актуальную стоимость и наличие номеров.'
+                '</div>'
+            ),
             unsafe_allow_html=True,
         )
 
@@ -636,17 +699,25 @@ with tab_route:
         for index, hotel in enumerate(hotels[:3]):
             tier = text_value(hotel.get("tier"), "Оптимальный")
             tier_style = TIER_STYLES.get(tier, TIER_STYLES["Оптимальный"])
+
             hotel_name = text_value(hotel.get("name"), "Вариант проживания")
             hotel_area = text_value(hotel.get("area"), "Удобный район")
-            hotel_why = text_value(hotel.get("why"))
-            rating = as_float(hotel.get("rating"))
-            standard_price = as_float((hotel.get("rooms") or {}).get("standard"))
+            hotel_why = text_value(
+                hotel.get("why"),
+                "Подходит для выбранного формата путешествия.",
+            )
+            rating = as_float(hotel.get("rating"), 0)
+            standard_price = as_float(
+                (hotel.get("rooms") or {}).get("standard"),
+                0,
+            )
             total_stay = standard_price * nights
+
             map_query = text_value(
                 hotel.get("map_query", f"{hotel_name} {destination}")
             )
 
-            google_url = (
+            google_maps_url = (
                 "https://www.google.com/maps/search/?api=1&query="
                 + quote_plus(map_query)
             )
@@ -656,11 +727,12 @@ with tab_route:
                     st.caption(f"{tier_style['emoji']} {tier_style['label']}")
                     st.subheader(hotel_name)
                     st.caption(f"📍 {hotel_area}")
-                    st.write(
-                        f"⭐ Рейтинг: **{rating:.1f}/10**"
-                        if rating > 0
-                        else "⭐ Рейтинг уточняется"
-                    )
+
+                    if rating > 0:
+                        st.write(f"⭐ Рейтинг: **{rating:.1f}/10**")
+                    else:
+                        st.write("⭐ Рейтинг уточняется")
+
                     st.write(hotel_why)
 
                     if standard_price > 0:
@@ -673,7 +745,7 @@ with tab_route:
 
                     st.link_button(
                         "⌖ Открыть на карте",
-                        google_url,
+                        google_maps_url,
                         use_container_width=True,
                     )
 
@@ -683,10 +755,13 @@ with tab_route:
         '<div class="tm-section-title">📅 План путешествия</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
-        '<div class="tm-section-text">'
-        'План составлен с учётом интересов, логистики и темпа поездки.'
-        '</div>',
+        (
+            '<div class="tm-section-text">'
+            'План составлен с учётом интересов, логистики и темпа поездки.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -697,8 +772,10 @@ with tab_route:
         day_vibe = text_value(day.get("vibe"))
 
         header = f"День {day_number} · {day_date}"
+
         if day_theme:
             header += f" — {day_theme}"
+
         if day_vibe:
             header += f" · {day_vibe}"
 
@@ -712,10 +789,11 @@ with tab_route:
             for activity in activities:
                 activity_type = text_value(activity.get("type"))
                 icon = ICONS.get(activity_type, "📍")
+
                 time_value = text_value(activity.get("time"))
                 title = text_value(activity.get("title"))
                 duration = text_value(activity.get("duration_min"), "?")
-                cost = as_float(activity.get("cost"))
+                cost = as_float(activity.get("cost"), 0)
                 location = text_value(activity.get("location"))
                 description = text_value(activity.get("description"))
                 tip = text_value(activity.get("tip"))
@@ -724,15 +802,19 @@ with tab_route:
                     (
                         '<div class="tm-activity">'
                         '<div class="tm-activity-time">'
-                        f'{escape(time_value)} · {icon} · ~{cost:.0f} '
-                        f'{escape(curr)}</div>'
+                        f'{escape(time_value)} · {icon} · '
+                        f'~{cost:.0f} {escape(curr)}'
+                        '</div>'
                         '<div class="tm-activity-title">'
-                        f'{escape(title)}</div>'
+                        f'{escape(title)}'
+                        '</div>'
                         '<div class="tm-activity-info">'
-                        f'⏱️ {escape(duration)} мин · ⌖ '
-                        f'{escape(location)}</div>'
+                        f'⏱️ {escape(duration)} мин · '
+                        f'⌖ {escape(location)}'
+                        '</div>'
                         '<div class="tm-activity-description">'
-                        f'{escape(description)}</div>'
+                        f'{escape(description)}'
+                        '</div>'
                         '</div>'
                     ),
                     unsafe_allow_html=True,
@@ -741,20 +823,34 @@ with tab_route:
                 if tip:
                     st.caption(f"✦ {tip}")
 
-            day_cost = as_float(day.get("day_cost"))
+            day_cost = as_float(day.get("day_cost"), 0)
+
             st.markdown(
-                f'<div class="tm-day-total">Итого за день: '
-                f'~{day_cost:.0f} {escape(curr)}</div>',
+                (
+                    '<div class="tm-day-total">'
+                    f'Итого за день: ~{day_cost:.0f} {escape(curr)}'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
 # ==========================================================
-# КАРТА
+# ВКЛАДКА 2 — КАРТА
 # ==========================================================
 
 with tab_map:
     st.markdown(
         '<div class="tm-section-title">⌖ Карта маршрута</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'Метки показывают рекомендованные места, а линии соединяют '
+            'точки одного дня в порядке следования маршрута.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -790,13 +886,15 @@ with tab_map:
             activity_type = text_value(activity.get("type"))
             points_by_day[day_number].append([lat, lon])
 
+            popup_html = (
+                f"День {escape(str(day_number))}<br>"
+                f"<b>{escape(text_value(activity.get('title')))}</b><br>"
+                f"{escape(text_value(activity.get('location')))}"
+            )
+
             folium.Marker(
                 location=[lat, lon],
-                popup=(
-                    f"День {escape(str(day_number))}<br>"
-                    f"<b>{escape(text_value(activity.get('title')))}</b><br>"
-                    f"{escape(text_value(activity.get('location')))}"
-                ),
+                popup=popup_html,
                 tooltip=text_value(activity.get("title")),
                 icon=folium.Icon(
                     color=COLORS.get(activity_type, "blue"),
@@ -824,7 +922,7 @@ with tab_map:
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
-# БЮДЖЕТ
+# ВКЛАДКА 3 — БЮДЖЕТ И РАСХОДЫ
 # ==========================================================
 
 with tab_budget:
@@ -832,10 +930,14 @@ with tab_budget:
         '<div class="tm-section-title">◫ Бюджет и фактические расходы</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
-        '<div class="tm-section-text">'
-        'Вносите реальные траты во время поездки. Для каждой позиции '
-        'отображается сравнение с первоначальным планом.</div>',
+        (
+            '<div class="tm-section-text">'
+            'Вносите реальные траты во время поездки. Для каждой позиции '
+            'отображается сравнение с первоначальным планом.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -853,7 +955,8 @@ with tab_budget:
 
         with columns[0]:
             st.markdown(
-                f"**День {day_number} · {ICONS.get(category, '•')} {title}**"
+                f"**День {day_number} · "
+                f"{ICONS.get(category, '•')} {title}**"
             )
 
         with columns[1]:
@@ -885,14 +988,19 @@ with tab_budget:
 
         with columns[3]:
             if st.button("💾", key=f"save_{expense['id']}"):
-                db.update_expense_actual(expense["id"], float(actual_value))
+                db.update_expense_actual(
+                    expense["id"],
+                    float(actual_value),
+                )
                 st.toast("Расход сохранён")
                 st.rerun()
 
         st.divider()
 
     # ------------------------------------------------------
-    # ГРАФИК БЮДЖЕТА — ALTAR 6 COMPATIBLE
+    # ГРАФИК БЮДЖЕТА
+    # Один Altair Chart: без bars + labels.
+    # Совместим с Altair 6.
     # ------------------------------------------------------
 
     budget_breakdown = data.get("budget_breakdown") or {}
@@ -902,10 +1010,14 @@ with tab_budget:
             '<div class="tm-section-title">◫ Структура планового бюджета</div>',
             unsafe_allow_html=True,
         )
+
         st.markdown(
-            '<div class="tm-section-text">'
-            'Распределение ориентировочного бюджета по основным категориям.'
-            '</div>',
+            (
+                '<div class="tm-section-text">'
+                'Распределение ориентировочного бюджета '
+                'по основным категориям поездки.'
+                '</div>'
+            ),
             unsafe_allow_html=True,
         )
 
@@ -919,7 +1031,9 @@ with tab_budget:
                     {
                         "Категория": BUDGET_RU.get(key, key),
                         "План": amount,
-                        "Сумма": f"{amount:,.0f} {curr}".replace(",", " "),
+                        "Сумма": (
+                            f"{amount:,.0f} {curr}"
+                        ).replace(",", " "),
                     }
                 )
 
@@ -933,19 +1047,9 @@ with tab_budget:
                 chart_data["План"] / total_breakdown * 100
             ).round(1)
 
-            chart_data["Подпись"] = chart_data["План"].apply(
-                lambda value: f"{value:,.0f}".replace(",", " ")
-            )
-
-            palette = [
-                "#22D3EE",
-                "#38BDF8",
-                "#818CF8",
-                "#A78BFA",
-                "#C084FC",
-            ]
-
-            bars = (
+            # Важно: создаётся только один график.
+            # Никаких bars + labels, поэтому TypeError не возникнет.
+            final_chart = (
                 alt.Chart(chart_data)
                 .mark_bar(
                     cornerRadiusTopLeft=12,
@@ -960,7 +1064,6 @@ with tab_budget:
                             title=None,
                             labelColor="#D8E5F5",
                             labelFontSize=14,
-                            labelFontWeight="bold",
                             labelAngle=0,
                             labelPadding=14,
                             domain=False,
@@ -978,17 +1081,31 @@ with tab_budget:
                             ticks=False,
                             grid=True,
                             gridColor="#314158",
-                            gridOpacity=0.6,
+                            gridOpacity=0.60,
                         ),
                     ),
                     color=alt.Color(
                         "Категория:N",
-                        scale=alt.Scale(range=palette),
+                        scale=alt.Scale(
+                            range=[
+                                "#22D3EE",
+                                "#38BDF8",
+                                "#818CF8",
+                                "#A78BFA",
+                                "#C084FC",
+                            ]
+                        ),
                         legend=None,
                     ),
                     tooltip=[
-                        alt.Tooltip("Категория:N", title="Категория"),
-                        alt.Tooltip("Сумма:N", title="План"),
+                        alt.Tooltip(
+                            "Категория:N",
+                            title="Категория",
+                        ),
+                        alt.Tooltip(
+                            "Сумма:N",
+                            title="План",
+                        ),
                         alt.Tooltip(
                             "Доля:Q",
                             title="Доля бюджета, %",
@@ -1005,36 +1122,17 @@ with tab_budget:
                         "left": 6,
                     },
                 )
-            )
-
-            labels = (
-                alt.Chart(chart_data)
-                .mark_text(
-                    align="center",
-                    baseline="bottom",
-                    dy=-9,
-                    color="#F8FAFC",
-                    font="Inter",
-                    fontSize=13,
-                    fontWeight="bold",
+                .configure_view(
+                    strokeOpacity=0,
+                    fill="transparent",
                 )
-                .encode(
-                    x=alt.X("Категория:N", sort="-y"),
-                    y=alt.Y("План:Q"),
-                    text=alt.Text("Подпись:N"),
+                .configure_axis(
+                    labelFont="Inter",
+                    titleFont="Inter",
                 )
-            )
-
-            final_chart = (
-                bars + labels
-            ).configure_view(
-                strokeOpacity=0,
-                fill="transparent",
-            ).configure_axis(
-                labelFont="Inter",
-                titleFont="Inter",
-            ).configure(
-                background="transparent",
+                .configure(
+                    background="transparent",
+                )
             )
 
             with st.container(border=True):
@@ -1048,7 +1146,9 @@ with tab_budget:
                     f"{total_breakdown:,.0f} {curr}"
                 ).replace(",", " ")
 
-                st.caption(f"Общий плановый бюджет: **{total_text}**")
+                st.caption(
+                    f"Общий плановый бюджет: **{total_text}**"
+                )
 
             table_data = pd.DataFrame(
                 [
@@ -1087,12 +1187,22 @@ with tab_budget:
             )
 
 # ==========================================================
-# СОВЕТЫ
+# ВКЛАДКА 4 — СОВЕТЫ
 # ==========================================================
 
 with tab_tips:
     st.markdown(
         '<div class="tm-section-title">✦ Полезное для поездки</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'Чек-лист, полезные фразы и рекомендации, сформированные AI '
+            'специально для выбранного направления.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -1103,8 +1213,11 @@ with tab_tips:
 
         for moment in wow_moments:
             st.markdown(
-                f'<div class="tm-tip-card">✦ '
-                f'{escape(text_value(moment))}</div>',
+                (
+                    '<div class="tm-tip-card">'
+                    f'✦ {escape(text_value(moment))}'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
@@ -1126,7 +1239,9 @@ with tab_tips:
 
         for phrase in phrases:
             with st.container(border=True):
-                st.markdown(f"**{text_value(phrase.get('ru'))}**")
+                st.markdown(
+                    f"**{text_value(phrase.get('ru'))}**"
+                )
                 st.caption(text_value(phrase.get("local")))
 
     tips = data.get("tips") or {}
@@ -1138,13 +1253,17 @@ with tab_tips:
             title = TIP_RU.get(key, key)
 
             st.markdown(
-                f'<div class="tm-tip-card"><b>{escape(text_value(title))}'
-                f'</b><br>{escape(text_value(value))}</div>',
+                (
+                    '<div class="tm-tip-card">'
+                    f'<b>{escape(text_value(title))}</b><br>'
+                    f'{escape(text_value(value))}'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
 # ==========================================================
-# ДАННЫЕ AI И ЭКСПОРТ
+# ВКЛАДКА 5 — AI-ДАННЫЕ И ЭКСПОРТ
 # ==========================================================
 
 with tab_ai:
@@ -1154,9 +1273,12 @@ with tab_ai:
     )
 
     st.markdown(
-        '<div class="tm-section-text">'
-        'Структурированный результат работы нейросети. Его можно скачать '
-        'для отчёта по учебному проекту.</div>',
+        (
+            '<div class="tm-section-text">'
+            'Структурированный результат работы нейросети. Его можно '
+            'скачать для отчёта по учебному проекту.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -1165,7 +1287,11 @@ with tab_ai:
     download_md, download_json = st.columns(2)
 
     markdown_content = ai.to_markdown(data, curr)
-    json_content = json.dumps(data, ensure_ascii=False, indent=2)
+    json_content = json.dumps(
+        data,
+        ensure_ascii=False,
+        indent=2,
+    )
 
     with download_md:
         st.download_button(
