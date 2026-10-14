@@ -107,9 +107,8 @@ footer {
 }
 
 /*
- Важно: span не добавляем в общий селектор.
- Streamlit применяет span к Material Icons.
- Это предотвращает артефакты _arrow_right.
+ Важно: span не добавляем сюда.
+ Streamlit использует span для системных Material Icons.
 */
 h1,
 h2,
@@ -140,7 +139,7 @@ button,
 }
 
 /* ----------------------------------------------------------
-   ШАПКА
+   ШАПКА ПОЕЗДКИ
    ---------------------------------------------------------- */
 
 .tm-hero-label {
@@ -264,7 +263,6 @@ button,
 .stTabs [data-baseweb="tab"],
 [data-testid="stTabs"] button[data-baseweb="tab"],
 [data-testid="stTabs"] button[role="tab"] {
-    position: relative !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -278,14 +276,7 @@ button,
     color: #F4F8FE !important;
     font-size: 1.24rem !important;
     font-weight: 800 !important;
-    letter-spacing: -0.025rem !important;
-    line-height: 1.1 !important;
     white-space: nowrap !important;
-    transition:
-        background 200ms ease,
-        border-color 200ms ease,
-        transform 200ms ease,
-        box-shadow 200ms ease !important;
 }
 
 .stTabs [data-baseweb="tab"] p,
@@ -298,7 +289,6 @@ button,
     white-space: nowrap !important;
 }
 
-/* Неактивная вкладка при наведении */
 .stTabs [data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[data-baseweb="tab"]:hover,
 [data-testid="stTabs"] button[role="tab"]:hover {
@@ -309,27 +299,15 @@ button,
             rgba(103, 232, 249, 0.20),
             rgba(139, 92, 246, 0.16)
         ) !important;
-    color: #FFFFFF !important;
-    transform: translateY(-1px) !important;
 }
 
-/*
- Активная вкладка.
- Добавлены :focus и :focus-visible, чтобы Streamlit
- не заменял фирменный градиент красным цветом.
-*/
 .stTabs [data-baseweb="tab"][aria-selected="true"],
 .stTabs [data-baseweb="tab"][aria-selected="true"]:hover,
 .stTabs [data-baseweb="tab"][aria-selected="true"]:focus,
-.stTabs [data-baseweb="tab"][aria-selected="true"]:focus-visible,
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]:hover,
 [data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]:focus,
-[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]:focus-visible,
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"],
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"]:hover,
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"]:focus,
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"]:focus-visible {
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
     border: 1px solid rgba(230, 250, 255, 0.92) !important;
     border-radius: 19px !important;
     outline: none !important;
@@ -342,19 +320,11 @@ button,
             #7551DE 100%
         ) !important;
     color: #FFFFFF !important;
-    font-weight: 800 !important;
     box-shadow:
         0 8px 22px rgba(34, 211, 238, 0.22),
         inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
-.stTabs [data-baseweb="tab"][aria-selected="true"] p,
-[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
-[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p {
-    color: #FFFFFF !important;
-}
-
-/* Убираем стандартную линию Streamlit под активной вкладкой */
 .stTabs [data-baseweb="tab-highlight"],
 [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
     display: none !important;
@@ -380,14 +350,106 @@ button,
     line-height: 1.68;
 }
 
-.streamlit-expanderHeader {
-    border: 1px solid rgba(148, 163, 184, 0.21) !important;
-    border-radius: 16px !important;
-    background: rgba(20, 31, 54, 0.82) !important;
-    color: #FFFFFF !important;
-    font-size: 1.02rem !important;
+/* ----------------------------------------------------------
+   РАСКРЫВАЕМЫЕ ДНИ МАРШРУТА — ИСПРАВЛЕНИЕ БЕЛОГО ФОНА
+   ---------------------------------------------------------- */
+
+/* Карточка раскрываемого дня */
+details[data-testid="stExpander"] {
+    overflow: hidden !important;
+    margin-bottom: 0.9rem !important;
+    border: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border-radius: 18px !important;
+    background: rgba(10, 22, 42, 0.78) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Заголовок дня — закрытое состояние */
+details[data-testid="stExpander"] > summary {
+    min-height: 64px !important;
+    padding: 1.05rem 1.2rem !important;
+    border: 0 !important;
+    border-radius: 17px !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(29, 49, 77, 0.98),
+            rgba(14, 25, 47, 0.98)
+        ) !important;
+    color: #F8FAFC !important;
+    cursor: pointer !important;
+}
+
+/*
+ Текст заголовка. Это локальный span только внутри раскрывающегося
+ компонента, поэтому системные Material Icons не ломаются.
+*/
+details[data-testid="stExpander"] > summary p,
+details[data-testid="stExpander"] > summary div,
+details[data-testid="stExpander"] > summary span {
+    color: #F8FAFC !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
+    font-size: 1.04rem !important;
     font-weight: 750 !important;
 }
+
+/* Заголовок открытого дня */
+details[data-testid="stExpander"][open] > summary {
+    border-bottom: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border-radius: 17px 17px 0 0 !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(8, 142, 175, 0.50),
+            rgba(75, 69, 177, 0.42)
+        ) !important;
+    color: #FFFFFF !important;
+}
+
+/* Текст заголовка открытого дня */
+details[data-testid="stExpander"][open] > summary p,
+details[data-testid="stExpander"][open] > summary div,
+details[data-testid="stExpander"][open] > summary span {
+    color: #FFFFFF !important;
+}
+
+/* Hover */
+details[data-testid="stExpander"] > summary:hover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(19, 104, 137, 0.62),
+            rgba(75, 62, 153, 0.50)
+        ) !important;
+}
+
+/* Стрелка раскрытия */
+details[data-testid="stExpander"] > summary svg {
+    fill: #7DEBFA !important;
+    color: #7DEBFA !important;
+}
+
+/* Контент раскрытого дня */
+details[data-testid="stExpander"] [data-testid="stExpanderDetails"],
+details[data-testid="stExpander"] > div {
+    background: rgba(8, 18, 35, 0.70) !important;
+}
+
+/* Дополнительный селектор для некоторых версий Streamlit */
+[data-testid="stExpander"] summary {
+    background-color: transparent !important;
+}
+
+/* ----------------------------------------------------------
+   АКТИВНОСТИ МАРШРУТА
+   ---------------------------------------------------------- */
 
 .tm-activity {
     margin: 0.85rem 0;
@@ -448,7 +510,7 @@ button,
 }
 
 /* ----------------------------------------------------------
-   БЮДЖЕТ: ДЕТАЛИЗАЦИЯ В СТИЛЕ ГРАФИКА
+   ДЕТАЛИЗАЦИЯ БЮДЖЕТА
    ---------------------------------------------------------- */
 
 .tm-budget-card {
@@ -466,9 +528,6 @@ button,
             rgba(27, 42, 68, 0.78),
             rgba(11, 20, 39, 0.74)
         );
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.035),
-        0 8px 20px rgba(0, 0, 0, 0.09);
 }
 
 .tm-budget-category {
@@ -489,10 +548,6 @@ button,
     box-shadow: 0 0 12px currentColor;
 }
 
-.tm-budget-progress-wrap {
-    min-width: 0;
-}
-
 .tm-budget-progress {
     width: 100%;
     height: 10px;
@@ -506,7 +561,6 @@ button,
     height: 100%;
     min-width: 6px;
     border-radius: 999px;
-    box-shadow: 0 0 13px rgba(34, 211, 238, 0.26);
 }
 
 .tm-budget-percent {
@@ -554,10 +608,6 @@ button,
     font-weight: 650 !important;
 }
 
-/* ----------------------------------------------------------
-   МОБИЛЬНАЯ ВЕРСИЯ
-   ---------------------------------------------------------- */
-
 @media (max-width: 760px) {
     .block-container {
         padding: 1.5rem 1rem 3rem;
@@ -596,7 +646,7 @@ button,
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ==========================================================
-# СЛОВАРИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# СЛОВАРИ И ФУНКЦИИ
 # ==========================================================
 
 ICONS = {
@@ -665,7 +715,7 @@ def text_value(value, default=""):
 
 
 def format_money(value, currency):
-    """Форматирует денежную сумму с пробелами."""
+    """Форматирует денежную сумму."""
     return f"{as_float(value):,.0f} {currency}".replace(",", " ")
 
 
@@ -1116,25 +1166,11 @@ with tab_budget:
 
         st.divider()
 
-    # ------------------------------------------------------
-    # ГРАФИК И ДЕТАЛИЗАЦИЯ БЮДЖЕТА
-    # ------------------------------------------------------
-
     budget_breakdown = data.get("budget_breakdown") or {}
 
     if budget_breakdown:
         st.markdown(
             '<div class="tm-section-title">◫ Структура планового бюджета</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            (
-                '<div class="tm-section-text">'
-                'Распределение ориентировочного бюджета '
-                'по основным категориям поездки.'
-                '</div>'
-            ),
             unsafe_allow_html=True,
         )
 
@@ -1152,9 +1188,7 @@ with tab_budget:
                     }
                 )
 
-        if not budget_rows:
-            st.info("В структуре бюджета нет положительных значений.")
-        else:
+        if budget_rows:
             chart_data = pd.DataFrame(budget_rows)
             total_breakdown = chart_data["План"].sum()
 
@@ -1162,7 +1196,6 @@ with tab_budget:
                 chart_data["План"] / total_breakdown * 100
             ).round(1)
 
-            # Один график Altair — совместимо с Altair 6.
             final_chart = (
                 alt.Chart(chart_data)
                 .mark_bar(
@@ -1204,14 +1237,8 @@ with tab_budget:
                         legend=None,
                     ),
                     tooltip=[
-                        alt.Tooltip(
-                            "Категория:N",
-                            title="Категория",
-                        ),
-                        alt.Tooltip(
-                            "Сумма:N",
-                            title="План",
-                        ),
+                        alt.Tooltip("Категория:N", title="Категория"),
+                        alt.Tooltip("Сумма:N", title="План"),
                         alt.Tooltip(
                             "Доля:Q",
                             title="Доля бюджета, %",
@@ -1219,26 +1246,12 @@ with tab_budget:
                         ),
                     ],
                 )
-                .properties(
-                    height=330,
-                    padding={
-                        "top": 28,
-                        "right": 16,
-                        "bottom": 8,
-                        "left": 6,
-                    },
-                )
+                .properties(height=330)
                 .configure_view(
                     strokeOpacity=0,
                     fill="transparent",
                 )
-                .configure_axis(
-                    labelFont="Inter",
-                    titleFont="Inter",
-                )
-                .configure(
-                    background="transparent",
-                )
+                .configure(background="transparent")
             )
 
             with st.container(border=True):
@@ -1247,33 +1260,18 @@ with tab_budget:
                     use_container_width=True,
                     theme=None,
                 )
-
                 st.caption(
                     "Общий плановый бюджет: "
                     f"**{format_money(total_breakdown, curr)}**"
                 )
-
-            # --------------------------------------------------
-            # КАСТОМНАЯ ДЕТАЛИЗАЦИЯ ВМЕСТО БЕЛОЙ ТАБЛИЦЫ
-            # --------------------------------------------------
 
             st.markdown(
                 '<div class="tm-section-title">Детализация бюджета</div>',
                 unsafe_allow_html=True,
             )
 
-            st.markdown(
-                (
-                    '<div class="tm-section-text">'
-                    'Каждая строка отражает сумму и долю категории '
-                    'в общем плановом бюджете.'
-                    '</div>'
-                ),
-                unsafe_allow_html=True,
-            )
-
             for index, row in enumerate(chart_data.to_dict("records")):
-                category = escape(text_value(row["Категория"]))
+                category_name = escape(text_value(row["Категория"]))
                 amount_text = escape(text_value(row["Сумма"]))
                 percent = as_float(row["Доля"])
                 color = BUDGET_COLORS[index % len(BUDGET_COLORS)]
@@ -1284,14 +1282,14 @@ with tab_budget:
                         '<div class="tm-budget-category">'
                         '<span class="tm-budget-dot" '
                         f'style="background:{color};color:{color};"></span>'
-                        f'<span>{category}</span>'
+                        f'<span>{category_name}</span>'
                         '</div>'
-                        '<div class="tm-budget-progress-wrap">'
+                        '<div>'
                         '<div class="tm-budget-progress">'
                         '<div class="tm-budget-progress-value" '
                         f'style="width:{percent:.1f}%;'
-                        f'background:linear-gradient(90deg, {color}, '
-                        f'rgba(255,255,255,0.88));"></div>'
+                        f'background:linear-gradient(90deg,{color},'
+                        f'rgba(255,255,255,0.9));"></div>'
                         '</div>'
                         '<div class="tm-budget-percent">'
                         f'{percent:.1f}% от бюджета'
@@ -1312,16 +1310,6 @@ with tab_budget:
 with tab_tips:
     st.markdown(
         '<div class="tm-section-title">✦ Полезное для поездки</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        (
-            '<div class="tm-section-text">'
-            'Чек-лист, полезные фразы и рекомендации, сформированные AI '
-            'специально для выбранного направления.'
-            '</div>'
-        ),
         unsafe_allow_html=True,
     )
 
@@ -1388,16 +1376,6 @@ with tab_tips:
 with tab_ai:
     st.markdown(
         '<div class="tm-section-title">⌘ Данные AI-маршрута</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        (
-            '<div class="tm-section-text">'
-            'Структурированный результат работы нейросети. Его можно '
-            'скачать для отчёта по учебному проекту.'
-            '</div>'
-        ),
         unsafe_allow_html=True,
     )
 
