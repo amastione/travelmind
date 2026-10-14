@@ -640,6 +640,69 @@ details[data-testid="stExpander"] > div {
         text-align: left;
     }
 }
+/* ----------------------------------------------------------
+   ЯРКИЕ КНОПКИ НАВИГАЦИИ STREAMLIT
+   Главное меню / К моим путешествиям
+   ---------------------------------------------------------- */
+
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+[data-testid="stPageLink-NavLink"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 48px !important;
+    padding: 0.7rem 1rem !important;
+    border: 1px solid rgba(234, 252, 255, 0.60) !important;
+    border-radius: 14px !important;
+    background:
+        linear-gradient(
+            135deg,
+            #069FBE 0%,
+            #1DCDE6 46%,
+            #568DF0 72%,
+            #8057E9 100%
+        ) !important;
+    color: #FFFFFF !important;
+    text-decoration: none !important;
+    font-size: 0.96rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.01rem !important;
+    box-shadow:
+        0 10px 22px rgba(34, 211, 238, 0.22),
+        0 7px 18px rgba(139, 92, 246, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease !important;
+}
+
+/* Текст внутри яркой page_link-кнопки */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+[data-testid="stPageLink-NavLink"] p {
+    margin: 0 !important;
+    color: #FFFFFF !important;
+    font-size: 0.96rem !important;
+    font-weight: 800 !important;
+}
+
+/* Hover-состояние */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+[data-testid="stPageLink-NavLink"]:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.09) saturate(1.06) !important;
+    box-shadow:
+        0 16px 30px rgba(34, 211, 238, 0.29),
+        0 12px 25px rgba(139, 92, 246, 0.21),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+/* Фокус с клавиатуры */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
+[data-testid="stPageLink-NavLink"]:focus-visible {
+    outline: 3px solid rgba(125, 235, 250, 0.88) !important;
+    outline-offset: 3px !important;
+}
 </style>
 """
 
