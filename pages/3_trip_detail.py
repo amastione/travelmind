@@ -291,28 +291,10 @@ with tabs[0]:
                 if rating_value > 0:
                     st.write(f"⭐ Рейтинг: **{rating_value:.1f}/10**")
 
-                photo_1, photo_2, photo_3 = st.columns(3)
-
-                with photo_1:
-                    st.image(
-                        images["exterior"],
-                        use_container_width=True,
-                    )
-                    st.caption("Фасад")
-
-                with photo_2:
-                    st.image(
-                        images["lobby"],
-                        use_container_width=True,
-                    )
-                    st.caption("Холл")
-
-                with photo_3:
-                    st.image(
-                        images["room"],
-                        use_container_width=True,
-                    )
-                    st.caption("Номер")
+                st.caption(
+                    "Варианты размещения: номера эконом, стандарт и люкс. "
+                    "Фото и доступность уточняются на сайте отеля."
+                )
 
                 st.write(hotel.get("why", ""))
 
