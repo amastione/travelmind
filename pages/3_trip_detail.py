@@ -1,4 +1,4 @@
-"""Детали поездки: план по дням, карта, план/факт расходов, советы, экспорт."""
+"""Детали поездки: маршрут, карта, расходы, советы и экспорт."""
 import json
 from collections import defaultdict
 
@@ -11,209 +11,424 @@ import ai
 import auth
 import db
 
-st.set_page_config(page_title="Детали поездки", page_icon="🗺", layout="wide")
+st.set_page_config(
+    page_title="Детали поездки",
+    page_icon="🗺️",
+    layout="wide",
+)
 
+# Проверяем, что пользователь авторизован
 user_id = auth.require_auth()
 
+# Получаем выбранную поездку из сессии
 trip_id = st.session_state.get("current_trip_id")
+
 if not trip_id:
-    st.warning("Поездка не выбрана. Откройте её из списка.")
+    st.warning("Поездка не выбрана. Откройте её из списка поездок.")
     st.page_link("pages/2_my_trips.py", label="К списку поездок →")
     st.stop()
 
 trip = db.get_trip(trip_id, user_id)
+
 if not trip:
-    st.error("Поездка не найдена или удалена.")
+    st.error("Поездка не найдена или была удалена.")
     st.page_link("pages/2_my_trips.py", label="К списку поездок →")
     st.stop()
 
+# Данные маршрута хранятся в базе в JSON
 data = json.loads(trip["data"])
 curr = trip["currency"]
 
-ICONS = {"A": "🏛", "F": "🍽", "T": "🚌", "S": "🏨",
-         "L": "🌿", "H": "🛍", "W": "✨"}
-COLORS = {"A": "blue", "F": "orange", "T": "gray", "S": "purple",
-          "L": "green", "H": "pink", "W": "red"}
-BUDGET_RU = {"accommodation": "Проживание", "food": "Еда",
-             "activities": "Активности", "transport": "Транспорт",
-             "other": "Прочее"}
-TIP_RU = {"transport": "🚌 Транспорт", "safety": "🛡 Безопасность",
-          "culture": "🎭 Культура", "money": "💵 Деньги"}
+# Словари для красивого отображения типов активностей
+ICONS = {
+    "A": "🏛️",
+    "F": "🍽️",
+    "T": "🚌",
+    "S": "🏨",
+    "L": "🌿",
+    "H": "🛍️",
+    "W": "✨",
+}
 
-# ---------- Шапка и метрики ----------
+COLORS = {
+    "A": "blue",
+    "F": "orange",
+    "T": "gray",
+    "S": "purple",
+    "L": "green",
+    "H": "pink",
+    "W": "red",
+}
+
+BUDGET_RU = {
+    "accommodation": "Проживание",
+    "food": "Еда",
+    "activities": "Активности",
+    "transport": "Транспорт",
+    "other": "Прочее",
+}
+
+TIP_RU = {
+    "transport": "🚌 Транспорт",
+    "safety": "🛡️ Безопасность",
+    "culture": "🎭 Культура",
+    "money": "💳 Деньги",
+}
+
+
+# ---------- ШАПКА СТРАНИЦЫ ----------
+
 st.title(data.get("title", trip["title"]))
+
 st.caption(
-    f"{trip['destination']} · {trip['start_date']} — {trip['end_date']} · "
-    f"{trip['people']} чел. · промпт {ai.PROMPT_VERSION}"
+    f"{trip['destination']} · "
+    f"{trip['start_date']} — {trip['end_date']} · "
+    f"{trip['people']} чел. · "
+    f"Промпт {ai.PROMPT_VERSION}"
 )
+
 st.write(data.get("overview", ""))
 
+# Получаем данные расходов
 expenses = db.get_expenses(trip_id)
-plan_sum = sum((e["cost_plan"] or 0) for e in expenses)
-actual_sum = sum((e["cost_actual"] or 0) for e in expenses)
 
+plan_sum = sum((expense["cost_plan"] or 0) for expense in expenses)
+actual_sum = sum((expense["cost_actual"] or 0) for expense in expenses)
+
+total_cost = data.get("total_cost")
+if not total_cost:
+    total_cost = plan_sum
+
+# Основные метрики
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("План", f"{data.get('total_cost') or plan_sum:.0f} {curr}")
-m2.metric(
-    "Факт",
-    f"{actual_sum:.0f} {curr}",
-    delta=(f"{actual_sum - plan_sum:+.0f} {curr}" if actual_sum else None),
-)
-m3.metric("Mood", f"{data.get('mood_score', '—')}/10")
-m4.metric("Дней", len(data.get("days", [])))
+
+m1.metric("Плановый бюджет", f"{total_cost:.0f} {curr}")
+
+actual_delta = None
+if actual_sum:
+    actual_delta = f"{actual_sum - plan_sum:+.0f} {curr}"
+
+m2.metric("Фактические расходы", f"{actual_sum:.0f} {curr}", delta=actual_delta)
+
+m3.metric("Ожидаемые эмоции", f"{data.get('mood_score', '—')}/10")
+
+m4.metric("Дней в поездке", len(data.get("days", [])))
 
 if data.get("mood_reason"):
     st.caption(f"🙂 {data['mood_reason']}")
 
-tabs = st.tabs(["📅 План", "🗺 Карта", "💰 План/факт", "✨ Фишки", "🔧 JSON"])
+# Вкладки страницы
+tabs = st.tabs(
+    [
+        "📅 План поездки",
+        "🗺️ Карта",
+        "💰 План / факт",
+        "✨ Полезное",
+        "🔧 JSON",
+    ]
+)
 
-# ---------- Вкладка 1: план по дням ----------
+
+# ---------- ВКЛАДКА 1. ПЛАН ПОЕЗДКИ ----------
+
 with tabs[0]:
-    acc = data.get("accommodation") or {}
-    if acc:
+    accommodation = data.get("accommodation") or {}
+
+    # Поддержка старого формата: один объект проживания
+    if isinstance(accommodation, dict) and accommodation:
         st.info(
-            f"🏨 **Проживание:** {acc.get('type', '')} в районе "
-            f"{acc.get('area', '')} · ~{acc.get('price_per_night', 0)} "
-            f"{curr}/ночь. {acc.get('why', '')}"
+            f"🏨 **Проживание:** {accommodation.get('type', '')} "
+            f"в районе {accommodation.get('area', '')} · "
+            f"~{accommodation.get('price_per_night', 0)} {curr}/ночь. "
+            f"{accommodation.get('why', '')}"
         )
 
-    for d in data.get("days", []):
+    # Поддержка нового формата: несколько вариантов проживания
+    elif isinstance(accommodation, list) and accommodation:
+        st.subheader("🏨 Варианты проживания")
+
+        for hotel in accommodation:
+            with st.container(border=True):
+                h1, h2 = st.columns([3, 1])
+
+                hotel_name = hotel.get("name", "Вариант проживания")
+                hotel_tier = hotel.get("tier", "")
+                hotel_area = hotel.get("area", "")
+                hotel_why = hotel.get("why", "")
+                hotel_price = hotel.get("price_per_night", 0)
+
+                h1.markdown(f"### {hotel_name}")
+                h1.write(f"**Категория:** {hotel_tier}")
+                h1.write(f"📍 Район: {hotel_area}")
+                h1.write(hotel_why)
+
+                h2.metric("За ночь", f"{hotel_price} {curr}")
+
+    for day in data.get("days", []):
+        day_number = day.get("day", "")
+        day_date = day.get("date", "")
+        day_theme = day.get("theme", "")
+        day_vibe = day.get("vibe", "")
+
         header = (
-            f"День {d.get('day')} · {d.get('date', '')} — {d.get('theme', '')}"
-            f"  ·  {d.get('vibe', '')}"
+            f"День {day_number} · {day_date} — {day_theme} "
+            f"· {day_vibe}"
         )
-        with st.expander(header, expanded=(d.get("day") == 1)):
-            for a in d.get("activities", []):
-                icon = ICONS.get(a.get("type"), "📍")
-                st.markdown(
-                    f"**{a.get('time', '')}** {icon} **{a.get('title', '')}** · "
-                    f"{a.get('duration_min', '?')} мин · ~{a.get('cost', 0)} {curr}  \n"
-                    f"📍 {a.get('location', '')}  \n"
-                    f"{a.get('description', '')}"
-                )
-                if a.get("tip"):
-                    st.caption(f"💡 {a['tip']}")
-            st.markdown(f"**Итого за день:** ~{d.get('day_cost', 0)} {curr}")
 
-# ---------- Вкладка 2: карта ----------
+        with st.expander(header, expanded=(day_number == 1)):
+            for activity in day.get("activities", []):
+                activity_type = activity.get("type", "")
+                icon = ICONS.get(activity_type, "📍")
+
+                time_value = activity.get("time", "")
+                title = activity.get("title", "")
+                duration = activity.get("duration_min", "?")
+                cost = activity.get("cost", 0)
+                location = activity.get("location", "")
+                description = activity.get("description", "")
+                tip = activity.get("tip", "")
+
+                st.markdown(
+                    f"**{time_value}** {icon} **{title}** · "
+                    f"{duration} мин · ~{cost} {curr}  \n"
+                    f"📍 {location}  \n"
+                    f"{description}"
+                )
+
+                if tip:
+                    st.caption(f"💡 {tip}")
+
+            st.markdown(
+                f"**Итого за день:** ~{day.get('day_cost', 0)} {curr}"
+            )
+
+
+# ---------- ВКЛАДКА 2. КАРТА ----------
+
 with tabs[1]:
     points = []
-    for d in data.get("days", []):
-        for a in d.get("activities", []):
-            lat, lon = a.get("lat"), a.get("lon")
-            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                points.append((lat, lon, a, d.get("day")))
 
-        if not points:
-        st.info("Для этой поездки модель не вернула координаты.")
+    # Берём сгенерированные моделью координаты активностей
+    for day in data.get("days", []):
+        for activity in day.get("activities", []):
+            lat = activity.get("lat")
+            lon = activity.get("lon")
+
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                points.append(
+                    (
+                        lat,
+                        lon,
+                        activity,
+                        day.get("day"),
+                    )
+                )
+
+    if not points:
+        st.info("Для этой поездки модель не вернула координаты для карты.")
     else:
         center = [
-            sum(p[0] for p in points) / len(points),
-            sum(p[1] for p in points) / len(points),
+            sum(point[0] for point in points) / len(points),
+            sum(point[1] for point in points) / len(points),
         ]
 
+        # Нейтральная тёмная подложка CartoDB.
+        # API-ключ для неё не требуется.
         fmap = folium.Map(
             location=center,
             zoom_start=12,
-            tiles="https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+            tiles=(
+                "https://{s}.basemaps.cartocdn.com/"
+                "dark_all/{z}/{x}/{y}{r}.png"
+            ),
             attr="© OpenStreetMap contributors © CARTO",
-            max_zoom=19,
+            max_zoom=20,
         )
 
-        for lat, lon, a, day in points:
+        # Добавляем маркеры активностей
+        for lat, lon, activity, day_number in points:
+            activity_type = activity.get("type", "")
+            color = COLORS.get(activity_type, "blue")
+
+            popup_html = (
+                f"День {day_number} · {activity.get('time', '')}<br>"
+                f"<b>{activity.get('title', '')}</b><br>"
+                f"{activity.get('location', '')}"
+            )
+
             folium.Marker(
-                [lat, lon],
-                popup=(
-                    f"День {day} · {a.get('time', '')}<br>"
-                    f"<b>{a.get('title', '')}</b><br>{a.get('location', '')}"
-                ),
-                tooltip=a.get("title", ""),
+                location=[lat, lon],
+                popup=popup_html,
+                tooltip=activity.get("title", ""),
                 icon=folium.Icon(
-                    color=COLORS.get(a.get("type"), "blue"),
+                    color=color,
                     icon="info-sign",
                 ),
             ).add_to(fmap)
 
-        by_day = defaultdict(list)
-        for lat, lon, _, day in points:
-            by_day[day].append([lat, lon])
-        for pts in by_day.values():
-            if len(pts) > 1:
-                folium.PolyLine(pts, weight=3, opacity=0.6).add_to(fmap)
+        # Соединяем активности линиями внутри одного дня
+        points_by_day = defaultdict(list)
 
-        st_folium(fmap, use_container_width=True, height=520,
-                  returned_objects=[])
+        for lat, lon, activity, day_number in points:
+            points_by_day[day_number].append([lat, lon])
 
-# ---------- Вкладка 3: план / факт ----------
-with tabs[2]:
-    st.caption("Вносите фактические суммы — отклонение считается автоматически.")
+        for day_points in points_by_day.values():
+            if len(day_points) > 1:
+                folium.PolyLine(
+                    day_points,
+                    weight=3,
+                    opacity=0.7,
+                    color="#22d3ee",
+                ).add_to(fmap)
 
-    for e in expenses:
-        c1, c2, c3, c4 = st.columns([4, 1, 2, 1])
-        c1.text(f"Д{e['day']} · {ICONS.get(e['category'], '•')} {e['title']}")
-        c2.text(f"план: {(e['cost_plan'] or 0):.0f}")
-        actual_val = c3.number_input(
-            "Факт",
-            min_value=0.0,
-            value=float(e["cost_actual"] or 0),
-            step=10.0,
-            key=f"act_{e['id']}",
-            label_visibility="collapsed",
+        # returned_objects=[] предотвращает бесконечную перерисовку карты
+        st_folium(
+            fmap,
+            use_container_width=True,
+            height=520,
+            returned_objects=[],
         )
-        if c4.button("💾", key=f"save_{e['id']}"):
-            db.update_expense_actual(e["id"], actual_val)
-            st.toast("Сохранено")
-            st.rerun()
 
-    bd = data.get("budget_breakdown") or {}
-    if bd:
-        df = pd.DataFrame({
-            "Категория": [BUDGET_RU.get(k, k) for k in bd],
-            "План": pd.to_numeric(list(bd.values()), errors="coerce"),
-        }).fillna(0).set_index("Категория")
-        st.bar_chart(df)
-        st.dataframe(df, use_container_width=True)
-        st.caption(f"Сумма по категориям: {df['План'].sum():.0f} {curr}")
+
+# ---------- ВКЛАДКА 3. ПЛАН / ФАКТ ----------
+
+with tabs[2]:
+    st.caption(
+        "Введите фактические траты и нажмите кнопку сохранения. "
+        "Отклонение от плана пересчитается автоматически."
+    )
+
+    if not expenses:
+        st.info("Для этой поездки пока нет расходов.")
     else:
-        st.info("Модель не вернула разбивку бюджета.")
+        for expense in expenses:
+            c1, c2, c3, c4 = st.columns([4, 1, 2, 1])
 
-# ---------- Вкладка 4: фишки ----------
+            day_number = expense["day"]
+            category = expense["category"]
+            title = expense["title"]
+            plan_cost = expense["cost_plan"] or 0
+            actual_cost = expense["cost_actual"] or 0
+
+            c1.text(
+                f"День {day_number} · "
+                f"{ICONS.get(category, '•')} {title}"
+            )
+
+            c2.text(f"План: {plan_cost:.0f}")
+
+            actual_value = c3.number_input(
+                "Факт",
+                min_value=0.0,
+                value=float(actual_cost),
+                step=10.0,
+                key=f"actual_{expense['id']}",
+                label_visibility="collapsed",
+            )
+
+            if c4.button("💾", key=f"save_{expense['id']}"):
+                db.update_expense_actual(expense["id"], actual_value)
+                st.toast("Расход сохранён")
+                st.rerun()
+
+    budget_breakdown = data.get("budget_breakdown") or {}
+
+    if budget_breakdown:
+        chart_data = pd.DataFrame(
+            {
+                "Категория": [
+                    BUDGET_RU.get(key, key)
+                    for key in budget_breakdown.keys()
+                ],
+                "План": pd.to_numeric(
+                    list(budget_breakdown.values()),
+                    errors="coerce",
+                ),
+            }
+        ).fillna(0)
+
+        chart_data = chart_data.set_index("Категория")
+
+        st.subheader("Структура планового бюджета")
+        st.bar_chart(chart_data)
+        st.dataframe(chart_data, use_container_width=True)
+
+        total_by_categories = chart_data["План"].sum()
+        st.caption(
+            f"Сумма по категориям: {total_by_categories:.0f} {curr}"
+        )
+
+
+# ---------- ВКЛАДКА 4. WOW-МОМЕНТЫ, ЧЕМОДАН, ФРАЗЫ ----------
+
 with tabs[3]:
-    wm = data.get("wow_moments") or []
-    if wm:
+    wow_moments = data.get("wow_moments") or []
+
+    if wow_moments:
         st.subheader("✨ Главные впечатления")
-        for w in wm:
-            st.markdown(f"- {w}")
+
+        for moment in wow_moments:
+            st.markdown(f"- {moment}")
 
     packing = data.get("packing") or []
+
     if packing:
         st.subheader("🎒 Что взять с собой")
-        for i, p in enumerate(packing):
-            st.checkbox(p, key=f"pack_{trip_id}_{i}")
+
+        for index, item in enumerate(packing):
+            st.checkbox(
+                item,
+                key=f"packing_{trip_id}_{index}",
+            )
 
     phrases = data.get("phrases") or []
+
     if phrases:
         st.subheader("💬 Полезные фразы")
-        for ph in phrases:
-            st.markdown(f"**{ph.get('ru', '')}** — _{ph.get('local', '')}_")
+
+        for phrase in phrases:
+            russian = phrase.get("ru", "")
+            local = phrase.get("local", "")
+            st.markdown(f"**{russian}** — _{local}_")
 
     tips = data.get("tips") or {}
+
     if tips:
         st.subheader("💡 Советы")
-        for k, v in tips.items():
-            st.markdown(f"- **{TIP_RU.get(k, k)}:** {v}")
 
-# ---------- Вкладка 5: сырой JSON + экспорт ----------
+        for key, value in tips.items():
+            title = TIP_RU.get(key, key)
+            st.markdown(f"- **{title}:** {value}")
+
+
+# ---------- ВКЛАДКА 5. JSON И СКАЧИВАНИЕ ----------
+
 with tabs[4]:
-    st.json(data)
-    d1, d2 = st.columns(2)
-    d1.download_button(
-        "⬇️ Скачать маршрут (Markdown)",
-        ai.to_markdown(data, curr),
-        file_name=f"travelmind_trip_{trip_id}.md",
+    st.caption(
+        "Эта вкладка показывает структурированный результат работы нейросети."
     )
-    d2.download_button(
-        "⬇️ Скачать JSON",
-        json.dumps(data, ensure_ascii=False, indent=2),
+
+    st.json(data)
+
+    download_1, download_2 = st.columns(2)
+
+    markdown_content = ai.to_markdown(data, curr)
+    json_content = json.dumps(
+        data,
+        ensure_ascii=False,
+        indent=2,
+    )
+
+    download_1.download_button(
+        label="⬇️ Скачать маршрут в Markdown",
+        data=markdown_content,
+        file_name=f"travelmind_trip_{trip_id}.md",
+        mime="text/markdown",
+    )
+
+    download_2.download_button(
+        label="⬇️ Скачать маршрут в JSON",
+        data=json_content,
         file_name=f"travelmind_trip_{trip_id}.json",
+        mime="application/json",
     )
