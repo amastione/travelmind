@@ -237,12 +237,9 @@ with tabs[1]:
         fmap = folium.Map(
             location=center,
             zoom_start=12,
-            tiles=(
-                "https://{s}.basemaps.cartocdn.com/"
-                "dark_all/{z}/{x}/{y}{r}.png"
-            ),
-            attr="© OpenStreetMap contributors © CARTO",
-            max_zoom=20,
+            tiles="OpenStreetMap",
+            attr="© OpenStreetMap contributors",
+            max_zoom=19,
         )
 
         # Добавляем маркеры активностей
@@ -282,6 +279,16 @@ with tabs[1]:
                 ).add_to(fmap)
 
         # returned_objects=[] предотвращает бесконечную перерисовку карты
+        st.markdown(
+            """
+            <style>
+                .leaflet-attribution-flag {
+                    display: none !important;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
         st_folium(
             fmap,
             use_container_width=True,
