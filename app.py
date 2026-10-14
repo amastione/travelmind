@@ -3,6 +3,7 @@ import streamlit as st
 
 import auth
 import db
+import site_access
 
 
 st.set_page_config(
@@ -11,11 +12,12 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
-
+site_access.require_site_access()
 db.init()
 
 # Восстанавливает пользователя после обновления страницы.
 auth.restore_session()
+
 
 CSS = """
 <style>
