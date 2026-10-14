@@ -37,8 +37,8 @@ CSS = """
 }
 
 .block-container {
-    max-width: 760px;
-    padding-top: 4.2rem;
+    max-width: 850px;
+    padding-top: 3.5rem;
     padding-bottom: 4rem;
 }
 
@@ -54,153 +54,133 @@ h1, h2, h3 {
     color: #F8FAFC !important;
 }
 
-.tm-logo-wide {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.35rem;
-    width: fit-content;
-    max-width: 100%;
-    margin: 0 auto 1.2rem;
-    padding: 1.05rem 1.55rem;
-    border: 1px solid rgba(34, 211, 238, 0.28);
-    border-radius: 22px;
-    background: linear-gradient(
-        135deg,
-        rgba(10, 29, 53, 0.84),
-        rgba(12, 22, 45, 0.72)
-    );
-    box-shadow:
-        0 20px 55px rgba(0, 0, 0, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
 .tm-map-symbol {
     position: relative;
-    width: 105px;
-    height: 84px;
-    flex: 0 0 105px;
+    width: 125px;
+    height: 100px;
+    margin: 0 auto;
 }
 
 .tm-map-left,
 .tm-map-center,
 .tm-map-right {
     position: absolute;
-    bottom: 5px;
-    height: 43px;
+    bottom: 7px;
+    height: 50px;
     transform: skewY(18deg);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 
 .tm-map-left {
     left: 4px;
-    width: 34px;
-    border-radius: 5px 0 0 5px;
+    width: 41px;
+    border-radius: 6px 0 0 6px;
     background: linear-gradient(145deg, #25CDED, #168DE6);
 }
 
 .tm-map-center {
-    left: 37px;
-    width: 34px;
+    left: 44px;
+    width: 41px;
     background: linear-gradient(145deg, #168EEA, #2778DA);
 }
 
 .tm-map-right {
-    left: 70px;
-    width: 32px;
-    border-radius: 0 5px 5px 0;
+    left: 84px;
+    width: 37px;
+    border-radius: 0 6px 6px 0;
     background: linear-gradient(145deg, #2586E2, #1B62BF);
 }
 
 .tm-map-fold-one,
 .tm-map-fold-two {
     position: absolute;
-    bottom: 5px;
+    bottom: 7px;
     z-index: 2;
     width: 3px;
-    height: 44px;
+    height: 51px;
     background: rgba(7, 24, 49, 0.65);
     transform: skewY(18deg);
 }
 
 .tm-map-fold-one {
-    left: 36px;
+    left: 43px;
 }
 
 .tm-map-fold-two {
-    left: 69px;
+    left: 83px;
 }
 
 .tm-pin {
     position: absolute;
     z-index: 4;
     top: 0;
-    left: 37px;
-    width: 45px;
-    height: 57px;
-    border-radius: 50% 50% 50% 8px;
+    left: 43px;
+    width: 52px;
+    height: 65px;
+    border-radius: 50% 50% 50% 9px;
     background: linear-gradient(145deg, #27D7F1, #1975D5);
     transform: rotate(-45deg);
-    box-shadow: 0 8px 18px rgba(34, 211, 238, 0.32);
+    box-shadow: 0 9px 20px rgba(34, 211, 238, 0.32);
 }
 
 .tm-pin::after {
     content: "";
     position: absolute;
-    top: 13px;
-    left: 13px;
-    width: 19px;
-    height: 19px;
+    top: 15px;
+    left: 15px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: #08172D;
 }
 
-.tm-logo-divider {
+.tm-divider {
     width: 2px;
-    height: 104px;
+    height: 118px;
+    margin: 0 auto;
     background: linear-gradient(
         180deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.92) 14%,
-        rgba(255, 255, 255, 0.92) 86%,
+        rgba(255, 255, 255, 0.95) 14%,
+        rgba(255, 255, 255, 0.95) 86%,
         transparent 100%
     );
 }
 
-.tm-logo-text {
-    text-align: left;
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: 800;
-    letter-spacing: 0.035em;
-    line-height: 1.15;
+.tm-logo-title h1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #F8FAFC !important;
+    font-size: 2.55rem !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.08rem !important;
+    line-height: 1.05 !important;
 }
 
-.tm-logo-name {
-    color: #F8FAFC;
-    font-size: 1.5rem;
-    white-space: nowrap;
-}
-
-.tm-logo-ai {
+.tm-logo-subtitle {
+    margin-top: 0.35rem;
     color: #67E8F9;
+    font-size: 1rem;
+    font-weight: 750;
+    letter-spacing: 0.08rem;
 }
 
 .tm-logo-description {
-    margin-top: 0.38rem;
-    color: #D8E5F5;
-    font-size: 0.82rem;
-    line-height: 1.38;
-    letter-spacing: 0.07em;
+    margin-top: 0.3rem;
+    color: #AAB8CE;
+    font-size: 0.83rem;
+    font-weight: 500;
+    letter-spacing: 0.055rem;
 }
 
 .tm-badge {
-    margin: 0.4rem 0 1.7rem;
+    margin: 1rem 0 1.7rem;
     text-align: center;
 }
 
 .tm-badge span {
     display: inline-block;
-    padding: 0.4rem 0.9rem;
+    padding: 0.42rem 0.95rem;
     border: 1px solid rgba(34, 211, 238, 0.30);
     border-radius: 999px;
     background: rgba(34, 211, 238, 0.08);
@@ -319,31 +299,32 @@ h1, h2, h3 {
 
 @media (max-width: 640px) {
     .block-container {
-        padding-top: 2.4rem;
+        padding-top: 2.3rem;
         padding-left: 1rem;
         padding-right: 1rem;
     }
 
-    .tm-logo-wide {
-        gap: 0.75rem;
-        padding: 0.85rem 0.75rem;
-    }
-
     .tm-map-symbol {
-        transform: scale(0.72);
-        margin-right: -21px;
+        transform: scale(0.75);
+        margin-left: -15px;
     }
 
-    .tm-logo-divider {
-        height: 82px;
+    .tm-divider {
+        height: 88px;
     }
 
-    .tm-logo-name {
-        font-size: 1.06rem;
+    .tm-logo-title h1 {
+        font-size: 1.75rem !important;
+    }
+
+    .tm-logo-subtitle {
+        font-size: 0.74rem;
+        letter-spacing: 0.04rem;
     }
 
     .tm-logo-description {
-        font-size: 0.64rem;
+        font-size: 0.62rem;
+        letter-spacing: 0.025rem;
     }
 
     [data-testid="stForm"] {
@@ -355,32 +336,50 @@ h1, h2, h3 {
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-LOGO_HTML = """
-<div class="tm-logo-wide" aria-label="TravelMind AI-планировщик путешествий">
-    <div class="tm-map-symbol" aria-hidden="true">
-        <div class="tm-map-left"></div>
-        <div class="tm-map-center"></div>
-        <div class="tm-map-right"></div>
-        <div class="tm-map-fold-one"></div>
-        <div class="tm-map-fold-two"></div>
-        <div class="tm-pin"></div>
-    </div>
+# ---------- ЛОГОТИП ----------
 
-    <div class="tm-logo-divider"></div>
+logo_map, logo_divider, logo_text = st.columns(
+    [1.1, 0.1, 2.3],
+    vertical_alignment="center",
+)
 
-    <div class="tm-logo-text">
-        <div class="tm-logo-name">
-            TRAVELMIND <span class="tm-logo-ai">AI</span>
+with logo_map:
+    st.markdown(
+        """
+        <div class="tm-map-symbol" aria-label="Карта и геометка">
+            <div class="tm-map-left"></div>
+            <div class="tm-map-center"></div>
+            <div class="tm-map-right"></div>
+            <div class="tm-map-fold-one"></div>
+            <div class="tm-map-fold-two"></div>
+            <div class="tm-pin"></div>
         </div>
-        <div class="tm-logo-description">
-            ПЛАНИРОВАНИЕ<br>
-            ПУТЕШЕСТВИЙ
-        </div>
-    </div>
-</div>
-"""
+        """,
+        unsafe_allow_html=True,
+    )
 
-st.markdown(LOGO_HTML, unsafe_allow_html=True)
+with logo_divider:
+    st.markdown(
+        '<div class="tm-divider"></div>',
+        unsafe_allow_html=True,
+    )
+
+with logo_text:
+    st.markdown('<div class="tm-logo-title">', unsafe_allow_html=True)
+    st.title("TravelMind")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="tm-logo-subtitle">AI-ПЛАНИРОВЩИК</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="tm-logo-description">'
+        'ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 st.markdown(
     """
@@ -390,6 +389,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# ---------- ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ ----------
 
 if "user_id" in st.session_state:
     username = st.session_state.get("username", "путешественник")
@@ -431,6 +432,8 @@ if "user_id" in st.session_state:
         st.rerun()
 
     st.stop()
+
+# ---------- ВХОД И РЕГИСТРАЦИЯ ----------
 
 tab_login, tab_register = st.tabs(
     [
