@@ -19,7 +19,7 @@ db.init()
 st.markdown(
     """
     <style>
-        /* Основной фон */
+        /* Основной тёмный фон */
         .stApp {
             background:
                 radial-gradient(
@@ -41,7 +41,7 @@ st.markdown(
             color: #F4F7FB;
         }
 
-        /* Центральная область */
+        /* Основной контейнер */
         .block-container {
             max-width: 760px;
             padding-top: 4.5rem;
@@ -57,87 +57,81 @@ st.markdown(
             visibility: hidden;
         }
 
-        /* Заголовки */
-        h1, h2, h3 {
-            color: #F8FAFC !important;
-        }
-
-        /* ---------- Бренд TravelMind ---------- */
-
-        .tm-brand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
+        /* ---------- Брендовая зона ---------- */
 
         .tm-logo {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 78px;
-            height: 78px;
-            margin: 0 auto 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            border-radius: 25px;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 26px;
             background:
                 radial-gradient(
                     circle at 28% 25%,
-                    rgba(255, 255, 255, 0.34),
-                    transparent 28%
+                    rgba(255, 255, 255, 0.38),
+                    transparent 27%
                 ),
                 linear-gradient(
                     135deg,
                     #22D3EE 0%,
-                    #4F8EF7 48%,
+                    #4F8EF7 50%,
                     #8B5CF6 100%
                 );
+            color: #FFFFFF;
+            font-size: 1.7rem;
+            font-weight: 850;
+            letter-spacing: -0.12rem;
             box-shadow:
                 0 18px 42px rgba(34, 211, 238, 0.22),
                 0 14px 32px rgba(139, 92, 246, 0.25);
         }
 
-        .tm-logo svg {
-            width: 43px;
-            height: 43px;
-            filter: drop-shadow(0 4px 5px rgba(5, 20, 45, 0.28));
-        }
-
-        .tm-title {
-            margin: 0;
-            color: #F8FAFC;
-            font-size: 2.7rem;
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.06rem;
+        /* Центрируем заголовок TravelMind */
+        .tm-brand-title {
             text-align: center;
         }
 
-        .tm-subtitle {
-            display: block;
-            width: min(100%, 560px);
-            margin: 0.8rem auto 0;
-            padding: 0 0.5rem;
-            color: #AAB8CE;
-            font-size: 1.08rem;
-            line-height: 1.6;
+        .tm-brand-title h1 {
+            margin: 0 !important;
+            color: #F8FAFC !important;
+            font-size: 2.8rem !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.08rem !important;
+        }
+
+        /* Центрируем подзаголовок */
+        .tm-brand-subtitle {
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+
+        .tm-brand-subtitle p {
+            margin: 0 !important;
+            color: #AAB8CE !important;
+            font-size: 1.08rem !important;
+            line-height: 1.65 !important;
             text-align: center !important;
         }
 
         .tm-badge {
+            margin-top: 1.15rem;
+            text-align: center;
+        }
+
+        .tm-badge span {
             display: inline-block;
-            margin-top: 1rem;
-            padding: 0.35rem 0.8rem;
-            border: 1px solid rgba(34, 211, 238, 0.28);
+            padding: 0.38rem 0.85rem;
+            border: 1px solid rgba(34, 211, 238, 0.30);
             border-radius: 999px;
             background: rgba(34, 211, 238, 0.08);
             color: #67E8F9;
-            font-size: 0.82rem;
+            font-size: 0.84rem;
         }
 
-        /* ---------- Вкладки ---------- */
+        /* ---------- Вкладки входа и регистрации ---------- */
 
         .stTabs [data-baseweb="tab-list"] {
             gap: 0.5rem;
@@ -169,7 +163,7 @@ st.markdown(
             display: none;
         }
 
-        /* ---------- Форма ---------- */
+        /* ---------- Карточка формы ---------- */
 
         [data-testid="stForm"] {
             margin-top: 1.25rem;
@@ -221,7 +215,6 @@ st.markdown(
             font-size: 1rem;
             font-weight: 700;
             box-shadow: 0 10px 25px rgba(34, 211, 238, 0.18);
-            transition: transform 0.18s ease, filter 0.18s ease;
         }
 
         .stButton > button:hover,
@@ -230,7 +223,7 @@ st.markdown(
             filter: brightness(1.08);
         }
 
-        /* ---------- Блок после авторизации ---------- */
+        /* ---------- Блок пользователя после авторизации ---------- */
 
         .tm-welcome {
             padding: 1.75rem;
@@ -264,12 +257,12 @@ st.markdown(
                 padding-right: 1rem;
             }
 
-            .tm-title {
-                font-size: 2.2rem;
+            .tm-brand-title h1 {
+                font-size: 2.3rem !important;
             }
 
-            .tm-subtitle {
-                font-size: 1rem;
+            .tm-brand-subtitle p {
+                font-size: 1rem !important;
             }
 
             [data-testid="stForm"] {
@@ -281,56 +274,35 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- ЛОГОТИП И БРЕНД ----------
+# ---------- БРЕНД TRAVELMIND ----------
+# Используются простые HTML-блоки, без SVG и сложной разметки.
+
+st.markdown(
+    '<div class="tm-logo">TM</div>',
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="tm-brand-title">', unsafe_allow_html=True)
+st.title("TravelMind")
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown('<div class="tm-brand-subtitle">', unsafe_allow_html=True)
+st.caption(
+    "Персональные путешествия, спланированные "
+    "искусственным интеллектом."
+)
+st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(
     """
-    <div class="tm-brand">
-        <div class="tm-logo" aria-label="Логотип TravelMind">
-            <svg viewBox="0 0 64 64" fill="none"
-                 xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M13 43C20 40 22 29 31 26C39 23 45 28 51 19"
-                    stroke="white"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                    stroke-dasharray="3 6"
-                    opacity="0.95"
-                />
-                <path
-                    d="M46 15L53 18L50 25"
-                    stroke="white"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
-                <circle
-                    cx="14"
-                    cy="44"
-                    r="6"
-                    fill="white"
-                    fill-opacity="0.96"
-                />
-                <circle cx="14" cy="44" r="2.5" fill="#5B5CEB"/>
-                <path
-                    d="M31 20L34 27L41 30L34 33L31 40L28 33L21 30L28 27L31 20Z"
-                    fill="white"
-                />
-            </svg>
-        </div>
-
-        <h1 class="tm-title">TravelMind</h1>
-
-        <div class="tm-subtitle">
-            Персональные путешествия, спланированные<br>
-            искусственным интеллектом.
-        </div>
-
-        <span class="tm-badge">✦ AI Travel Planner · Учебный MVP</span>
+    <div class="tm-badge">
+        <span>✦ AI Travel Planner · Учебный MVP</span>
     </div>
     """,
     unsafe_allow_html=True,
 )
+
+st.write("")
 
 # ---------- ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ ----------
 
