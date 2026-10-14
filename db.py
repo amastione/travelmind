@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 
 @contextmanager
 def _conn():
-    """Открывает соединение с БД, сохраняет изменения и закрывает его."""
+    """Открывает соединение с базой, сохраняет изменения и закрывает его."""
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
 
@@ -70,7 +70,7 @@ def _conn():
 
 
 def init():
-    """Создаёт таблицы, если их ещё нет."""
+    """Создаёт таблицы и индексы, если их ещё нет."""
     with _conn() as connection:
         connection.executescript(SCHEMA)
 
@@ -80,6 +80,7 @@ def init():
 # ==========================================================
 
 def create_user(username: str, pw_hash: str):
+    """Создаёт пользователя."""
     with _conn() as connection:
         connection.execute(
             "INSERT INTO users(username, password_hash) VALUES (?, ?)",
@@ -88,6 +89,7 @@ def create_user(username: str, pw_hash: str):
 
 
 def get_user(username: str):
+    """Находит пользователя по логину."""
     with _conn() as connection:
         return connection.execute(
             "SELECT * FROM users WHERE username = ?",
@@ -96,7 +98,7 @@ def get_user(username: str):
 
 
 # ==========================================================
-# ПОСТОЯННЫЕ СЕССИИ АВТОРИЗАЦИИ
+# ПОСТОЯННЫЕ СЕССИИ
 # ==========================================================
 
 def create_auth_session(
@@ -104,7 +106,7 @@ def create_auth_session(
     token_hash: str,
     expires_at: int,
 ):
-    """Сохраняет хэш токена авторизации и время окончания сессии."""
+    """Сохраняет хэш токена авторизации."""
     with _conn() as connection:
         connection.execute(
             """
@@ -117,9 +119,9 @@ def create_auth_session(
 
 def get_user_by_session_token(token_hash: str):
     """
-    Находит пользователя по токену активной сессии.
+    Возвращает пользователя по активному токену.
 
-    Просроченные сессии удаляются при каждой проверке.
+    Перед проверкой автоматически удаляет устаревшие токены.
     """
     with _conn() as connection:
         connection.execute(
@@ -143,7 +145,7 @@ def get_user_by_session_token(token_hash: str):
 
 
 def delete_auth_session(token_hash: str):
-    """Удаляет сессию при выходе из аккаунта."""
+    """Удаляет токен из БД при выходе пользователя."""
     with _conn() as connection:
         connection.execute(
             "DELETE FROM auth_sessions WHERE token_hash = ?",
@@ -156,6 +158,7 @@ def delete_auth_session(token_hash: str):
 # ==========================================================
 
 def save_trip(user_id: int, meta: dict, data_json: str) -> int:
+    """Сохраняет новую поездку и возвращает её ID."""
     with _conn() as connection:
         cursor = connection.execute(
             """
@@ -189,6 +192,7 @@ def save_trip(user_id: int, meta: dict, data_json: str) -> int:
 
 
 def list_trips(user_id: int):
+    """Возвращает список поездок пользователя."""
     with _conn() as connection:
         return connection.execute(
             """
@@ -202,6 +206,7 @@ def list_trips(user_id: int):
 
 
 def get_trip(trip_id: int, user_id: int):
+    """Возвращает одну поездку, если она принадлежит пользователю."""
     with _conn() as connection:
         return connection.execute(
             """
@@ -214,6 +219,7 @@ def get_trip(trip_id: int, user_id: int):
 
 
 def delete_trip(trip_id: int, user_id: int):
+    """Удаляет поездку и связанные с ней расходы."""
     with _conn() as connection:
         connection.execute(
             "DELETE FROM expenses WHERE trip_id = ?",
@@ -234,7 +240,7 @@ def delete_trip(trip_id: int, user_id: int):
 # ==========================================================
 
 def init_expenses_from_plan(trip_id: int, data: dict):
-    """Создаёт строки расходов из AI-плана, если их ещё нет."""
+    """Создаёт строки расходов на основе маршрута AI, если их ещё нет."""
     with _conn() as connection:
         existing = connection.execute(
             "SELECT COUNT(*) FROM expenses WHERE trip_id = ?",
@@ -273,6 +279,7 @@ def init_expenses_from_plan(trip_id: int, data: dict):
 
 
 def get_expenses(trip_id: int):
+    """Возвращает все плановые и фактические расходы поездки."""
     with _conn() as connection:
         return connection.execute(
             """
@@ -286,6 +293,7 @@ def get_expenses(trip_id: int):
 
 
 def update_expense_actual(expense_id: int, actual: float):
+    """Обновляет фактическую сумму расхода."""
     with _conn() as connection:
         connection.execute(
             """
@@ -297,5 +305,5 @@ def update_expense_actual(expense_id: int, actual: float):
         )
 
 
-# База создаётся автоматически при импорте.
+# Создание базы при импорте модуля.
 init()
