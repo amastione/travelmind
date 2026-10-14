@@ -11,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Инициализация базы данных
 db.init()
 
 # ---------- СТИЛИ ----------
@@ -19,7 +18,7 @@ db.init()
 st.markdown(
     """
     <style>
-        /* Основной тёмный фон */
+        /* Общий тёмный фон */
         .stApp {
             background:
                 radial-gradient(
@@ -41,7 +40,7 @@ st.markdown(
             color: #F4F7FB;
         }
 
-        /* Основной контейнер */
+        /* Центральная область */
         .block-container {
             max-width: 760px;
             padding-top: 4.5rem;
@@ -57,54 +56,78 @@ st.markdown(
             visibility: hidden;
         }
 
-        /* ---------- Брендовая зона ---------- */
+        /* ---------- ЛОГОТИП ---------- */
 
         .tm-logo {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 80px;
-            height: 80px;
+            gap: 0.85rem;
+            width: fit-content;
+            min-width: 255px;
+            height: 76px;
             margin: 0 auto 1.2rem;
+            padding: 0 1.45rem;
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 26px;
+            border-radius: 24px;
             background:
                 radial-gradient(
-                    circle at 28% 25%,
-                    rgba(255, 255, 255, 0.38),
-                    transparent 27%
+                    circle at 20% 20%,
+                    rgba(255, 255, 255, 0.34),
+                    transparent 25%
                 ),
                 linear-gradient(
                     135deg,
                     #22D3EE 0%,
-                    #4F8EF7 50%,
+                    #4F8EF7 48%,
                     #8B5CF6 100%
                 );
             color: #FFFFFF;
-            font-size: 1.7rem;
-            font-weight: 850;
-            letter-spacing: -0.12rem;
             box-shadow:
                 0 18px 42px rgba(34, 211, 238, 0.22),
                 0 14px 32px rgba(139, 92, 246, 0.25);
         }
 
-        /* Центрируем заголовок TravelMind */
-        .tm-brand-title {
-            text-align: center;
+        .tm-route-icon {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            color: #FFFFFF;
+            font-size: 1.42rem;
+            font-weight: 800;
+            letter-spacing: -0.08rem;
+            text-shadow: 0 3px 7px rgba(5, 20, 45, 0.24);
         }
 
-        .tm-brand-title h1 {
-            margin: 0 !important;
-            color: #F8FAFC !important;
-            font-size: 2.8rem !important;
-            font-weight: 800 !important;
-            letter-spacing: -0.08rem !important;
+        .tm-route-start {
+            font-size: 1.18rem;
+            margin-right: 0.14rem;
         }
 
-        /* Центрируем подзаголовок */
+        .tm-route-line {
+            opacity: 0.92;
+            letter-spacing: -0.18rem;
+        }
+
+        .tm-route-star {
+            margin-left: 0.16rem;
+            font-size: 1.08rem;
+        }
+
+        .tm-wordmark {
+            padding-left: 0.8rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.34);
+            color: #FFFFFF;
+            font-size: 1.48rem;
+            font-weight: 800;
+            letter-spacing: -0.06rem;
+            text-shadow: 0 3px 7px rgba(5, 20, 45, 0.18);
+        }
+
+        /* ---------- ПОДЗАГОЛОВОК И БЕЙДЖ ---------- */
+
         .tm-brand-subtitle {
-            margin-top: 0.75rem;
+            margin-top: 0.8rem;
             text-align: center;
         }
 
@@ -131,7 +154,7 @@ st.markdown(
             font-size: 0.84rem;
         }
 
-        /* ---------- Вкладки входа и регистрации ---------- */
+        /* ---------- ВКЛАДКИ ---------- */
 
         .stTabs [data-baseweb="tab-list"] {
             gap: 0.5rem;
@@ -163,7 +186,7 @@ st.markdown(
             display: none;
         }
 
-        /* ---------- Карточка формы ---------- */
+        /* ---------- ФОРМЫ ---------- */
 
         [data-testid="stForm"] {
             margin-top: 1.25rem;
@@ -197,7 +220,7 @@ st.markdown(
             box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
         }
 
-        /* ---------- Кнопки ---------- */
+        /* ---------- КНОПКИ ---------- */
 
         .stButton > button,
         .stFormSubmitButton > button {
@@ -215,6 +238,7 @@ st.markdown(
             font-size: 1rem;
             font-weight: 700;
             box-shadow: 0 10px 25px rgba(34, 211, 238, 0.18);
+            transition: transform 0.18s ease, filter 0.18s ease;
         }
 
         .stButton > button:hover,
@@ -223,7 +247,7 @@ st.markdown(
             filter: brightness(1.08);
         }
 
-        /* ---------- Блок пользователя после авторизации ---------- */
+        /* ---------- БЛОК ПОСЛЕ ВХОДА ---------- */
 
         .tm-welcome {
             padding: 1.75rem;
@@ -249,7 +273,8 @@ st.markdown(
             border-radius: 14px;
         }
 
-        /* Мобильная версия */
+        /* ---------- МОБИЛЬНАЯ ВЕРСИЯ ---------- */
+
         @media (max-width: 640px) {
             .block-container {
                 padding-top: 2.5rem;
@@ -257,8 +282,18 @@ st.markdown(
                 padding-right: 1rem;
             }
 
-            .tm-brand-title h1 {
-                font-size: 2.3rem !important;
+            .tm-logo {
+                min-width: 230px;
+                height: 68px;
+                padding: 0 1.1rem;
+            }
+
+            .tm-wordmark {
+                font-size: 1.28rem;
+            }
+
+            .tm-route-icon {
+                font-size: 1.2rem;
             }
 
             .tm-brand-subtitle p {
@@ -275,17 +310,22 @@ st.markdown(
 )
 
 # ---------- БРЕНД TRAVELMIND ----------
-# Используются простые HTML-блоки, без SVG и сложной разметки.
 
 st.markdown(
-    '<div class="tm-logo">TM</div>',
+    """
+    <div class="tm-logo" aria-label="TravelMind">
+        <div class="tm-route-icon">
+            <span class="tm-route-start">●</span>
+            <span class="tm-route-line">┄┄➜</span>
+            <span class="tm-route-star">✦</span>
+        </div>
+        <div class="tm-wordmark">TravelMind</div>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="tm-brand-title">', unsafe_allow_html=True)
-st.title("TravelMind")
-st.markdown("</div>", unsafe_allow_html=True)
-
+# Нативный Streamlit-текст: не будет отображаться как HTML-код.
 st.markdown('<div class="tm-brand-subtitle">', unsafe_allow_html=True)
 st.caption(
     "Персональные путешествия, спланированные "
