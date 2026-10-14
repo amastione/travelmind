@@ -738,6 +738,7 @@ if "user_id" in st.session_state:
 
     if st.button("Выйти из аккаунта"):
         auth.logout()
+        site_access.revoke_site_access()
         st.rerun()
 
     st.stop()
