@@ -14,14 +14,14 @@ from streamlit_folium import st_folium
 import ai
 import auth
 import db
-
+import site_access
 
 st.set_page_config(
     page_title="Маршрут поездки",
     page_icon="🗺️",
     layout="wide",
 )
-
+site_access.require_site_access()
 # ==========================================================
 # АВТОРИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ
 # ==========================================================
