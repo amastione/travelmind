@@ -201,6 +201,8 @@ h1, h2, h3 {
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+auth.render_main_menu_button()
+
 st.markdown(
     '<div class="tm-page-eyebrow">TravelMind AI</div>',
     unsafe_allow_html=True,
@@ -438,7 +440,7 @@ st.success(
     f"{result['tokens_out']} выход."
 )
 
-st.session_state["current_trip_id"] = trip_id
+auth.remember_trip(trip_id)
 
 st.write("")
 
