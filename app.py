@@ -4,6 +4,7 @@ import streamlit as st
 import auth
 import db
 import site_access
+import branding
 
 
 st.set_page_config(
@@ -12,6 +13,7 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
+branding.show_author_mark()
 site_access.require_site_access()
 db.init()
 
