@@ -6,20 +6,20 @@ import db
 
 st.set_page_config(
     page_title="TravelMind — AI-планировщик путешествий",
-    page_icon="🧭",
+    page_icon="✦",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
-# Инициализация базы
+# Инициализация базы данных
 db.init()
 
-# ---------- СТИЛИ ГЛАВНОЙ СТРАНИЦЫ ----------
+# ---------- СТИЛИ ----------
 
 st.markdown(
     """
     <style>
-        /* Общий фон */
+        /* Основной фон */
         .stApp {
             background:
                 radial-gradient(
@@ -32,18 +32,23 @@ st.markdown(
                     rgba(139, 92, 246, 0.18) 0%,
                     transparent 35%
                 ),
-                linear-gradient(135deg, #070B14 0%, #0D1628 50%, #101426 100%);
+                linear-gradient(
+                    135deg,
+                    #070B14 0%,
+                    #0D1628 50%,
+                    #101426 100%
+                );
             color: #F4F7FB;
         }
 
-        /* Ограничиваем и центрируем основной контент */
+        /* Центральная область */
         .block-container {
             max-width: 760px;
             padding-top: 4.5rem;
             padding-bottom: 4rem;
         }
 
-        /* Убираем стандартные элементы Streamlit */
+        /* Скрываем технические элементы Streamlit */
         #MainMenu {
             visibility: hidden;
         }
@@ -57,29 +62,47 @@ st.markdown(
             color: #F8FAFC !important;
         }
 
-        /* Верхняя бренд-зона */
+        /* ---------- Бренд TravelMind ---------- */
+
         .tm-brand {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
             margin-bottom: 2rem;
+            text-align: center;
         }
 
         .tm-logo {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 72px;
-            height: 72px;
-            margin-bottom: 1rem;
-            border-radius: 24px;
-            font-size: 35px;
-            background: linear-gradient(
-                135deg,
-                rgba(34, 211, 238, 0.95),
-                rgba(139, 92, 246, 0.95)
-            );
+            width: 78px;
+            height: 78px;
+            margin: 0 auto 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 25px;
+            background:
+                radial-gradient(
+                    circle at 28% 25%,
+                    rgba(255, 255, 255, 0.34),
+                    transparent 28%
+                ),
+                linear-gradient(
+                    135deg,
+                    #22D3EE 0%,
+                    #4F8EF7 48%,
+                    #8B5CF6 100%
+                );
             box-shadow:
-                0 12px 36px rgba(34, 211, 238, 0.20),
-                0 12px 36px rgba(139, 92, 246, 0.20);
+                0 18px 42px rgba(34, 211, 238, 0.22),
+                0 14px 32px rgba(139, 92, 246, 0.25);
+        }
+
+        .tm-logo svg {
+            width: 43px;
+            height: 43px;
+            filter: drop-shadow(0 4px 5px rgba(5, 20, 45, 0.28));
         }
 
         .tm-title {
@@ -89,14 +112,18 @@ st.markdown(
             font-weight: 800;
             line-height: 1.1;
             letter-spacing: -0.06rem;
+            text-align: center;
         }
 
         .tm-subtitle {
-            margin: 0.7rem auto 0;
-            max-width: 480px;
+            display: block;
+            width: min(100%, 560px);
+            margin: 0.8rem auto 0;
+            padding: 0 0.5rem;
             color: #AAB8CE;
             font-size: 1.08rem;
             line-height: 1.6;
+            text-align: center !important;
         }
 
         .tm-badge {
@@ -110,7 +137,8 @@ st.markdown(
             font-size: 0.82rem;
         }
 
-        /* Вкладки авторизации */
+        /* ---------- Вкладки ---------- */
+
         .stTabs [data-baseweb="tab-list"] {
             gap: 0.5rem;
             padding: 0.4rem;
@@ -141,7 +169,8 @@ st.markdown(
             display: none;
         }
 
-        /* Карточка формы */
+        /* ---------- Форма ---------- */
+
         [data-testid="stForm"] {
             margin-top: 1.25rem;
             padding: 1.7rem;
@@ -152,7 +181,6 @@ st.markdown(
             backdrop-filter: blur(16px);
         }
 
-        /* Подписи и поля */
         [data-testid="stWidgetLabel"] p {
             color: #D6E0EF !important;
             font-weight: 600;
@@ -166,12 +194,17 @@ st.markdown(
             color: #F8FAFC !important;
         }
 
+        .stTextInput input::placeholder {
+            color: #72819A !important;
+        }
+
         .stTextInput input:focus {
             border-color: #22D3EE !important;
             box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
         }
 
-        /* Основные кнопки */
+        /* ---------- Кнопки ---------- */
+
         .stButton > button,
         .stFormSubmitButton > button {
             width: 100%;
@@ -197,12 +230,8 @@ st.markdown(
             filter: brightness(1.08);
         }
 
-        /* Информационные сообщения */
-        [data-testid="stAlert"] {
-            border-radius: 14px;
-        }
+        /* ---------- Блок после авторизации ---------- */
 
-        /* Карточки после входа */
         .tm-welcome {
             padding: 1.75rem;
             border: 1px solid rgba(52, 211, 153, 0.30);
@@ -223,7 +252,11 @@ st.markdown(
             color: #B7C7DB;
         }
 
-        /* Адаптация под телефон */
+        [data-testid="stAlert"] {
+            border-radius: 14px;
+        }
+
+        /* Мобильная версия */
         @media (max-width: 640px) {
             .block-container {
                 padding-top: 2.5rem;
@@ -235,6 +268,10 @@ st.markdown(
                 font-size: 2.2rem;
             }
 
+            .tm-subtitle {
+                font-size: 1rem;
+            }
+
             [data-testid="stForm"] {
                 padding: 1.2rem;
             }
@@ -244,24 +281,58 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- БРЕНД-ЗОНА ----------
+# ---------- ЛОГОТИП И БРЕНД ----------
 
 st.markdown(
     """
     <div class="tm-brand">
-        <div class="tm-logo">🧭</div>
+        <div class="tm-logo" aria-label="Логотип TravelMind">
+            <svg viewBox="0 0 64 64" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M13 43C20 40 22 29 31 26C39 23 45 28 51 19"
+                    stroke="white"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-dasharray="3 6"
+                    opacity="0.95"
+                />
+                <path
+                    d="M46 15L53 18L50 25"
+                    stroke="white"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <circle
+                    cx="14"
+                    cy="44"
+                    r="6"
+                    fill="white"
+                    fill-opacity="0.96"
+                />
+                <circle cx="14" cy="44" r="2.5" fill="#5B5CEB"/>
+                <path
+                    d="M31 20L34 27L41 30L34 33L31 40L28 33L21 30L28 27L31 20Z"
+                    fill="white"
+                />
+            </svg>
+        </div>
+
         <h1 class="tm-title">TravelMind</h1>
-        <p class="tm-subtitle">
-            Персональные путешествия, спланированные
+
+        <div class="tm-subtitle">
+            Персональные путешествия, спланированные<br>
             искусственным интеллектом.
-        </p>
+        </div>
+
         <span class="tm-badge">✦ AI Travel Planner · Учебный MVP</span>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# ---------- ЕСЛИ ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ ----------
+# ---------- ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ ----------
 
 if "user_id" in st.session_state:
     username = st.session_state.get("username", "путешественник")
@@ -280,16 +351,16 @@ if "user_id" in st.session_state:
 
     st.write("")
 
-    c1, c2 = st.columns(2)
+    column_1, column_2 = st.columns(2)
 
-    with c1:
+    with column_1:
         st.page_link(
             "pages/1_new_trip.py",
             label="✈️ Спланировать поездку",
             use_container_width=True,
         )
 
-    with c2:
+    with column_2:
         st.page_link(
             "pages/2_my_trips.py",
             label="🧳 Мои путешествия",
@@ -304,7 +375,7 @@ if "user_id" in st.session_state:
 
     st.stop()
 
-# ---------- АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ----------
+# ---------- ВХОД И РЕГИСТРАЦИЯ ----------
 
 tab_login, tab_register = st.tabs(
     [
