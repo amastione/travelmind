@@ -298,25 +298,6 @@ with tabs[0]:
 
                 st.write(hotel.get("why", ""))
 
-                st.markdown("**Ориентировочная цена за ночь**")
-
-                price_col_1, price_col_2, price_col_3 = st.columns(3)
-
-                price_col_1.metric(
-                    "Эконом",
-                    f"{economy_price:.0f} {curr}",
-                )
-
-                price_col_2.metric(
-                    "Стандарт",
-                    f"{standard_price:.0f} {curr}",
-                )
-
-                price_col_3.metric(
-                    "Люкс",
-                    f"{luxury_price:.0f} {curr}",
-                )
-
                 st.info(
                     f"Стандартный номер: примерно "
                     f"**{total_stay:.0f} {curr}** за {nights} ноч."
