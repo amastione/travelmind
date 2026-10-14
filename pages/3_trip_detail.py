@@ -111,7 +111,12 @@ with tabs[1]:
             sum(p[0] for p in points) / len(points),
             sum(p[1] for p in points) / len(points),
         ]
-        fmap = folium.Map(location=center, zoom_start=12)
+        fmap = folium.Map(
+            location=center,
+            zoom_start=12,
+            tiles="CartoDB dark_matter",
+            attr="© OpenStreetMap contributors © CARTO",
+        )
 
         for lat, lon, a, day in points:
             folium.Marker(
