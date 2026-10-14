@@ -6,15 +6,27 @@ from typing import Optional
 
 import bcrypt
 import streamlit as st
+from streamlit_cookies_controller import CookieController
 
 import db
 
 
-# Название параметра в URL, содержащего токен текущей сессии.
-AUTH_QUERY_PARAM = "tm_session"
+# Название cookie с токеном авторизации.
+AUTH_COOKIE_NAME = "travelmind_auth_token"
 
-# Срок действия сессии: 30 дней.
+# Сессия действует 30 дней.
 SESSION_DAYS = 30
+
+
+@st.cache_resource
+def _cookie_controller() -> CookieController:
+    """
+    Создаёт единый контроллер cookie на время жизни приложения.
+
+    cache_resource нужен, чтобы компонент не создавался заново
+    во время каждого rerun Streamlit.
+    """
+    return CookieController()
 
 
 def _hash(password: str) -> str:
@@ -29,20 +41,17 @@ def _verify(password: str, pw_hash: str) -> bool:
 
 def _token_hash(token: str) -> str:
     """
-    Создаёт SHA-256-хэш токена.
+    Возвращает SHA-256-хэш токена.
 
-    В базе хранится только хэш, а не исходный токен. Поэтому сам токен
-    нельзя восстановить даже при прямом доступе к файлу базы данных.
+    В SQLite хранится только хэш токена, а не сам секретный токен.
     """
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def _get_url_token() -> Optional[str]:
-    """Получает токен авторизации из параметров URL."""
-    token = st.query_params.get(AUTH_QUERY_PARAM)
-
-    if isinstance(token, list):
-        token = token[0] if token else None
+def _get_cookie_token() -> Optional[str]:
+    """Читает токен авторизации из cookie браузера."""
+    controller = _cookie_controller()
+    token = controller.get(AUTH_COOKIE_NAME)
 
     if not token:
         return None
@@ -50,45 +59,49 @@ def _get_url_token() -> Optional[str]:
     return str(token)
 
 
-def _set_url_token(token: str):
+def _set_cookie_token(token: str):
     """
-    Добавляет токен авторизации в URL.
+    Сохраняет токен в cookie браузера на 30 дней.
 
-    Streamlit сохраняет этот параметр при обычной перезагрузке страницы.
+    Cookie доступна на всех страницах приложения и переживает:
+    - F5 / Ctrl+R;
+    - переходы между страницами;
+    - закрытие и повторное открытие браузера.
     """
-    st.query_params[AUTH_QUERY_PARAM] = token
+    controller = _cookie_controller()
+
+    expires_at = time.time() + SESSION_DAYS * 24 * 60 * 60
+
+    controller.set(
+        AUTH_COOKIE_NAME,
+        token,
+        expires=expires_at,
+    )
 
 
-def _remove_url_token():
-    """Удаляет токен из URL после выхода пользователя."""
+def _delete_cookie_token():
+    """Удаляет авторизационную cookie."""
+    controller = _cookie_controller()
+
     try:
-        del st.query_params[AUTH_QUERY_PARAM]
-    except KeyError:
+        controller.remove(AUTH_COOKIE_NAME)
+    except Exception:
+        # Если cookie уже не существует, приложение не должно падать.
         pass
 
 
 def restore_session() -> bool:
     """
-    Восстанавливает авторизацию после обновления страницы.
+    Восстанавливает авторизацию после перезагрузки браузера.
 
-    Логика:
-    1. Если сессия Streamlit ещё существует — просто убеждаемся,
-       что токен есть в URL.
-    2. Если браузер обновлён, session_state пустой:
-       читаем токен из URL и проверяем его в SQLite.
+    1. Если текущий session_state сохранён — пользователь уже авторизован.
+    2. Если session_state очистился после F5:
+       читаем токен cookie, ищем его хэш в БД, восстанавливаем пользователя.
     """
-    # Обычное переключение между страницами Streamlit.
-    # session_state ещё существует, но query-параметры могли очиститься.
     if "user_id" in st.session_state:
-        token = st.session_state.get("auth_token")
-
-        if token and _get_url_token() != token:
-            _set_url_token(token)
-
         return True
 
-    # Полная перезагрузка: восстанавливаем вход по URL-токену.
-    token = _get_url_token()
+    token = _get_cookie_token()
 
     if not token:
         return False
@@ -96,22 +109,18 @@ def restore_session() -> bool:
     user = db.get_user_by_session_token(_token_hash(token))
 
     if not user:
-        _remove_url_token()
+        _delete_cookie_token()
         return False
 
-    st.session_state["user_id"] = user["id"]
-    st.session_state["username"] = user["username"]
+    st.session_state["user_id"] = int(user["id"])
+    st.session_state["username"] = str(user["username"])
     st.session_state["auth_token"] = token
 
     return True
 
 
 def register(username: str, password: str) -> Optional[str]:
-    """
-    Создаёт пользователя.
-
-    Возвращает текст ошибки или None при успешной регистрации.
-    """
+    """Создаёт пользователя. Возвращает ошибку либо None."""
     username = username.strip()
 
     if len(username) < 3:
@@ -129,21 +138,16 @@ def register(username: str, password: str) -> Optional[str]:
 
 def login(username: str, password: str) -> Optional[str]:
     """
-    Проверяет пользователя, создаёт постоянную сессию в БД
-    и записывает токен в URL.
+    Проверяет пароль, создаёт сессию в SQLite и сохраняет токен в cookie.
     """
     user = db.get_user(username.strip())
 
     if not user or not _verify(password, user["password_hash"]):
         return "Неверный логин или пароль."
 
-    # Создаём достаточно длинный криптографически стойкий токен.
     raw_token = secrets.token_urlsafe(48)
-
-    # Сохраняем только хэш токена.
     token_hash = _token_hash(raw_token)
 
-    # Время истечения токена в Unix timestamp.
     expires_at = int(
         time.time() + SESSION_DAYS * 24 * 60 * 60
     )
@@ -154,34 +158,28 @@ def login(username: str, password: str) -> Optional[str]:
         expires_at=expires_at,
     )
 
-    st.session_state["user_id"] = user["id"]
-    st.session_state["username"] = user["username"]
+    st.session_state["user_id"] = int(user["id"])
+    st.session_state["username"] = str(user["username"])
     st.session_state["auth_token"] = raw_token
 
-    # Благодаря этому токен переживёт F5 / Ctrl+R.
-    _set_url_token(raw_token)
+    _set_cookie_token(raw_token)
 
     return None
 
 
 def remember_trip(trip_id: int):
-    """Запоминает открытую поездку в текущей Streamlit-сессии."""
+    """Сохраняет ID текущей поездки в Streamlit-сессии."""
     st.session_state["current_trip_id"] = int(trip_id)
 
 
 def logout():
-    """
-    Завершает сессию:
-    - удаляет токен из БД;
-    - удаляет токен из URL;
-    - очищает session_state.
-    """
-    token = st.session_state.get("auth_token") or _get_url_token()
+    """Завершает авторизацию в БД, cookie и session_state."""
+    token = st.session_state.get("auth_token") or _get_cookie_token()
 
     if token:
         db.delete_auth_session(_token_hash(token))
 
-    _remove_url_token()
+    _delete_cookie_token()
 
     for key in (
         "user_id",
@@ -194,7 +192,7 @@ def logout():
 
 
 def require_auth() -> int:
-    """Не пускает на внутренние страницы без авторизации."""
+    """Проверяет вход и при необходимости восстанавливает сессию."""
     restore_session()
 
     if "user_id" not in st.session_state:
@@ -212,11 +210,7 @@ def require_auth() -> int:
 
 
 def render_main_menu_button():
-    """
-    Отображает заметную кнопку возврата в главное меню.
-
-    Стили кнопки задаются CSS на соответствующей странице.
-    """
+    """Выводит кнопку возврата в главное меню справа вверху страницы."""
     spacer, menu_column = st.columns([4.6, 1.8])
 
     with menu_column:
