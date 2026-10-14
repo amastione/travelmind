@@ -1,7 +1,7 @@
 """Детали поездки: маршрут, карта, расходы, советы и экспорт."""
 import json
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from html import escape
 from urllib.parse import quote_plus
 
@@ -782,6 +782,20 @@ def text_value(value, default=""):
 def format_money(value, currency):
     """Форматирует денежную сумму."""
     return f"{as_float(value):,.0f} {currency}".replace(",", " ")
+def format_date_ru(value) -> str:
+    """
+    Преобразует YYYY-MM-DD в DD/MM/YYYY для интерфейса.
+    Данные AI и БД при этом продолжают храниться в ISO-формате.
+    """
+    if not value:
+        return ""
+
+    text = str(value)
+
+    try:
+        return datetime.strptime(text[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return text
 
 
 # ==========================================================
@@ -790,8 +804,8 @@ def format_money(value, currency):
 
 trip_title = text_value(data.get("title") or trip["title"], "Поездка")
 destination = text_value(trip["destination"])
-start_date_text = text_value(trip["start_date"])
-end_date_text = text_value(trip["end_date"])
+start_date_text = format_date_ru(trip["start_date"])
+end_date_text = format_date_ru(trip["end_date"])
 people = trip["people"] or 1
 overview = text_value(data.get("overview"))
 mood_reason = text_value(data.get("mood_reason"))
@@ -997,7 +1011,7 @@ with tab_route:
 
     for day in data.get("days", []):
         day_number = day.get("day", "")
-        day_date = text_value(day.get("date"))
+        day_date = format_date_ru(day.get("date"))
         day_theme = text_value(day.get("theme"))
         day_vibe = text_value(day.get("vibe"))
 
