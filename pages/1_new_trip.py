@@ -491,7 +491,7 @@ with st.form("plan_form"):
     with column_4:
         curr = st.selectbox(
             "Валюта",
-            ["USD", "EUR", "RUB"],
+            ["RUB", "USD", "EUR"],
         )
 
     with column_5:
