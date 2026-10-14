@@ -4,6 +4,7 @@ import streamlit as st
 import auth
 import db
 
+
 st.set_page_config(
     page_title="TravelMind — AI-планировщик путешествий",
     page_icon="🗺️",
@@ -15,6 +16,10 @@ db.init()
 
 CSS = """
 <style>
+/* ----------------------------------------------------------
+   ОСНОВА
+   ---------------------------------------------------------- */
+
 .stApp {
     background:
         radial-gradient(
@@ -34,6 +39,13 @@ CSS = """
             #101426 100%
         );
     color: #F4F7FB;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
 }
 
 .block-container {
@@ -42,17 +54,52 @@ CSS = """
     padding-bottom: 4rem;
 }
 
-#MainMenu {
-    visibility: hidden;
-}
-
+#MainMenu,
 footer {
     visibility: hidden;
 }
 
-h1, h2, h3 {
+/*
+ Важно: span намеренно не указан.
+ Streamlit использует span для Material Icons.
+*/
+h1,
+h2,
+h3,
+h4,
+p,
+label,
+button,
+[data-testid="stMarkdownContainer"] {
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif !important;
+}
+
+.material-symbols-rounded,
+.material-symbols-outlined,
+.material-icons,
+[data-testid="stIconMaterial"] {
+    font-family:
+        "Material Symbols Rounded",
+        "Material Symbols Outlined",
+        "Material Icons" !important;
+    font-style: normal !important;
+}
+
+h1,
+h2,
+h3 {
     color: #F8FAFC !important;
 }
+
+/* ----------------------------------------------------------
+   ЛОГОТИП
+   ---------------------------------------------------------- */
 
 .tm-map-symbol {
     position: relative;
@@ -188,6 +235,10 @@ h1, h2, h3 {
     font-size: 0.84rem;
 }
 
+/* ----------------------------------------------------------
+   ВКЛАДКИ АВТОРИЗАЦИИ
+   ---------------------------------------------------------- */
+
 .stTabs [data-baseweb="tab-list"] {
     gap: 0.5rem;
     padding: 0.4rem;
@@ -217,6 +268,10 @@ h1, h2, h3 {
 .stTabs [data-baseweb="tab-highlight"] {
     display: none;
 }
+
+/* ----------------------------------------------------------
+   ФОРМЫ
+   ---------------------------------------------------------- */
 
 [data-testid="stForm"] {
     margin-top: 1.25rem;
@@ -249,6 +304,10 @@ h1, h2, h3 {
     box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
 }
 
+/* ----------------------------------------------------------
+   СТАНДАРТНЫЕ КНОПКИ И ФОРМЫ
+   ---------------------------------------------------------- */
+
 .stButton > button,
 .stFormSubmitButton > button {
     width: 100%;
@@ -265,19 +324,36 @@ h1, h2, h3 {
     font-size: 1rem;
     font-weight: 700;
     box-shadow: 0 10px 25px rgba(34, 211, 238, 0.18);
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease;
 }
 
 .stButton > button:hover,
 .stFormSubmitButton > button:hover {
     transform: translateY(-2px);
     filter: brightness(1.08);
+    box-shadow: 0 15px 30px rgba(34, 211, 238, 0.26);
 }
+
+/* ----------------------------------------------------------
+   ПРИВЕТСТВЕННЫЙ БЛОК
+   ---------------------------------------------------------- */
 
 .tm-welcome {
     padding: 1.75rem;
     border: 1px solid rgba(52, 211, 153, 0.30);
     border-radius: 22px;
-    background: rgba(16, 38, 44, 0.55);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(16, 49, 57, 0.62),
+            rgba(22, 33, 61, 0.60)
+        );
+    box-shadow:
+        0 16px 38px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
     text-align: center;
 }
 
@@ -293,15 +369,129 @@ h1, h2, h3 {
     color: #B7C7DB;
 }
 
+/* ----------------------------------------------------------
+   ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
+   ---------------------------------------------------------- */
+
+/* Общая структура ссылок на страницы */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 72px !important;
+    padding: 1rem 1.2rem !important;
+    border-radius: 19px !important;
+    text-decoration: none !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.015rem !important;
+    line-height: 1.2 !important;
+    transition:
+        transform 190ms ease,
+        filter 190ms ease,
+        border-color 190ms ease,
+        box-shadow 190ms ease !important;
+}
+
+/* Текст и иконки внутри ссылок */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
+    color: #FFFFFF !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+}
+
+/*
+ Основная кнопка: Спланировать поездку.
+ href содержит имя файла страницы 1_new_trip.
+*/
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"] {
+    border: 1px solid rgba(236, 254, 255, 0.62) !important;
+    background:
+        radial-gradient(
+            circle at 25% 0%,
+            rgba(255, 255, 255, 0.28),
+            transparent 38%
+        ),
+        linear-gradient(
+            135deg,
+            #05B8D5 0%,
+            #22D3EE 43%,
+            #4E8DF2 73%,
+            #8257E7 100%
+        ) !important;
+    box-shadow:
+        0 14px 28px rgba(34, 211, 238, 0.23),
+        0 8px 24px rgba(139, 92, 246, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+/*
+ Вторичная кнопка: Мои путешествия.
+ Хорошо заметна, но визуально слабее основной CTA.
+*/
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"] {
+    border: 1px solid rgba(103, 232, 249, 0.46) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(20, 48, 71, 0.94),
+            rgba(30, 37, 78, 0.92)
+        ) !important;
+    box-shadow:
+        0 12px 26px rgba(0, 0, 0, 0.17),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Hover: основное действие */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"]:hover {
+    transform: translateY(-3px) !important;
+    filter: brightness(1.08) saturate(1.07) !important;
+    box-shadow:
+        0 20px 35px rgba(34, 211, 238, 0.29),
+        0 12px 27px rgba(139, 92, 246, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.40) !important;
+}
+
+/* Hover: вторичное действие */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"]:hover {
+    transform: translateY(-3px) !important;
+    border-color: rgba(167, 139, 250, 0.82) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(27, 73, 96, 0.98),
+            rgba(57, 43, 106, 0.98)
+        ) !important;
+    box-shadow:
+        0 18px 33px rgba(34, 211, 238, 0.13),
+        0 12px 26px rgba(139, 92, 246, 0.17),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Доступность: фокус клавиатурой */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible {
+    outline: 3px solid rgba(103, 232, 249, 0.78) !important;
+    outline-offset: 3px !important;
+}
+
+/* ----------------------------------------------------------
+   СООБЩЕНИЯ
+   ---------------------------------------------------------- */
+
 [data-testid="stAlert"] {
     border-radius: 14px;
 }
 
+/* ----------------------------------------------------------
+   МОБИЛЬНАЯ ВЕРСИЯ
+   ---------------------------------------------------------- */
+
 @media (max-width: 640px) {
     .block-container {
         padding-top: 2.3rem;
-        padding-left: 1rem;
         padding-right: 1rem;
+        padding-left: 1rem;
     }
 
     .tm-map-symbol {
@@ -330,13 +520,26 @@ h1, h2, h3 {
     [data-testid="stForm"] {
         padding: 1.2rem;
     }
+
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
+        min-height: 64px !important;
+        padding: 0.85rem 0.9rem !important;
+        font-size: 0.98rem !important;
+    }
+
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
+        font-size: 0.98rem !important;
+    }
 }
 </style>
 """
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-# ---------- ЛОГОТИП ----------
+# ==========================================================
+# ЛОГОТИП
+# ==========================================================
 
 logo_map, logo_divider, logo_text = st.columns(
     [1.1, 0.1, 2.3],
@@ -375,9 +578,11 @@ with logo_text:
     )
 
     st.markdown(
-        '<div class="tm-logo-description">'
-        'ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ'
-        '</div>',
+        (
+            '<div class="tm-logo-description">'
+            'ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
@@ -390,7 +595,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------- ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ ----------
+# ==========================================================
+# ПОЛЬЗОВАТЕЛЬ УЖЕ ВОШЁЛ
+# ==========================================================
 
 if "user_id" in st.session_state:
     username = st.session_state.get("username", "путешественник")
@@ -409,7 +616,7 @@ if "user_id" in st.session_state:
 
     st.write("")
 
-    column_1, column_2 = st.columns(2)
+    column_1, column_2 = st.columns(2, gap="medium")
 
     with column_1:
         st.page_link(
@@ -433,7 +640,9 @@ if "user_id" in st.session_state:
 
     st.stop()
 
-# ---------- ВХОД И РЕГИСТРАЦИЯ ----------
+# ==========================================================
+# ВХОД И РЕГИСТРАЦИЯ
+# ==========================================================
 
 tab_login, tab_register = st.tabs(
     [
