@@ -1,5 +1,6 @@
 """Страница истории поездок: список, открытие и удаление."""
 import json
+from datetime import datetime
 from html import escape
 
 import streamlit as st
@@ -462,6 +463,20 @@ def get_trip_theme(trip):
         return THEMES["adventure"]
 
     return THEMES["city"]
+    def format_date_ru(value) -> str:
+    """
+    Преобразует дату из формата YYYY-MM-DD в DD/MM/YYYY.
+    Если значение имеет неожиданный формат, возвращает его без ошибки.
+    """
+    if not value:
+        return ""
+
+    text = str(value)
+
+    try:
+        return datetime.strptime(text[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return text
 
 
 # ---------- ШАПКА СТРАНИЦЫ ----------
@@ -529,8 +544,12 @@ for trip in trips:
 
     title = escape(title_raw)
     destination = escape(destination_raw)
-    start_date = escape(str(trip_value(trip, "start_date", "")))
-    end_date = escape(str(trip_value(trip, "end_date", "")))
+    start_date = escape(
+        format_date_ru(trip_value(trip, "start_date", ""))
+    )
+    end_date = escape(
+        format_date_ru(trip_value(trip, "end_date", ""))
+    )
     people = trip_value(trip, "people", 1)
     budget = float(trip_value(trip, "budget", 0) or 0)
     currency = escape(str(trip_value(trip, "currency", "")))
