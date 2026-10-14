@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# АВТОРИЗАЦИЯ И ЗАГРУЗКА ПОЕЗДКИ
+# АВТОРИЗАЦИЯ И ПОЛУЧЕНИЕ ДАННЫХ
 # ==========================================================
 
 user_id = auth.require_auth()
@@ -100,42 +100,49 @@ h1, h2, h3, h4 {
     color: #F8FAFC !important;
 }
 
-/* ---------- HERO-БЛОК ---------- */
+/* ---------- ШАПКА МАРШРУТА ---------- */
 
 .tm-hero-label {
     color: #67E8F9;
-    font-size: 0.8rem;
-    font-weight: 750;
-    letter-spacing: 0.1rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.10rem;
     text-transform: uppercase;
 }
 
 .tm-hero-title {
-    margin: 0.35rem 0 0 !important;
+    margin: 0.4rem 0 0 !important;
     color: #F8FAFC !important;
-    font-size: 2.35rem !important;
-    font-weight: 800 !important;
+    font-size: 2.45rem !important;
+    font-weight: 850 !important;
     letter-spacing: -0.06rem;
+    line-height: 1.15;
 }
 
 .tm-hero-meta {
-    margin-top: 0.65rem;
-    color: #C2D0E3;
-    font-size: 1rem;
-    line-height: 1.65;
+    margin-top: 0.8rem;
+    color: #C8D5E6;
+    font-size: 1.04rem;
+    font-weight: 550;
+    line-height: 1.7;
 }
 
-.tm-hero-overview {
-    margin-top: 0.9rem;
-    color: #AEBED3;
+.tm-overview-box {
+    margin-top: 1.15rem;
+    padding: 1rem 1.1rem;
+    border-left: 3px solid #22D3EE;
+    border-radius: 0 14px 14px 0;
+    background: rgba(34, 211, 238, 0.06);
+    color: #D6E2F0;
     font-size: 1rem;
-    line-height: 1.65;
+    line-height: 1.7;
 }
 
-.tm-mood {
+.tm-mood-box {
     margin-top: 0.9rem;
     color: #FDE68A;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 /* ---------- КАРТОЧКИ ---------- */
@@ -148,7 +155,7 @@ h1, h2, h3, h4 {
 }
 
 [data-testid="stMetric"] {
-    min-height: 118px;
+    min-height: 124px;
     padding: 1rem 1.1rem;
     border: 1px solid rgba(148, 163, 184, 0.20);
     border-radius: 17px;
@@ -157,91 +164,55 @@ h1, h2, h3, h4 {
 }
 
 [data-testid="stMetricLabel"] {
-    color: #AAB8CE !important;
-    font-size: 0.85rem !important;
+    color: #B7C5D9 !important;
+    font-size: 0.92rem !important;
+    font-weight: 650 !important;
 }
 
 [data-testid="stMetricValue"] {
     color: #F8FAFC !important;
+    font-size: 2rem !important;
 }
 
-/* ---------- НАВИГАЦИОННАЯ ЛЕНТА ---------- */
+/* ---------- ВКЛАДКИ: ПОЛУКРУГЛЫЙ TAB-ИНТЕРФЕЙС ---------- */
 
-.tm-nav-caption {
-    margin-top: 1.8rem;
-    margin-bottom: 0.55rem;
-    color: #8FA2BA;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08rem;
-    text-transform: uppercase;
+.stTabs {
+    margin-top: 2.1rem;
 }
 
-/*
-  Streamlit radio превращается в соединённую ленту.
-  Активный пункт — градиент TravelMind.
-*/
-[data-testid="stRadio"] div[role="radiogroup"] {
+.stTabs [data-baseweb="tab-list"] {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 0 !important;
-    width: 100%;
+    gap: 0.28rem;
+    align-items: flex-end;
     overflow-x: auto;
-    padding: 0.45rem 0.45rem 0.55rem;
-    border: 1px solid rgba(103, 232, 249, 0.22);
-    border-radius: 20px;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(15, 23, 42, 0.94),
-            rgba(21, 30, 57, 0.90)
-        );
-    box-shadow:
-        0 15px 34px rgba(0, 0, 0, 0.19),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    padding: 0 0.35rem;
+    border-bottom: 2px solid rgba(103, 232, 249, 0.55);
+    background: transparent;
 }
 
-/* Каждая вкладка — сегмент единой ленты */
-[data-testid="stRadio"] div[role="radiogroup"] > label {
+/* Неактивная вкладка */
+.stTabs [data-baseweb="tab"] {
     position: relative;
-    flex: 1 0 auto;
-    min-width: 155px;
+    flex: 0 0 auto;
+    min-height: 60px;
     margin: 0 !important;
-    padding: 0.92rem 1rem !important;
-    border-top: 1px solid rgba(148, 163, 184, 0.18);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-    border-right: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 0 !important;
-    background: rgba(7, 11, 20, 0.36);
-    color: #C9D6E6 !important;
-    cursor: pointer;
-    font-size: 0.92rem;
-    font-weight: 720;
-    text-align: center;
+    padding: 0.92rem 1.35rem 0.82rem !important;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0 !important;
+    background: rgba(15, 23, 42, 0.30) !important;
+    color: #D4E1F0 !important;
+    font-size: 1.10rem !important;
+    font-weight: 780 !important;
+    letter-spacing: 0.005rem;
     transition:
-        background 0.2s ease,
         color 0.2s ease,
+        background 0.2s ease,
         transform 0.2s ease;
 }
 
-/* Скруглённый левый край ленты */
-[data-testid="stRadio"] div[role="radiogroup"] > label:first-of-type {
-    border-left: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 14px 0 0 14px !important;
-}
-
-/* Скруглённый правый край ленты */
-[data-testid="stRadio"] div[role="radiogroup"] > label:last-of-type {
-    border-radius: 0 14px 14px 0 !important;
-}
-
-/* Убираем стандартный radio-кружок */
-[data-testid="stRadio"] div[role="radiogroup"] input {
-    display: none !important;
-}
-
-/* Текст label */
-[data-testid="stRadio"] div[role="radiogroup"] label p {
+/* Текст вкладки */
+.stTabs [data-baseweb="tab"] p {
     color: inherit !important;
     font-size: inherit !important;
     font-weight: inherit !important;
@@ -249,76 +220,70 @@ h1, h2, h3, h4 {
 }
 
 /* Наведение */
-[data-testid="stRadio"] div[role="radiogroup"] > label:hover {
-    z-index: 2;
-    background: rgba(34, 211, 238, 0.12);
+.stTabs [data-baseweb="tab"]:hover {
+    background: rgba(34, 211, 238, 0.13) !important;
     color: #FFFFFF !important;
+    transform: translateY(-3px);
 }
 
-/*
-  Активный элемент: Streamlit размещает input в label,
-  поэтому применяем стили через :has().
-*/
-[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
+/* Активная вкладка */
+.stTabs [aria-selected="true"] {
     z-index: 3;
-    margin: -0.16rem 0 !important;
-    padding-top: 1.08rem !important;
-    padding-bottom: 1.08rem !important;
-    border: 1px solid rgba(186, 230, 253, 0.72);
-    border-radius: 18px !important;
+    min-height: 70px;
+    margin-bottom: -2px !important;
+    padding: 1.05rem 1.65rem 0.94rem !important;
+    border: 1px solid rgba(186, 230, 253, 0.82) !important;
+    border-bottom: 2px solid #10213D !important;
+    border-radius: 24px 24px 0 0 !important;
     background:
         linear-gradient(
             135deg,
-            #0891B2 0%,
-            #22D3EE 47%,
+            #078EAE 0%,
+            #22D3EE 48%,
             #7C3AED 100%
         ) !important;
     color: #FFFFFF !important;
-    font-weight: 850;
+    font-size: 1.20rem !important;
+    font-weight: 900 !important;
     box-shadow:
-        0 10px 24px rgba(34, 211, 238, 0.24),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        0 -10px 24px rgba(34, 211, 238, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
 }
 
-/* Декоративная нижняя линия у активного элемента */
-[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked)::after {
-    content: "";
-    position: absolute;
-    right: 18%;
-    bottom: 6px;
-    left: 18%;
-    height: 2px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.88);
+/* Стандартную линию Streamlit убираем */
+.stTabs [data-baseweb="tab-highlight"] {
+    display: none !important;
 }
 
 /* ---------- КОНТЕНТ ---------- */
 
 .tm-section-title {
-    margin-top: 1.5rem;
-    margin-bottom: 0.35rem;
+    margin-top: 1.65rem;
+    margin-bottom: 0.4rem;
     color: #F8FAFC;
-    font-size: 1.45rem;
-    font-weight: 760;
+    font-size: 1.55rem;
+    font-weight: 820;
 }
 
 .tm-section-text {
-    margin-bottom: 1.05rem;
-    color: #AAB8CE;
-    line-height: 1.6;
+    margin-bottom: 1.15rem;
+    color: #B8C8DC;
+    font-size: 1rem;
+    line-height: 1.65;
 }
 
 .streamlit-expanderHeader {
     border: 1px solid rgba(148, 163, 184, 0.20) !important;
     border-radius: 14px !important;
-    background: rgba(15, 23, 42, 0.70) !important;
+    background: rgba(15, 23, 42, 0.74) !important;
     color: #F8FAFC !important;
-    font-weight: 700 !important;
+    font-size: 1rem !important;
+    font-weight: 760 !important;
 }
 
 .tm-activity {
-    margin: 0.75rem 0;
-    padding: 0.95rem;
+    margin: 0.8rem 0;
+    padding: 1rem;
     border-left: 3px solid #22D3EE;
     border-radius: 0 14px 14px 0;
     background: rgba(13, 30, 54, 0.58);
@@ -326,38 +291,39 @@ h1, h2, h3, h4 {
 
 .tm-activity-time {
     color: #67E8F9;
-    font-size: 0.83rem;
-    font-weight: 760;
+    font-size: 0.87rem;
+    font-weight: 800;
 }
 
 .tm-activity-title {
-    margin-top: 0.2rem;
+    margin-top: 0.25rem;
     color: #F8FAFC;
-    font-size: 1.03rem;
-    font-weight: 720;
+    font-size: 1.06rem;
+    font-weight: 760;
 }
 
 .tm-activity-info {
     margin-top: 0.35rem;
-    color: #B5C4D8;
-    font-size: 0.9rem;
-    line-height: 1.5;
+    color: #BFD0E2;
+    font-size: 0.92rem;
+    line-height: 1.55;
 }
 
 .tm-activity-description {
     margin-top: 0.45rem;
-    color: #CED9E7;
-    font-size: 0.9rem;
+    color: #D6E0EB;
+    font-size: 0.92rem;
     line-height: 1.55;
 }
 
 .tm-day-total {
     margin-top: 0.85rem;
-    padding: 0.75rem 0.9rem;
+    padding: 0.8rem 0.95rem;
     border-radius: 12px;
     background: rgba(139, 92, 246, 0.14);
-    color: #E8DCFF;
-    font-weight: 720;
+    color: #ECE4FF;
+    font-size: 0.95rem;
+    font-weight: 750;
 }
 
 .tm-map-card {
@@ -371,11 +337,11 @@ h1, h2, h3, h4 {
 .tm-tip-card {
     margin: 0.65rem 0;
     padding: 1rem;
-    border: 1px solid rgba(148, 163, 184, 0.17);
+    border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 14px;
     background: rgba(15, 23, 42, 0.66);
-    color: #C8D5E5;
-    line-height: 1.55;
+    color: #D0DCE9;
+    line-height: 1.6;
 }
 
 .stButton > button,
@@ -391,8 +357,8 @@ h1, h2, h3, h4 {
         #8B5CF6 100%
     ) !important;
     color: #FFFFFF !important;
-    font-size: 0.94rem;
-    font-weight: 700;
+    font-size: 0.95rem;
+    font-weight: 750;
     box-shadow: 0 10px 22px rgba(34, 211, 238, 0.16);
 }
 
@@ -415,13 +381,21 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 900px) {
-    [data-testid="stRadio"] div[role="radiogroup"] {
-        justify-content: flex-start;
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.15rem;
+        padding: 0 0.1rem;
     }
 
-    [data-testid="stRadio"] div[role="radiogroup"] > label {
-        min-width: 170px;
-        font-size: 0.87rem;
+    .stTabs [data-baseweb="tab"] {
+        min-height: 55px;
+        padding: 0.8rem 1rem 0.72rem !important;
+        font-size: 1rem !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        min-height: 64px;
+        padding: 0.92rem 1.15rem 0.84rem !important;
+        font-size: 1.08rem !important;
     }
 }
 
@@ -431,7 +405,11 @@ h1, h2, h3, h4 {
     }
 
     .tm-hero-title {
-        font-size: 1.8rem !important;
+        font-size: 1.85rem !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-size: 1.65rem !important;
     }
 }
 </style>
@@ -440,7 +418,7 @@ h1, h2, h3, h4 {
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ==========================================================
-# СЛОВАРИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# СЛОВАРИ
 # ==========================================================
 
 ICONS = {
@@ -493,9 +471,13 @@ TIER_STYLES = {
     },
 }
 
+# ==========================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ==========================================================
+
 
 def as_float(value, default=0.0):
-    """Безопасно преобразует число, строку или None в float."""
+    """Безопасно приводит значение к float."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -503,7 +485,7 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
-    """Безопасно получает текстовое значение."""
+    """Безопасно преобразует None или другое значение в строку."""
     if value is None:
         return default
     return str(value)
@@ -538,24 +520,38 @@ with st.container(border=True):
     )
 
     st.markdown(
-        f"""
-        <div class="tm-hero-meta">
-            📍 {escape(destination)}<br>
-            📅 {escape(start_date_text)} — {escape(end_date_text)} ·
-            👥 {people} чел.
-        </div>
-        """,
+        (
+            '<div class="tm-hero-meta">'
+            f'📍 {escape(destination)}<br>'
+            f'📅 {escape(start_date_text)} — {escape(end_date_text)} · '
+            f'👥 {people} чел.'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
     if overview:
-        st.write(overview)
+        st.markdown(
+            (
+                '<div class="tm-overview-box">'
+                f'{escape(overview)}'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
+        )
 
     if mood_reason:
-        st.caption(f"🙂 {mood_reason}")
+        st.markdown(
+            (
+                '<div class="tm-mood-box">'
+                f'🙂 {escape(mood_reason)}'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
+        )
 
 # ==========================================================
-# МЕТРИКИ И РАСЧЁТ РАСХОДОВ
+# МЕТРИКИ И КАЛЬКУЛЯЦИЯ
 # ==========================================================
 
 expenses = db.get_expenses(trip_id)
@@ -595,45 +591,49 @@ else:
 metric_1, metric_2, metric_3, metric_4 = st.columns(4)
 
 with metric_1:
-    st.metric("Общий бюджет поездки", f"{total_cost:.0f} {curr}")
+    st.metric(
+        "Общий бюджет поездки",
+        f"{total_cost:.0f} {curr}",
+    )
 
 with metric_2:
-    st.metric("Внесено по факту", f"{actual_sum:.0f} {curr}")
+    st.metric(
+        "Внесено по факту",
+        f"{actual_sum:.0f} {curr}",
+    )
     st.caption(f"{expense_status_icon} {expense_status}")
 
 with metric_3:
-    st.metric("План по строкам расходов", f"{plan_sum:.0f} {curr}")
+    st.metric(
+        "План по строкам расходов",
+        f"{plan_sum:.0f} {curr}",
+    )
 
 with metric_4:
-    st.metric("Дней в маршруте", len(data.get("days", [])))
+    st.metric(
+        "Дней в маршруте",
+        len(data.get("days", [])),
+    )
 
 # ==========================================================
-# НАВИГАЦИОННАЯ ЛЕНТА
+# ВКЛАДКИ
 # ==========================================================
 
-st.markdown(
-    '<div class="tm-nav-caption">Разделы маршрута</div>',
-    unsafe_allow_html=True,
-)
-
-section = st.radio(
-    "Навигация по маршруту",
+tab_route, tab_map, tab_budget, tab_tips, tab_ai = st.tabs(
     [
         "📅 Маршрут по дням",
         "🗺️ Карта поездки",
         "💳 Бюджет и расходы",
         "💡 Советы",
         "🤖 Данные AI",
-    ],
-    horizontal=True,
-    label_visibility="collapsed",
+    ]
 )
 
 # ==========================================================
-# РАЗДЕЛ 1 — МАРШРУТ ПО ДНЯМ
+# ВКЛАДКА 1 — МАРШРУТ ПО ДНЯМ
 # ==========================================================
 
-if section == "📅 Маршрут по дням":
+with tab_route:
     hotels = data.get("hotels") or []
 
     if hotels:
@@ -663,6 +663,7 @@ if section == "📅 Маршрут по дням":
 
         for index, hotel in enumerate(hotels[:3]):
             tier = text_value(hotel.get("tier"), "Оптимальный")
+
             tier_style = TIER_STYLES.get(
                 tier,
                 TIER_STYLES["Оптимальный"],
@@ -705,6 +706,7 @@ if section == "📅 Маршрут по дням":
                     st.caption(
                         f"{tier_style['emoji']} {tier_style['label']}"
                     )
+
                     st.subheader(hotel_name)
                     st.caption(f"📍 {hotel_area}")
 
@@ -752,6 +754,40 @@ if section == "📅 Маршрут по дням":
             f"{accommodation_price:.0f} {curr}/ночь. "
             f"{accommodation_why}"
         )
+
+    elif not hotels and isinstance(accommodation, list) and accommodation:
+        st.markdown(
+            '<div class="tm-section-title">🏨 Варианты проживания</div>',
+            unsafe_allow_html=True,
+        )
+
+        for hotel in accommodation:
+            with st.container(border=True):
+                hotel_left, hotel_right = st.columns([3, 1])
+
+                with hotel_left:
+                    st.subheader(
+                        text_value(
+                            hotel.get("name"),
+                            "Вариант проживания",
+                        )
+                    )
+                    st.caption(
+                        f"Категория: {text_value(hotel.get('tier'))}"
+                    )
+                    st.write(
+                        f"📍 Район: {text_value(hotel.get('area'))}"
+                    )
+                    st.write(text_value(hotel.get("why")))
+
+                with hotel_right:
+                    st.metric(
+                        "За ночь",
+                        (
+                            f"{as_float(hotel.get('price_per_night')):.0f} "
+                            f"{curr}"
+                        ),
+                    )
 
     st.markdown(
         '<div class="tm-section-title">📅 План путешествия</div>',
@@ -802,24 +838,27 @@ if section == "📅 Маршрут по дням":
 
                 activity_html = (
                     '<div class="tm-activity">'
-                    f'<div class="tm-activity-time">'
+                    '<div class="tm-activity-time">'
                     f'{escape(time_value)} · {icon} · '
                     f'~{cost:.0f} {escape(curr)}'
                     '</div>'
-                    f'<div class="tm-activity-title">'
+                    '<div class="tm-activity-title">'
                     f'{escape(activity_title)}'
                     '</div>'
-                    f'<div class="tm-activity-info">'
+                    '<div class="tm-activity-info">'
                     f'⏱️ {escape(duration)} мин · '
                     f'📍 {escape(location)}'
                     '</div>'
-                    f'<div class="tm-activity-description">'
+                    '<div class="tm-activity-description">'
                     f'{escape(description)}'
                     '</div>'
                     '</div>'
                 )
 
-                st.markdown(activity_html, unsafe_allow_html=True)
+                st.markdown(
+                    activity_html,
+                    unsafe_allow_html=True,
+                )
 
                 if tip:
                     st.caption(f"💡 {tip}")
@@ -836,10 +875,10 @@ if section == "📅 Маршрут по дням":
             )
 
 # ==========================================================
-# РАЗДЕЛ 2 — КАРТА ПОЕЗДКИ
+# ВКЛАДКА 2 — КАРТА ПОЕЗДКИ
 # ==========================================================
 
-elif section == "🗺️ Карта поездки":
+with tab_map:
     st.markdown(
         '<div class="tm-section-title">🗺️ Карта маршрута</div>',
         unsafe_allow_html=True,
@@ -863,7 +902,14 @@ elif section == "🗺️ Карта поездки":
             lon = activity.get("lon")
 
             if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                points.append((lat, lon, activity, day.get("day")))
+                points.append(
+                    (
+                        lat,
+                        lon,
+                        activity,
+                        day.get("day"),
+                    )
+                )
 
     if not points:
         st.info(
@@ -921,7 +967,10 @@ elif section == "🗺️ Карта поездки":
                     color="#22D3EE",
                 ).add_to(fmap)
 
-        st.markdown('<div class="tm-map-card">', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="tm-map-card">',
+            unsafe_allow_html=True,
+        )
 
         st_folium(
             fmap,
@@ -935,10 +984,10 @@ elif section == "🗺️ Карта поездки":
         st.caption("Картографические данные: © OpenStreetMap contributors")
 
 # ==========================================================
-# РАЗДЕЛ 3 — БЮДЖЕТ И РАСХОДЫ
+# ВКЛАДКА 3 — БЮДЖЕТ И РАСХОДЫ
 # ==========================================================
 
-elif section == "💳 Бюджет и расходы":
+with tab_budget:
     st.markdown(
         '<div class="tm-section-title">💳 Бюджет и фактические расходы</div>',
         unsafe_allow_html=True,
@@ -947,8 +996,8 @@ elif section == "💳 Бюджет и расходы":
     st.markdown(
         """
         <div class="tm-section-text">
-            Вносите реальные траты во время поездки. У каждой позиции будет
-            показано сравнение с первоначальным планом.
+            Вносите реальные траты во время поездки. Для каждой позиции
+            отображается сравнение с первоначальным планом.
         </div>
         """,
         unsafe_allow_html=True,
@@ -988,12 +1037,14 @@ elif section == "💳 Бюджет и расходы":
 
                 elif item_difference < 0:
                     st.caption(
-                        f"🟢 Экономия: {abs(item_difference):.0f} {curr}"
+                        f"🟢 Экономия: "
+                        f"{abs(item_difference):.0f} {curr}"
                     )
 
                 else:
                     st.caption(
-                        f"🔴 Превышение: {item_difference:.0f} {curr}"
+                        f"🔴 Превышение: "
+                        f"{item_difference:.0f} {curr}"
                     )
 
             with expense_columns[2]:
@@ -1009,7 +1060,10 @@ elif section == "💳 Бюджет и расходы":
                 )
 
             with expense_columns[3]:
-                if st.button("💾", key=f"save_{expense['id']}"):
+                if st.button(
+                    "💾",
+                    key=f"save_{expense['id']}",
+                ):
                     db.update_expense_actual(
                         expense["id"],
                         float(actual_value),
@@ -1051,10 +1105,10 @@ elif section == "💳 Бюджет и расходы":
         )
 
 # ==========================================================
-# РАЗДЕЛ 4 — СОВЕТЫ
+# ВКЛАДКА 4 — СОВЕТЫ
 # ==========================================================
 
-elif section == "💡 Советы":
+with tab_tips:
     st.markdown(
         '<div class="tm-section-title">💡 Полезное для поездки</div>',
         unsafe_allow_html=True,
@@ -1063,8 +1117,8 @@ elif section == "💡 Советы":
     st.markdown(
         """
         <div class="tm-section-text">
-            Здесь собраны рекомендации, чек-лист вещей и полезные фразы
-            для выбранного направления.
+            Чек-лист, полезные фразы и рекомендации, сформированные AI
+            специально для выбранного направления.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1128,10 +1182,10 @@ elif section == "💡 Советы":
             )
 
 # ==========================================================
-# РАЗДЕЛ 5 — ДАННЫЕ AI
+# ВКЛАДКА 5 — ДАННЫЕ AI
 # ==========================================================
 
-elif section == "🤖 Данные AI":
+with tab_ai:
     st.markdown(
         '<div class="tm-section-title">🤖 Данные AI-маршрута</div>',
         unsafe_allow_html=True,
