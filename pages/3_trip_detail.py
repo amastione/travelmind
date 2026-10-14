@@ -1017,10 +1017,10 @@ with tab_route:
                 if not activities:
                     st.info("Для этого дня пока нет активностей.")
 
-                for activity in activities:
+                for activity_index, activity in enumerate(activities):
                     activity_type = text_value(activity.get("type"))
                     icon = ICONS.get(activity_type, "📍")
-
+                
                     time_value = text_value(activity.get("time"))
                     title = text_value(activity.get("title"))
                     duration = text_value(activity.get("duration_min"), "?")
@@ -1028,7 +1028,7 @@ with tab_route:
                     location = text_value(activity.get("location"))
                     description = text_value(activity.get("description"))
                     tip = text_value(activity.get("tip"))
-
+                
                     st.markdown(
                         (
                             '<div class="tm-activity">'
@@ -1050,7 +1050,26 @@ with tab_route:
                         ),
                         unsafe_allow_html=True,
                     )
-
+                
+                    # Ссылка строится из места активности и города поездки.
+                    # Ничего не требует от AI дополнительно: координаты необязательны.
+                    if location:
+                        activity_map_query = f"{location}, {destination}"
+                
+                        activity_map_url = (
+                            "https://www.google.com/maps/search/?api=1&query="
+                            + quote_plus(activity_map_query)
+                        )
+                
+                        st.link_button(
+                            "⌖ Открыть место на карте",
+                            activity_map_url,
+                            key=(
+                                f"activity_map_{trip_id}_{day_number}_{activity_index}"
+                            ),
+                            use_container_width=False,
+                        )
+                
                     if tip:
                         st.caption(f"✦ {tip}")
 
