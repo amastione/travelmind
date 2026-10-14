@@ -354,23 +354,114 @@ button,
    Здесь нет st.expander, поэтому белый фон исключён.
    ========================================================== */
 
-.tm-day-header {
-    margin: 0.15rem 0 0.75rem;
-    padding: 0.1rem 0;
-    color: #F8FAFC;
-    font-size: 1.08rem;
-    font-weight: 800;
-    line-height: 1.45;
+/* ==========================================================
+   БЫСТРЫЕ РАСКРЫВАЕМЫЕ ДНИ МАРШРУТА
+   Используем нативный st.expander без полного st.rerun().
+   Важно: не стилизуем summary * — это ломает Material Icons.
+   ========================================================== */
+
+/* Внешняя тёмная карточка дня */
+details[data-testid="stExpander"],
+div[data-testid="stExpander"] details {
+    overflow: hidden !important;
+    margin: 0.9rem 0 !important;
+    border: 1px solid rgba(103, 232, 249, 0.26) !important;
+    border-radius: 20px !important;
+    background: rgba(8, 18, 35, 0.92) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
-.tm-day-header-open {
-    color: #BDF7FF;
+/* Заголовок закрытого дня */
+details[data-testid="stExpander"] > summary,
+div[data-testid="stExpander"] details > summary {
+    min-height: 68px !important;
+    padding: 1.05rem 1.2rem !important;
+    border: 0 !important;
+    border-radius: 19px !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(28, 49, 78, 0.98),
+            rgba(13, 27, 51, 0.98)
+        ) !important;
+    color: #F8FAFC !important;
+    cursor: pointer !important;
 }
 
-.tm-day-description {
-    margin: 0.25rem 0 0.8rem;
-    color: #AFC4DD;
-    font-size: 0.91rem;
+/*
+ Текст заголовка. Стилизуем только markdown-контейнер
+ и его абзац — не span, не svg и не системную иконку стрелки.
+*/
+details[data-testid="stExpander"] > summary [data-testid="stMarkdownContainer"],
+details[data-testid="stExpander"] > summary [data-testid="stMarkdownContainer"] p,
+div[data-testid="stExpander"] details > summary [data-testid="stMarkdownContainer"],
+div[data-testid="stExpander"] details > summary [data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #F8FAFC !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
+    font-size: 1.04rem !important;
+    font-weight: 750 !important;
+    line-height: 1.45 !important;
+}
+
+/* Стрелка раскрытия: сохраняем Material Icon, меняем только цвет */
+details[data-testid="stExpander"] > summary [data-testid="stIconMaterial"],
+details[data-testid="stExpander"] > summary .material-symbols-rounded,
+details[data-testid="stExpander"] > summary .material-icons,
+div[data-testid="stExpander"] details > summary [data-testid="stIconMaterial"],
+div[data-testid="stExpander"] details > summary .material-symbols-rounded,
+div[data-testid="stExpander"] details > summary .material-icons {
+    color: #7DEBFA !important;
+}
+
+/* Открытый день */
+details[data-testid="stExpander"][open] > summary,
+div[data-testid="stExpander"] details[open] > summary {
+    border-bottom: 1px solid rgba(103, 232, 249, 0.24) !important;
+    border-radius: 19px 19px 0 0 !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(7, 132, 162, 0.66),
+            rgba(53, 69, 166, 0.56)
+        ) !important;
+}
+
+/* Текст активного заголовка */
+details[data-testid="stExpander"][open] > summary [data-testid="stMarkdownContainer"],
+details[data-testid="stExpander"][open] > summary [data-testid="stMarkdownContainer"] p,
+div[data-testid="stExpander"] details[open] > summary [data-testid="stMarkdownContainer"],
+div[data-testid="stExpander"] details[open] > summary [data-testid="stMarkdownContainer"] p {
+    color: #FFFFFF !important;
+}
+
+/* Контент раскрытого дня — только тёмный фон */
+details[data-testid="stExpander"] [data-testid="stExpanderDetails"],
+details[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
+div[data-testid="stExpander"] [data-testid="stExpanderDetails"],
+div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
+    background: rgba(8, 18, 35, 0.92) !important;
+    color: #F8FAFC !important;
+}
+
+/* Наведение */
+details[data-testid="stExpander"] > summary:hover,
+div[data-testid="stExpander"] details > summary:hover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(25, 87, 116, 0.88),
+            rgba(55, 57, 132, 0.80)
+        ) !important;
 }
 
 /* ---------- Активности ---------- */
@@ -960,11 +1051,8 @@ with tab_route:
 
     # Вместо st.expander используем собственные карточки.
     # Это устраняет белый фон и проблему с нечитаемым заголовком.
-    route_day_state_key = f"opened_route_day_{trip_id}"
-
-    if route_day_state_key not in st.session_state:
-        st.session_state[route_day_state_key] = 1
-
+        # Нативный expander раскрывается без полного перезапуска приложения.
+    # Это быстрее, чем st.button + st.rerun().
     for day in data.get("days", []):
         day_number = day.get("day", "")
         day_date = format_date_ru(day.get("date"))
@@ -979,110 +1067,81 @@ with tab_route:
         if day_vibe:
             day_header += f" · {day_vibe}"
 
-        is_open = st.session_state[route_day_state_key] == day_number
+        with st.expander(
+            day_header,
+            expanded=(day_number == 1),
+        ):
+            activities = day.get("activities") or []
 
-        with st.container(border=True):
-            header_class = (
-                "tm-day-header tm-day-header-open"
-                if is_open
-                else "tm-day-header"
-            )
+            if not activities:
+                st.info("Для этого дня пока нет активностей.")
 
-            st.markdown(
-                f'<div class="{header_class}">{escape(day_header)}</div>',
-                unsafe_allow_html=True,
-            )
+            for activity_index, activity in enumerate(activities):
+                activity_type = text_value(activity.get("type"))
+                icon = ICONS.get(activity_type, "📍")
 
-            toggle_label = (
-                "⌃ Скрыть план дня"
-                if is_open
-                else "⌄ Открыть план дня"
-            )
-
-            if st.button(
-                toggle_label,
-                key=f"toggle_day_{trip_id}_{day_number}",
-                use_container_width=True,
-            ):
-                if is_open:
-                    st.session_state[route_day_state_key] = None
-                else:
-                    st.session_state[route_day_state_key] = day_number
-
-                st.rerun()
-
-            if is_open:
-                activities = day.get("activities") or []
-
-                if not activities:
-                    st.info("Для этого дня пока нет активностей.")
-
-                for activity_index, activity in enumerate(activities):
-                    activity_type = text_value(activity.get("type"))
-                    icon = ICONS.get(activity_type, "📍")
-                
-                    time_value = text_value(activity.get("time"))
-                    title = text_value(activity.get("title"))
-                    duration = text_value(activity.get("duration_min"), "?")
-                    cost = as_float(activity.get("cost"), 0)
-                    location = text_value(activity.get("location"))
-                    description = text_value(activity.get("description"))
-                    tip = text_value(activity.get("tip"))
-                
-                    st.markdown(
-                        (
-                            '<div class="tm-activity">'
-                            '<div class="tm-activity-time">'
-                            f'{escape(time_value)} · {icon} · '
-                            f'~{format_money(cost, curr)}'
-                            '</div>'
-                            '<div class="tm-activity-title">'
-                            f'{escape(title)}'
-                            '</div>'
-                            '<div class="tm-activity-info">'
-                            f'⏱️ {escape(duration)} мин · '
-                            f'⌖ {escape(location)}'
-                            '</div>'
-                            '<div class="tm-activity-description">'
-                            f'{escape(description)}'
-                            '</div>'
-                            '</div>'
-                        ),
-                        unsafe_allow_html=True,
-                    )
-                
-                    # Ссылка строится из места активности и города поездки.
-                    # Ничего не требует от AI дополнительно: координаты необязательны.
-                    if location:
-                        activity_map_query = f"{location}, {destination}"
-                
-                        activity_map_url = (
-                            "https://www.google.com/maps/search/?api=1&query="
-                            + quote_plus(activity_map_query)
-                        )
-                
-                        st.link_button(
-                            "⌖ Открыть место на карте",
-                            activity_map_url,
-                            key=(
-                                f"activity_map_{trip_id}_{day_number}_{activity_index}"
-                            ),
-                            use_container_width=False,
-                        )
-                
-                    if tip:
-                        st.caption(f"✦ {tip}")
-
-                day_cost = as_float(day.get("day_cost"), 0)
+                time_value = text_value(activity.get("time"))
+                title = text_value(activity.get("title"))
+                duration = text_value(activity.get("duration_min"), "?")
+                cost = as_float(activity.get("cost"), 0)
+                location = text_value(activity.get("location"))
+                description = text_value(activity.get("description"))
+                tip = text_value(activity.get("tip"))
 
                 st.markdown(
                     (
-                        '<div class="tm-day-total">'
-                        f'Итого за день: ~{format_money(day_cost, curr)}'
+                        '<div class="tm-activity">'
+                        '<div class="tm-activity-time">'
+                        f'{escape(time_value)} · {icon} · '
+                        f'~{format_money(cost, curr)}'
+                        '</div>'
+                        '<div class="tm-activity-title">'
+                        f'{escape(title)}'
+                        '</div>'
+                        '<div class="tm-activity-info">'
+                        f'⏱️ {escape(duration)} мин · '
+                        f'⌖ {escape(location)}'
+                        '</div>'
+                        '<div class="tm-activity-description">'
+                        f'{escape(description)}'
+                        '</div>'
                         '</div>'
                     ),
                     unsafe_allow_html=True,
                 )
+
+                # Ссылка на карту для конкретной активности.
+                if location:
+                    activity_map_query = f"{location}, {destination}"
+
+                    activity_map_url = (
+                        "https://www.google.com/maps/search/?api=1&query="
+                        + quote_plus(activity_map_query)
+                    )
+
+                    st.link_button(
+                        "⌖ Открыть место на карте",
+                        activity_map_url,
+                        key=(
+                            f"activity_map_{trip_id}_"
+                            f"{day_number}_{activity_index}"
+                        ),
+                        use_container_width=False,
+                    )
+
+                if tip:
+                    st.caption(f"✦ {tip}")
+
+            day_cost = as_float(day.get("day_cost"), 0)
+
+            st.markdown(
+                (
+                    '<div class="tm-day-total">'
+                    f'Итого за день: ~{format_money(day_cost, curr)}'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
 
 # ==========================================================
 # ВКЛАДКА: КАРТА
