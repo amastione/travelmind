@@ -7,14 +7,14 @@ import streamlit as st
 
 import auth
 import db
-
+import site_access
 
 st.set_page_config(
     page_title="Мои путешествия",
     page_icon="🧳",
     layout="wide",
 )
-
+site_access.require_site_access()
 # Без авторизации не пускаем на страницу.
 user_id = auth.require_auth()
 
