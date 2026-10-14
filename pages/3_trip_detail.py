@@ -327,53 +327,109 @@ h1, h2, h3, h4, p, label, button,
 
 /* ---------- Раскрываемые дни ---------- */
 
+/* ---------- Раскрываемые дни маршрута ---------- */
+
+/* Внешняя карточка дня */
 details[data-testid="stExpander"] {
     overflow: hidden !important;
     margin-bottom: 0.9rem !important;
-    border: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border: 1px solid rgba(103, 232, 249, 0.24) !important;
     border-radius: 18px !important;
-    background: rgba(10, 22, 42, 0.78) !important;
+    background: rgba(8, 18, 35, 0.92) !important;
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
+/* Заголовок дня в закрытом состоянии */
 details[data-testid="stExpander"] > summary {
     min-height: 64px !important;
     padding: 1.05rem 1.2rem !important;
     border: 0 !important;
     border-radius: 17px !important;
-    background: linear-gradient(
-        135deg,
-        rgba(29, 49, 77, 0.98),
-        rgba(14, 25, 47, 0.98)
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(29, 49, 77, 0.98),
+            rgba(14, 25, 47, 0.98)
+        ) !important;
     color: #F8FAFC !important;
+    cursor: pointer !important;
 }
 
+/* Текст заголовка: День 1 · дата · тема */
 details[data-testid="stExpander"] > summary p,
 details[data-testid="stExpander"] > summary div,
 details[data-testid="stExpander"] > summary span {
+    margin: 0 !important;
+    background: transparent !important;
     color: #F8FAFC !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
     font-size: 1.04rem !important;
     font-weight: 750 !important;
 }
 
+/* Заголовок открытого дня */
 details[data-testid="stExpander"][open] > summary {
-    border-bottom: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border-bottom: 1px solid rgba(103, 232, 249, 0.25) !important;
     border-radius: 17px 17px 0 0 !important;
-    background: linear-gradient(
-        135deg,
-        rgba(8, 142, 175, 0.50),
-        rgba(75, 69, 177, 0.42)
-    ) !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(8, 142, 175, 0.58),
+            rgba(75, 69, 177, 0.50)
+        ) !important;
+    color: #FFFFFF !important;
 }
 
+/* Текст даты и названия открытого дня */
+details[data-testid="stExpander"][open] > summary p,
+details[data-testid="stExpander"][open] > summary div,
+details[data-testid="stExpander"][open] > summary span {
+    background: transparent !important;
+    color: #FFFFFF !important;
+}
+
+/* Hover заголовка */
+details[data-testid="stExpander"] > summary:hover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(19, 104, 137, 0.72),
+            rgba(75, 62, 153, 0.62)
+        ) !important;
+}
+
+/* Иконка-стрелка справа */
 details[data-testid="stExpander"] > summary svg {
     fill: #7DEBFA !important;
     color: #7DEBFA !important;
 }
 
+/*
+  Streamlit может создавать несколько вложенных контейнеров
+  внутри expander. Принудительно оставляем их тёмными,
+  чтобы не появлялся белый прямоугольник.
+*/
+details[data-testid="stExpander"] > div,
 details[data-testid="stExpander"] [data-testid="stExpanderDetails"],
-details[data-testid="stExpander"] > div {
-    background: rgba(8, 18, 35, 0.70) !important;
+details[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
+details[data-testid="stExpander"] [data-testid="stVerticalBlock"],
+details[data-testid="stExpander"] [data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(8, 18, 35, 0.92) !important;
+    color: #F8FAFC !important;
+}
+
+/* Убираем потенциальный светлый фон у внутренних блоков Markdown */
+details[data-testid="stExpander"] [data-testid="stMarkdownContainer"],
+details[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+    background: transparent !important;
+    color: inherit !important;
 }
 
 /* ---------- Маршрут ---------- */
