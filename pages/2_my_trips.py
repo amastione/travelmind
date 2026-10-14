@@ -13,6 +13,7 @@ st.set_page_config(
     layout="wide",
 )
 
+# Без авторизации не пускаем на страницу
 user_id = auth.require_auth()
 
 CSS = """
@@ -78,6 +79,18 @@ h1, h2, h3 {
     font-size: 1.05rem;
 }
 
+.tm-counter {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: 999px;
+    background: rgba(34, 211, 238, 0.07);
+    color: #BCEFF8;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
 .tm-trip-cover {
     min-height: 155px;
     padding: 1.35rem;
@@ -120,11 +133,11 @@ h1, h2, h3 {
 .tm-trip-meta {
     color: #AAB8CE;
     font-size: 0.92rem;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 .tm-trip-budget {
-    margin-top: 0.7rem;
+    margin-top: 0.75rem;
     color: #EAF4FF;
     font-size: 1.08rem;
     font-weight: 700;
@@ -201,6 +214,7 @@ h1, h2, h3 {
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# Темы обложек. Внешние изображения не используются.
 THEMES = {
     "city": {
         "icon": "🏙️",
@@ -261,11 +275,30 @@ THEMES = {
 }
 
 
-def get_trip_theme(trip: dict) -> dict:
-    """Определяет тему обложки из JSON маршрута или по названию поездки."""
-    theme_key = ""
+def trip_value(trip, key, default=None):
+    """
+    Безопасно получает значение из sqlite3.Row или dict.
 
-    raw_data = trip.get("data")
+    db.list_trips() может вернуть sqlite3.Row. У такого объекта есть доступ
+    через trip["title"], но отсутствует метод trip.get("title").
+    """
+    try:
+        value = trip[key]
+    except (KeyError, IndexError, TypeError):
+        return default
+
+    return default if value is None else value
+
+
+def get_trip_theme(trip):
+    """
+    Определяет стиль карточки.
+
+    Если list_trips возвращает JSON маршрута в поле data, берём cover_theme
+    от AI. Если этого поля нет, выбираем тему по названию и направлению.
+    """
+    theme_key = ""
+    raw_data = trip_value(trip, "data", "")
 
     if raw_data:
         try:
@@ -277,37 +310,107 @@ def get_trip_theme(trip: dict) -> dict:
     if theme_key in THEMES:
         return THEMES[theme_key]
 
-    text = (
-        f"{trip.get('title', '')} "
-        f"{trip.get('destination', '')}"
-    ).lower()
+    title = str(trip_value(trip, "title", ""))
+    destination = str(trip_value(trip, "destination", ""))
+    text = f"{title} {destination}".lower()
 
-    if any(word in text for word in ["горы", "эльбрус", "алтай", "кавказ"]):
+    if any(
+        word in text
+        for word in [
+            "горы",
+            "эльбрус",
+            "алтай",
+            "кавказ",
+            "домбай",
+            "архыз",
+            "швейцари",
+        ]
+    ):
         return THEMES["mountains"]
 
-    if any(word in text for word in ["море", "пляж", "сочи", "бали", "турция"]):
+    if any(
+        word in text
+        for word in [
+            "море",
+            "пляж",
+            "сочи",
+            "бали",
+            "турция",
+            "анталья",
+            "тайланд",
+            "пхукет",
+            "египет",
+        ]
+    ):
         return THEMES["beach"]
 
-    if any(word in text for word in ["еда", "кухня", "ресторан", "гастро"]):
+    if any(
+        word in text
+        for word in [
+            "еда",
+            "кухня",
+            "ресторан",
+            "гастро",
+            "вино",
+            "винный",
+        ]
+    ):
         return THEMES["food"]
 
-    if any(word in text for word in ["лес", "озеро", "парк", "природ"]):
+    if any(
+        word in text
+        for word in [
+            "лес",
+            "озеро",
+            "парк",
+            "природ",
+            "байкал",
+            "карел",
+        ]
+    ):
         return THEMES["nature"]
 
-    if any(word in text for word in ["музей", "истор", "культур", "архитект"]):
+    if any(
+        word in text
+        for word in [
+            "музей",
+            "истор",
+            "культур",
+            "архитект",
+            "петербург",
+            "рим",
+            "афины",
+        ]
+    ):
         return THEMES["culture"]
+
+    if any(
+        word in text
+        for word in [
+            "актив",
+            "поход",
+            "серф",
+            "дайвинг",
+            "приключ",
+        ]
+    ):
+        return THEMES["adventure"]
 
     return THEMES["city"]
 
+
+# ---------- ШАПКА СТРАНИЦЫ ----------
 
 st.markdown(
     '<div class="tm-page-eyebrow">TravelMind AI</div>',
     unsafe_allow_html=True,
 )
+
 st.markdown(
     '<h1 class="tm-page-title">🧳 Мои путешествия</h1>',
     unsafe_allow_html=True,
 )
+
 st.markdown(
     """
     <div class="tm-page-description">
@@ -316,6 +419,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# ---------- ПОЛУЧЕНИЕ ПОЕЗДОК ----------
 
 trips = db.list_trips(user_id)
 
@@ -343,20 +448,27 @@ if not trips:
 
     st.stop()
 
-st.caption(f"Всего сохранённых путешествий: {len(trips)}")
+st.markdown(
+    f'<div class="tm-counter">Сохранённых путешествий: {len(trips)}</div>',
+    unsafe_allow_html=True,
+)
 
-st.write("")
+# ---------- СПИСОК ПОЕЗДОК ----------
 
 for trip in trips:
     theme = get_trip_theme(trip)
 
-    title = escape(str(trip.get("title", "Поездка")))
-    destination = escape(str(trip.get("destination", "")))
-    start_date = escape(str(trip.get("start_date", "")))
-    end_date = escape(str(trip.get("end_date", "")))
-    people = trip.get("people", 1)
-    budget = float(trip.get("budget", 0) or 0)
-    currency = escape(str(trip.get("currency", "")))
+    trip_id = trip_value(trip, "id")
+    title_raw = str(trip_value(trip, "title", "Поездка"))
+    destination_raw = str(trip_value(trip, "destination", ""))
+
+    title = escape(title_raw)
+    destination = escape(destination_raw)
+    start_date = escape(str(trip_value(trip, "start_date", "")))
+    end_date = escape(str(trip_value(trip, "end_date", "")))
+    people = trip_value(trip, "people", 1)
+    budget = float(trip_value(trip, "budget", 0) or 0)
+    currency = escape(str(trip_value(trip, "currency", "")))
 
     st.markdown(
         f"""
@@ -388,25 +500,25 @@ for trip in trips:
 
     st.write("")
 
-    action_1, action_2 = st.columns([3, 1])
+    action_open, action_delete = st.columns([3, 1])
 
-    with action_1:
+    with action_open:
         if st.button(
             "🗺️ Открыть маршрут",
-            key=f"open_{trip['id']}",
+            key=f"open_{trip_id}",
             use_container_width=True,
         ):
-            st.session_state["current_trip_id"] = trip["id"]
+            st.session_state["current_trip_id"] = trip_id
             st.switch_page("pages/3_trip_detail.py")
 
-    with action_2:
+    with action_delete:
         if st.button(
             "🗑️ Удалить",
-            key=f"delete_{trip['id']}",
+            key=f"delete_{trip_id}",
             use_container_width=True,
         ):
-            db.delete_trip(trip["id"], user_id)
-            st.toast(f"Поездка «{trip['title']}» удалена")
+            db.delete_trip(trip_id, user_id)
+            st.toast(f"Поездка «{title_raw}» удалена")
             st.rerun()
 
     st.write("")
