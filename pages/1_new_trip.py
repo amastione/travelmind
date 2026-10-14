@@ -8,13 +8,14 @@ import ai
 import auth
 import db
 
+
 st.set_page_config(
     page_title="Спланировать поездку",
     page_icon="✈️",
     layout="wide",
 )
 
-# Защита страницы: без входа сюда не пустим
+# Защита страницы: без входа сюда не пустим.
 user_id = auth.require_auth()
 
 CSS = """
@@ -46,15 +47,14 @@ CSS = """
     padding-bottom: 4rem;
 }
 
-#MainMenu {
-    visibility: hidden;
-}
-
+#MainMenu,
 footer {
     visibility: hidden;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     color: #F8FAFC !important;
 }
 
@@ -87,6 +87,46 @@ h1, h2, h3 {
     background: rgba(34, 211, 238, 0.06);
     color: #C9D7E8;
     line-height: 1.5;
+}
+
+.tm-ready-card {
+    margin-top: 1.3rem;
+    padding: 2rem 1.5rem;
+    border: 1px solid rgba(103, 232, 249, 0.40);
+    border-radius: 22px;
+    background:
+        radial-gradient(
+            circle at 15% 5%,
+            rgba(34, 211, 238, 0.15),
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(12, 46, 66, 0.86),
+            rgba(28, 27, 69, 0.82)
+        );
+    box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    text-align: center;
+}
+
+.tm-ready-icon {
+    font-size: 3rem;
+}
+
+.tm-ready-title {
+    margin-top: 0.5rem;
+    color: #FFFFFF;
+    font-size: 1.55rem;
+    font-weight: 800;
+}
+
+.tm-ready-text {
+    margin-top: 0.55rem;
+    color: #C8D7E9;
+    font-size: 1rem;
+    line-height: 1.6;
 }
 
 [data-testid="stForm"] {
@@ -151,8 +191,8 @@ h1, h2, h3 {
 }
 
 .stMultiSelect [data-baseweb="tag"] {
-    background: rgba(34, 211, 238, 0.14) !important;
     border-radius: 999px !important;
+    background: rgba(34, 211, 238, 0.14) !important;
 }
 
 .stFormSubmitButton > button,
@@ -171,34 +211,25 @@ h1, h2, h3 {
     font-size: 1rem;
     font-weight: 750;
     box-shadow: 0 10px 25px rgba(34, 211, 238, 0.20);
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease;
 }
 
 .stFormSubmitButton > button:hover,
 .stButton > button:hover {
     transform: translateY(-2px);
     filter: brightness(1.08);
+    box-shadow: 0 15px 30px rgba(34, 211, 238, 0.26);
 }
 
 [data-testid="stAlert"] {
     border-radius: 14px;
 }
 
-@media (max-width: 640px) {
-    .block-container {
-        padding: 1.8rem 1rem 3rem;
-    }
-
-    .tm-page-title {
-        font-size: 2rem !important;
-    }
-
-    [data-testid="stForm"] {
-        padding: 1.15rem;
-    }
-}
 /* ----------------------------------------------------------
    ЯРКИЕ КНОПКИ НАВИГАЦИИ STREAMLIT
-   Главное меню / К моим путешествиям
    ---------------------------------------------------------- */
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
@@ -233,7 +264,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
         box-shadow 180ms ease !important;
 }
 
-/* Текст внутри яркой page_link-кнопки */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 [data-testid="stPageLink-NavLink"] p {
     margin: 0 !important;
@@ -242,7 +272,6 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
     font-weight: 800 !important;
 }
 
-/* Hover-состояние */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
 [data-testid="stPageLink-NavLink"]:hover {
     transform: translateY(-2px) !important;
@@ -253,11 +282,24 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
         inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
 }
 
-/* Фокус с клавиатуры */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 [data-testid="stPageLink-NavLink"]:focus-visible {
     outline: 3px solid rgba(125, 235, 250, 0.88) !important;
     outline-offset: 3px !important;
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding: 1.8rem 1rem 3rem;
+    }
+
+    .tm-page-title {
+        font-size: 2rem !important;
+    }
+
+    [data-testid="stForm"] {
+        padding: 1.15rem;
+    }
 }
 </style>
 """
@@ -270,10 +312,12 @@ st.markdown(
     '<div class="tm-page-eyebrow">TravelMind AI</div>',
     unsafe_allow_html=True,
 )
+
 st.markdown(
     '<h1 class="tm-page-title">✈️ Спланировать поездку</h1>',
     unsafe_allow_html=True,
 )
+
 st.markdown(
     """
     <div class="tm-page-description">
@@ -295,13 +339,115 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.write("")
+# ==========================================================
+# ЭКРАН ПОСЛЕ УСПЕШНОГО СОЗДАНИЯ МАРШРУТА
+# ==========================================================
+
+generated_trip_id = st.session_state.get("generated_trip_id")
+
+if generated_trip_id:
+    tokens_in = st.session_state.get("generated_tokens_in")
+    tokens_out = st.session_state.get("generated_tokens_out")
+
+    st.markdown(
+        """
+        <div class="tm-ready-card">
+            <div class="tm-ready-icon">🗺️</div>
+            <div class="tm-ready-title">Маршрут готов!</div>
+            <div class="tm-ready-text">
+                AI-маршрут сохранён в ваших путешествиях.
+                Откройте его, чтобы посмотреть план по дням, карту,
+                рекомендации и бюджет.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if tokens_in is not None and tokens_out is not None:
+        st.caption(
+            f"Использовано токенов: {tokens_in} вход / {tokens_out} выход."
+        )
+
+    st.write("")
+
+    open_column, new_column = st.columns(2)
+
+    with open_column:
+        if st.button(
+            "🗺️ Открыть готовый маршрут",
+            type="primary",
+            use_container_width=True,
+            key="open_generated_trip",
+        ):
+            auth.remember_trip(int(generated_trip_id))
+
+            st.session_state.pop("generated_trip_id", None)
+            st.session_state.pop("generated_tokens_in", None)
+            st.session_state.pop("generated_tokens_out", None)
+
+            st.switch_page("pages/3_trip_detail.py")
+
+    with new_column:
+        if st.button(
+            "✨ Создать ещё одну поездку",
+            use_container_width=True,
+            key="create_another_trip",
+        ):
+            st.session_state.pop("generated_trip_id", None)
+            st.session_state.pop("generated_tokens_in", None)
+            st.session_state.pop("generated_tokens_out", None)
+            st.rerun()
+
+    st.stop()
+
+# ==========================================================
+# ФОРМА СОЗДАНИЯ ПОЕЗДКИ
+# ==========================================================
 
 PACES = {
     "Спокойный": "slow",
     "Средний": "medium",
     "Насыщенный": "fast",
 }
+
+INTERESTS = [
+    "история",
+    "музеи",
+    "архитектура",
+    "искусство",
+    "театры и концерты",
+    "местная кухня",
+    "рестораны высокой кухни",
+    "кофейни и десерты",
+    "уличная еда",
+    "винные дегустации",
+    "природа",
+    "национальные парки",
+    "озёра и водопады",
+    "горы и треккинг",
+    "море и пляжи",
+    "активный спорт",
+    "велосипедные маршруты",
+    "экскурсии и гиды",
+    "фотография",
+    "видовые площадки",
+    "шопинг",
+    "рынки и локальные товары",
+    "ночная жизнь",
+    "бары и коктейли",
+    "фестивали и события",
+    "религиозные места",
+    "современные районы",
+    "уютные нетуристические места",
+    "спа и wellness",
+    "йога и медитация",
+    "семейный отдых",
+    "развлечения для детей",
+    "романтические места",
+    "бизнес и нетворкинг",
+    "экология и осознанный туризм",
+]
 
 with st.form("plan_form"):
     st.subheader("📍 Основные параметры")
@@ -324,6 +470,8 @@ with st.form("plan_form"):
                 today + timedelta(days=17),
             ),
             min_value=today,
+            format="DD/MM/YYYY",
+            help="Выберите дату начала и дату окончания поездки.",
         )
 
     st.write("")
@@ -381,22 +529,13 @@ with st.form("plan_form"):
 
     interests = st.multiselect(
         "Что вам интересно?",
-        [
-            "история",
-            "музеи",
-            "архитектура",
-            "еда",
-            "природа",
-            "шопинг",
-            "ночная жизнь",
-            "фотография",
-            "море",
-            "горы",
-            "спа",
-            "спорт",
-        ],
-        default=["история", "еда"],
+        INTERESTS,
+        default=["история", "местная кухня"],
         placeholder="Выберите интересы",
+        help=(
+            "Выберите несколько интересов — AI использует их при создании "
+            "маршрута и подборе активностей."
+        ),
     )
 
     notes = st.text_area(
@@ -417,7 +556,9 @@ with st.form("plan_form"):
 if not submitted:
     st.stop()
 
-# ---------- ВАЛИДАЦИЯ ВВОДА ----------
+# ==========================================================
+# ВАЛИДАЦИЯ ВВОДА
+# ==========================================================
 
 if not dest.strip():
     st.error("Укажите направление поездки.")
@@ -436,7 +577,9 @@ if days < 1 or days > ai.MAX_DAYS:
     )
     st.stop()
 
-# ---------- СБОРКА ПРОМПТА ----------
+# ==========================================================
+# СБОРКА ПРОМПТА
+# ==========================================================
 
 user_prompt = ai.build_prompt(
     dest=dest.strip(),
@@ -452,7 +595,9 @@ user_prompt = ai.build_prompt(
     notes=notes.strip() or "нет",
 )
 
-# ---------- ГЕНЕРАЦИЯ ----------
+# ==========================================================
+# ГЕНЕРАЦИЯ AI-МАРШРУТА
+# ==========================================================
 
 with st.spinner(
     "✦ AI анализирует предпочтения и составляет маршрут… "
@@ -474,12 +619,16 @@ with st.spinner(
 
 data = result["data"]
 
-# ---------- ПРОВЕРКА КАЧЕСТВА ----------
+# ==========================================================
+# ПРОВЕРКА КАЧЕСТВА
+# ==========================================================
 
 for warning in ai.validate(data):
     st.warning(warning)
 
-# ---------- СОХРАНЕНИЕ ----------
+# ==========================================================
+# СОХРАНЕНИЕ МАРШРУТА
+# ==========================================================
 
 trip_id = db.save_trip(
     user_id,
@@ -497,19 +646,13 @@ trip_id = db.save_trip(
 
 db.init_expenses_from_plan(trip_id, data)
 
-st.success(
-    "Маршрут успешно создан и сохранён. "
-    f"Токены: {result['tokens_in']} вход / "
-    f"{result['tokens_out']} выход."
-)
+# Сохраняем данные между перезапусками Streamlit.
+st.session_state["generated_trip_id"] = int(trip_id)
+st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
+st.session_state["generated_tokens_out"] = result.get("tokens_out", 0)
 
+# Сохраняем созданную поездку как текущую.
 auth.remember_trip(trip_id)
 
-st.write("")
-
-if st.button(
-    "🗺️ Открыть готовый маршрут",
-    type="primary",
-    use_container_width=True,
-):
-    st.switch_page("pages/3_trip_detail.py")
+# На новом запуске появится экран с кнопкой открытия маршрута.
+st.rerun()
