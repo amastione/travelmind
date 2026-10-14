@@ -214,6 +214,8 @@ h1, h2, h3 {
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+auth.render_main_menu_button()
+
 # Темы обложек. Внешние изображения не используются.
 THEMES = {
     "city": {
@@ -508,7 +510,7 @@ for trip in trips:
             key=f"open_{trip_id}",
             use_container_width=True,
         ):
-            st.session_state["current_trip_id"] = trip_id
+            auth.remember_trip(trip_id)
             st.switch_page("pages/3_trip_detail.py")
 
     with action_delete:
