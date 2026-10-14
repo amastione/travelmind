@@ -822,3 +822,11 @@ with tab_register:
                 else:
                     auth.login(username, password)
                     st.rerun()
+st.markdown(
+    """
+    <div class="tm-author">
+        Concept & design by <strong>Michael Degtyarev</strong>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
