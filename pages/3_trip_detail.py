@@ -14,6 +14,7 @@ import ai
 import auth
 import db
 
+
 st.set_page_config(
     page_title="Маршрут поездки",
     page_icon="🗺️",
@@ -21,7 +22,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# АВТОРИЗАЦИЯ И ПОЛУЧЕНИЕ ДАННЫХ
+# АВТОРИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ
 # ==========================================================
 
 user_id = auth.require_auth()
@@ -61,25 +62,37 @@ curr = trip["currency"] or "RUB"
 
 CSS = """
 <style>
+/* ==========================================================
+   БАЗОВЫЙ СТИЛЬ ПРИЛОЖЕНИЯ
+   ========================================================== */
+
 .stApp {
     background:
         radial-gradient(
-            circle at 8% 7%,
-            rgba(34, 211, 238, 0.14),
-            transparent 28%
+            circle at 8% 8%,
+            rgba(34, 211, 238, 0.12),
+            transparent 29%
         ),
         radial-gradient(
             circle at 92% 88%,
-            rgba(139, 92, 246, 0.18),
-            transparent 35%
+            rgba(124, 92, 232, 0.16),
+            transparent 34%
         ),
         linear-gradient(
             135deg,
-            #070B14 0%,
-            #0D1628 52%,
-            #101426 100%
+            #060B15 0%,
+            #0A1427 52%,
+            #0E1325 100%
         );
-    color: #F4F7FB;
+    color: #F8FAFC;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "SF Pro Text",
+        "Segoe UI",
+        sans-serif;
 }
 
 .block-container {
@@ -88,60 +101,67 @@ CSS = """
     padding-bottom: 4rem;
 }
 
-#MainMenu {
-    visibility: hidden;
-}
-
+#MainMenu,
 footer {
     visibility: hidden;
 }
 
-h1, h2, h3, h4 {
-    color: #F8FAFC !important;
+h1,
+h2,
+h3,
+h4,
+p,
+span,
+label,
+button {
     font-family:
+        Inter,
         -apple-system,
         BlinkMacSystemFont,
         "SF Pro Display",
+        "SF Pro Text",
         "Segoe UI",
         sans-serif !important;
 }
 
-/* ---------- ШАПКА ПОЕЗДКИ ---------- */
+/* ==========================================================
+   ШАПКА МАРШРУТА
+   ========================================================== */
 
 .tm-hero-label {
-    color: #72E8FB;
-    font-size: 0.84rem;
-    font-weight: 850;
-    letter-spacing: 0.11rem;
+    color: #79EAFB;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.1rem;
     text-transform: uppercase;
 }
 
 .tm-hero-title {
-    margin: 0.4rem 0 0 !important;
+    margin: 0.42rem 0 0 !important;
     color: #FFFFFF !important;
-    font-size: 2.55rem !important;
-    font-weight: 850 !important;
-    letter-spacing: -0.075rem;
-    line-height: 1.14;
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.07rem;
+    line-height: 1.15;
 }
 
 .tm-hero-meta {
     margin-top: 0.8rem;
-    color: #D0DDF0;
-    font-size: 1.06rem;
-    font-weight: 600;
+    color: #D0DCEF;
+    font-size: 1.04rem;
+    font-weight: 580;
     line-height: 1.7;
 }
 
 .tm-overview-box {
     margin-top: 1.1rem;
     padding: 1rem 1.15rem;
-    border: 1px solid rgba(103, 232, 249, 0.16);
+    border: 1px solid rgba(125, 211, 252, 0.14);
     border-left: 3px solid #22D3EE;
     border-radius: 0 16px 16px 0;
     background: rgba(34, 211, 238, 0.055);
-    color: #DEE9F5;
-    font-size: 1.02rem;
+    color: #DDE8F4;
+    font-size: 1.01rem;
     font-weight: 500;
     line-height: 1.7;
 }
@@ -149,219 +169,241 @@ h1, h2, h3, h4 {
 .tm-mood-box {
     margin-top: 0.9rem;
     color: #FDE68A;
-    font-size: 0.98rem;
-    font-weight: 650;
+    font-size: 0.96rem;
+    font-weight: 620;
 }
 
-/* ---------- КАРТОЧКИ ---------- */
+/* ==========================================================
+   КАРТОЧКИ И МЕТРИКИ
+   ========================================================== */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
-    border-color: rgba(148, 163, 184, 0.23) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
     border-radius: 22px !important;
-    background: rgba(15, 23, 42, 0.70) !important;
+    background: rgba(15, 23, 42, 0.68) !important;
     box-shadow:
-        0 16px 35px rgba(0, 0, 0, 0.13),
-        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        0 14px 32px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 [data-testid="stMetric"] {
-    min-height: 128px;
-    padding: 1.05rem 1.15rem;
-    border: 1px solid rgba(148, 163, 184, 0.21);
+    min-height: 125px;
+    padding: 1rem 1.12rem;
+    border: 1px solid rgba(148, 163, 184, 0.20);
     border-radius: 19px;
     background:
         linear-gradient(
             145deg,
-            rgba(22, 32, 57, 0.78),
-            rgba(10, 18, 35, 0.76)
+            rgba(22, 33, 58, 0.78),
+            rgba(10, 18, 34, 0.75)
         );
     box-shadow:
-        0 14px 30px rgba(0, 0, 0, 0.14),
+        0 13px 28px rgba(0, 0, 0, 0.13),
         inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 [data-testid="stMetricLabel"] {
-    color: #C1D0E4 !important;
-    font-size: 0.94rem !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.01rem !important;
+    color: #C1CFE1 !important;
+    font-size: 0.93rem !important;
+    font-weight: 650 !important;
 }
 
 [data-testid="stMetricValue"] {
     color: #FFFFFF !important;
-    font-size: 2.05rem !important;
-    font-weight: 750 !important;
+    font-size: 2rem !important;
+    font-weight: 720 !important;
     letter-spacing: -0.05rem !important;
 }
 
 /* ==========================================================
-   ВКЛАДКИ — APPLE-STYLE / ПОЛУКРУГЛЫЕ
+   ВКЛАДКИ — GLASS NAVIGATION / PREMIUM TRAVEL UI
+
+   Панель:
+   - единый стеклянный контейнер;
+   - равная высота всех вкладок;
+   - gap между пунктами;
+   - хорошо читаемые неактивные пункты;
+   - мягкое компактное active-состояние.
    ========================================================== */
 
 .stTabs {
-    margin-top: 2.45rem;
+    margin-top: 2rem;
 }
 
-/* Общая линия под вкладками */
+/* Общий контейнер навигации */
 .stTabs [data-baseweb="tab-list"] {
     display: flex;
-    gap: 0.25rem;
-    align-items: flex-end;
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 72px;
     overflow-x: auto;
-    padding: 0 0.35rem;
-    border-bottom: 1px solid rgba(119, 190, 225, 0.44);
+    padding: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 20px;
     background:
         linear-gradient(
-            180deg,
-            rgba(15, 23, 42, 0.10),
-            rgba(15, 23, 42, 0.00)
+            135deg,
+            rgba(22, 34, 57, 0.78),
+            rgba(10, 18, 34, 0.74)
         );
+    box-shadow:
+        0 15px 34px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    scrollbar-width: none;
 }
 
-/* Неактивные вкладки */
+/* Скрываем scrollbar на Chrome / Safari */
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+    display: none;
+}
+
+/* Все вкладки: единая структура */
 .stTabs [data-baseweb="tab"] {
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
-    min-height: 65px;
+    min-height: 54px;
     margin: 0 !important;
-    padding: 1rem 1.45rem 0.92rem !important;
-    border: 1px solid transparent;
-    border-bottom: 0;
-    border-radius: 24px 24px 0 0 !important;
-    background: transparent !important;
-    color: #D9E8F7 !important;
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "Segoe UI",
-        sans-serif !important;
-    font-size: 1.16rem !important;
-    font-weight: 760 !important;
-    letter-spacing: -0.025rem !important;
-    opacity: 0.94;
+    padding: 0.85rem 1.15rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 15px !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+    color: #E4ECF7 !important;
+    font-size: 1.08rem !important;
+    font-weight: 680 !important;
+    letter-spacing: -0.018rem !important;
+    line-height: 1 !important;
+    opacity: 1 !important;
     transition:
-        background 0.26s ease,
-        color 0.26s ease,
-        transform 0.26s ease,
-        opacity 0.26s ease,
-        box-shadow 0.26s ease;
+        background 200ms ease,
+        border-color 200ms ease,
+        color 200ms ease,
+        box-shadow 200ms ease,
+        transform 200ms ease;
 }
 
-/* Текст внутри вкладок */
+/* Текст и иконка внутри tab */
 .stTabs [data-baseweb="tab"] p {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0 !important;
     color: inherit !important;
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "Segoe UI",
-        sans-serif !important;
     font-size: inherit !important;
     font-weight: inherit !important;
     letter-spacing: inherit !important;
+    line-height: 1 !important;
     white-space: nowrap;
 }
 
-/* Мягкое свечение неактивных вкладок при наведении */
+/* Неактивная вкладка: hover */
 .stTabs [data-baseweb="tab"]:hover {
     z-index: 2;
+    border-color: rgba(125, 211, 252, 0.32) !important;
     background:
         linear-gradient(
-            145deg,
-            rgba(103, 232, 249, 0.15),
-            rgba(139, 92, 246, 0.12)
+            135deg,
+            rgba(103, 232, 249, 0.13),
+            rgba(139, 92, 246, 0.11)
         ) !important;
     color: #FFFFFF !important;
-    opacity: 1;
-    transform: translateY(-4px);
     box-shadow:
-        0 -8px 21px rgba(34, 211, 238, 0.10),
+        0 8px 18px rgba(0, 0, 0, 0.14),
         inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    transform: translateY(-1px);
 }
 
-/* Активная вкладка — гладкая, объёмная, яркая */
+/* Деликатный focus ring для клавиатурной навигации */
+.stTabs [data-baseweb="tab"]:focus-visible {
+    outline: 3px solid rgba(103, 232, 249, 0.48) !important;
+    outline-offset: 2px !important;
+}
+
+/* Активная вкладка */
 .stTabs [aria-selected="true"] {
     z-index: 3;
-    min-height: 78px;
-    margin-bottom: -1px !important;
-    padding: 1.15rem 1.8rem 1.06rem !important;
-    border: 1px solid rgba(216, 249, 255, 0.78) !important;
-    border-bottom: 1px solid #15294A !important;
-    border-radius: 31px 31px 0 0 !important;
+    border: 1px solid rgba(224, 249, 255, 0.66) !important;
     background:
         radial-gradient(
-            circle at 26% 18%,
-            rgba(255, 255, 255, 0.28),
-            transparent 30%
+            circle at 22% 0%,
+            rgba(255, 255, 255, 0.20),
+            transparent 36%
         ),
         linear-gradient(
             135deg,
-            #0899B9 0%,
-            #20C9E6 44%,
-            #4D8FF2 69%,
-            #7652E8 100%
+            #078FAA 0%,
+            #16C7E2 46%,
+            #548CF0 73%,
+            #7653DF 100%
         ) !important;
     color: #FFFFFF !important;
-    font-size: 1.27rem !important;
-    font-weight: 850 !important;
-    opacity: 1;
+    font-size: 1.08rem !important;
+    font-weight: 760 !important;
     box-shadow:
-        0 -14px 30px rgba(34, 211, 238, 0.18),
-        0 8px 22px rgba(75, 66, 190, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.46),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+        0 8px 22px rgba(34, 211, 238, 0.19),
+        0 5px 16px rgba(91, 74, 208, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.09);
+    transform: none;
 }
 
-/* Световая тонкая линия внизу активной вкладки */
+/* Световой акцент снизу у активного пункта */
 .stTabs [aria-selected="true"]::after {
     content: "";
     position: absolute;
-    right: 17%;
-    bottom: 8px;
-    left: 17%;
+    right: 17px;
+    bottom: 7px;
+    left: 17px;
     height: 2px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 0 9px rgba(255, 255, 255, 0.42);
 }
 
-/* Убираем стандартный индикатор Streamlit */
+/* Убираем стандартную полоску Streamlit */
 .stTabs [data-baseweb="tab-highlight"] {
     display: none !important;
 }
 
-/* ---------- КОНТЕНТ ---------- */
+/* ==========================================================
+   КОНТЕНТ ВКЛАДОК
+   ========================================================== */
 
 .tm-section-title {
-    margin-top: 1.7rem;
+    margin-top: 1.75rem;
     margin-bottom: 0.45rem;
     color: #FFFFFF;
     font-size: 1.62rem;
-    font-weight: 820;
-    letter-spacing: -0.04rem;
+    font-weight: 800;
+    letter-spacing: -0.045rem;
 }
 
 .tm-section-text {
     margin-bottom: 1.2rem;
-    color: #C3D1E3;
+    color: #C8D5E6;
     font-size: 1.02rem;
-    font-weight: 520;
+    font-weight: 510;
     line-height: 1.68;
 }
 
 .streamlit-expanderHeader {
-    border: 1px solid rgba(148, 163, 184, 0.22) !important;
+    border: 1px solid rgba(148, 163, 184, 0.20) !important;
     border-radius: 16px !important;
     background:
         linear-gradient(
             145deg,
-            rgba(21, 32, 57, 0.80),
-            rgba(12, 20, 38, 0.76)
+            rgba(22, 33, 57, 0.78),
+            rgba(11, 19, 37, 0.75)
         ) !important;
     color: #FFFFFF !important;
-    font-size: 1.03rem !important;
-    font-weight: 760 !important;
+    font-size: 1.02rem !important;
+    font-weight: 720 !important;
 }
 
 .tm-activity {
@@ -374,21 +416,21 @@ h1, h2, h3, h4 {
 }
 
 .tm-activity-time {
-    color: #72E8FB;
+    color: #78EAFB;
     font-size: 0.88rem;
-    font-weight: 800;
+    font-weight: 780;
 }
 
 .tm-activity-title {
-    margin-top: 0.28rem;
+    margin-top: 0.27rem;
     color: #FFFFFF;
     font-size: 1.08rem;
-    font-weight: 780;
+    font-weight: 760;
 }
 
 .tm-activity-info {
     margin-top: 0.4rem;
-    color: #C6D6E9;
+    color: #C7D6E8;
     font-size: 0.93rem;
     font-weight: 550;
     line-height: 1.55;
@@ -396,7 +438,7 @@ h1, h2, h3, h4 {
 
 .tm-activity-description {
     margin-top: 0.46rem;
-    color: #DFE8F3;
+    color: #DEE8F2;
     font-size: 0.93rem;
     line-height: 1.6;
 }
@@ -409,7 +451,7 @@ h1, h2, h3, h4 {
     background: rgba(139, 92, 246, 0.14);
     color: #F0EAFF;
     font-size: 0.96rem;
-    font-weight: 760;
+    font-weight: 730;
 }
 
 .tm-map-card {
@@ -423,12 +465,12 @@ h1, h2, h3, h4 {
 .tm-tip-card {
     margin: 0.7rem 0;
     padding: 1.05rem;
-    border: 1px solid rgba(148, 163, 184, 0.19);
+    border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 16px;
     background: rgba(15, 23, 42, 0.68);
-    color: #D5E1EF;
+    color: #D4E0EE;
     font-size: 0.96rem;
-    font-weight: 550;
+    font-weight: 530;
     line-height: 1.62;
 }
 
@@ -441,22 +483,22 @@ h1, h2, h3, h4 {
     background: linear-gradient(
         135deg,
         #06B6D4 0%,
-        #22D3EE 46%,
+        #22D3EE 47%,
         #8B5CF6 100%
     ) !important;
     color: #FFFFFF !important;
     font-size: 0.97rem;
-    font-weight: 760;
+    font-weight: 720;
     box-shadow:
-        0 10px 23px rgba(34, 211, 238, 0.18),
+        0 10px 23px rgba(34, 211, 238, 0.17),
         inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 
 .stButton > button:hover,
 .stLinkButton > a:hover,
 .stDownloadButton > button:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.08);
+    transform: translateY(-1px);
+    filter: brightness(1.07);
 }
 
 .stNumberInput input {
@@ -471,22 +513,26 @@ h1, h2, h3, h4 {
     border-radius: 14px;
 }
 
+/* ==========================================================
+   АДАПТАЦИЯ ДЛЯ ПЛАНШЕТОВ И МОБИЛЬНЫХ
+   ========================================================== */
+
 @media (max-width: 900px) {
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0.15rem;
-        padding: 0 0.1rem;
+        gap: 0.45rem;
+        min-height: 68px;
+        padding: 0.45rem;
+        border-radius: 18px;
     }
 
     .stTabs [data-baseweb="tab"] {
-        min-height: 60px;
-        padding: 0.92rem 1.15rem 0.82rem !important;
-        font-size: 1.08rem !important;
+        min-height: 52px;
+        padding: 0.8rem 1.05rem !important;
+        font-size: 1rem !important;
     }
 
     .stTabs [aria-selected="true"] {
-        min-height: 70px;
-        padding: 1.05rem 1.32rem 0.96rem !important;
-        font-size: 1.15rem !important;
+        font-size: 1rem !important;
     }
 }
 
@@ -500,7 +546,21 @@ h1, h2, h3, h4 {
     }
 
     [data-testid="stMetricValue"] {
-        font-size: 1.68rem !important;
+        font-size: 1.65rem !important;
+    }
+
+    .stTabs {
+        margin-top: 1.55rem;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        margin: 0 -0.1rem;
+        border-radius: 17px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.78rem 1rem !important;
+        font-size: 0.98rem !important;
     }
 }
 </style>
@@ -509,7 +569,7 @@ h1, h2, h3, h4 {
 st.markdown(CSS, unsafe_allow_html=True)
 
 # ==========================================================
-# СЛОВАРИ
+# СЛОВАРИ И НАСТРОЙКИ
 # ==========================================================
 
 ICONS = {
@@ -576,7 +636,7 @@ def as_float(value, default=0.0):
 
 
 def text_value(value, default=""):
-    """Безопасно возвращает строку."""
+    """Безопасно возвращает текст."""
     if value is None:
         return default
     return str(value)
@@ -610,34 +670,39 @@ with st.container(border=True):
         unsafe_allow_html=True,
     )
 
-    meta_html = (
-        '<div class="tm-hero-meta">'
-        f'📍 {escape(destination)}<br>'
-        f'📅 {escape(start_date_text)} — {escape(end_date_text)} · '
-        f'👥 {people} чел.'
-        '</div>'
+    st.markdown(
+        (
+            '<div class="tm-hero-meta">'
+            f'📍 {escape(destination)}<br>'
+            f'📅 {escape(start_date_text)} — {escape(end_date_text)} · '
+            f'👥 {people} чел.'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
     )
 
-    st.markdown(meta_html, unsafe_allow_html=True)
-
     if overview:
-        overview_html = (
-            '<div class="tm-overview-box">'
-            f'{escape(overview)}'
-            '</div>'
+        st.markdown(
+            (
+                '<div class="tm-overview-box">'
+                f'{escape(overview)}'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
         )
-        st.markdown(overview_html, unsafe_allow_html=True)
 
     if mood_reason:
-        mood_html = (
-            '<div class="tm-mood-box">'
-            f'🙂 {escape(mood_reason)}'
-            '</div>'
+        st.markdown(
+            (
+                '<div class="tm-mood-box">'
+                f'🙂 {escape(mood_reason)}'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
         )
-        st.markdown(mood_html, unsafe_allow_html=True)
 
 # ==========================================================
-# МЕТРИКИ И КАЛЬКУЛЯЦИЯ РАСХОДОВ
+# МЕТРИКИ И РАСХОДЫ
 # ==========================================================
 
 expenses = db.get_expenses(trip_id)
@@ -662,14 +727,14 @@ elif abs(remaining_by_items) < 0.01:
 
 elif remaining_by_items > 0:
     expense_status = (
-        f"По плановым статьям ещё не внесено: "
+        "По плановым статьям ещё не внесено: "
         f"{remaining_by_items:.0f} {curr}"
     )
     expense_status_icon = "⏳"
 
 else:
     expense_status = (
-        f"Превышение плана по внесённым расходам: "
+        "Превышение плана по внесённым расходам: "
         f"{abs(remaining_by_items):.0f} {curr}"
     )
     expense_status_icon = "⚠️"
@@ -702,21 +767,21 @@ with metric_4:
     )
 
 # ==========================================================
-# ВКЛАДКИ
+# ВКЛАДКИ МАРШРУТА
 # ==========================================================
 
 tab_route, tab_map, tab_budget, tab_tips, tab_ai = st.tabs(
     [
-        "📅 Маршрут по дням",
-        "🗺️ Карта поездки",
-        "💳 Бюджет и расходы",
-        "💡 Советы",
-        "🤖 Данные AI",
+        "▦  Маршрут по дням",
+        "⌖  Карта поездки",
+        "◫  Бюджет и расходы",
+        "✦  Советы",
+        "⌘  Данные AI",
     ]
 )
 
 # ==========================================================
-# ВКЛАДКА 1 — МАРШРУТ
+# ВКЛАДКА 1 — МАРШРУТ ПО ДНЯМ
 # ==========================================================
 
 with tab_route:
@@ -816,7 +881,7 @@ with tab_route:
                         )
 
                     st.link_button(
-                        "📍 Открыть на карте",
+                        "⌖ Открыть на карте",
                         google_maps_url,
                         use_container_width=True,
                     )
@@ -933,7 +998,7 @@ with tab_route:
                     '</div>'
                     '<div class="tm-activity-info">'
                     f'⏱️ {escape(duration)} мин · '
-                    f'📍 {escape(location)}'
+                    f'⌖ {escape(location)}'
                     '</div>'
                     '<div class="tm-activity-description">'
                     f'{escape(description)}'
@@ -947,7 +1012,7 @@ with tab_route:
                 )
 
                 if tip:
-                    st.caption(f"💡 {tip}")
+                    st.caption(f"✦ {tip}")
 
             day_cost = as_float(day.get("day_cost"), 0)
 
@@ -966,7 +1031,7 @@ with tab_route:
 
 with tab_map:
     st.markdown(
-        '<div class="tm-section-title">🗺️ Карта маршрута</div>',
+        '<div class="tm-section-title">⌖ Карта маршрута</div>',
         unsafe_allow_html=True,
     )
 
@@ -1075,7 +1140,7 @@ with tab_map:
 
 with tab_budget:
     st.markdown(
-        '<div class="tm-section-title">💳 Бюджет и фактические расходы</div>',
+        '<div class="tm-section-title">◫ Бюджет и фактические расходы</div>',
         unsafe_allow_html=True,
     )
 
@@ -1163,7 +1228,7 @@ with tab_budget:
 
     if budget_breakdown:
         st.markdown(
-            '<div class="tm-section-title">📊 Структура планового бюджета</div>',
+            '<div class="tm-section-title">◫ Структура планового бюджета</div>',
             unsafe_allow_html=True,
         )
 
@@ -1196,7 +1261,7 @@ with tab_budget:
 
 with tab_tips:
     st.markdown(
-        '<div class="tm-section-title">💡 Полезное для поездки</div>',
+        '<div class="tm-section-title">✦ Полезное для поездки</div>',
         unsafe_allow_html=True,
     )
 
@@ -1213,13 +1278,13 @@ with tab_tips:
     wow_moments = data.get("wow_moments") or []
 
     if wow_moments:
-        st.subheader("✨ Главные впечатления")
+        st.subheader("✦ Главные впечатления")
 
         for moment in wow_moments:
             st.markdown(
                 (
                     '<div class="tm-tip-card">'
-                    f'✨ {escape(text_value(moment))}'
+                    f'✦ {escape(text_value(moment))}'
                     '</div>'
                 ),
                 unsafe_allow_html=True,
@@ -1228,7 +1293,7 @@ with tab_tips:
     packing = data.get("packing") or []
 
     if packing:
-        st.subheader("🎒 Что взять с собой")
+        st.subheader("⌘ Что взять с собой")
 
         for index, item in enumerate(packing):
             st.checkbox(
@@ -1239,7 +1304,7 @@ with tab_tips:
     phrases = data.get("phrases") or []
 
     if phrases:
-        st.subheader("💬 Полезные фразы")
+        st.subheader("◌ Полезные фразы")
 
         for phrase in phrases:
             russian = text_value(phrase.get("ru"))
@@ -1252,7 +1317,7 @@ with tab_tips:
     tips = data.get("tips") or {}
 
     if tips:
-        st.subheader("🧭 Советы путешественнику")
+        st.subheader("⌁ Советы путешественнику")
 
         for key, value in tips.items():
             tip_title = TIP_RU.get(key, key)
@@ -1273,7 +1338,7 @@ with tab_tips:
 
 with tab_ai:
     st.markdown(
-        '<div class="tm-section-title">🤖 Данные AI-маршрута</div>',
+        '<div class="tm-section-title">⌘ Данные AI-маршрута</div>',
         unsafe_allow_html=True,
     )
 
@@ -1301,7 +1366,7 @@ with tab_ai:
 
     with download_markdown:
         st.download_button(
-            label="⬇️ Скачать маршрут в Markdown",
+            label="⬇ Скачать маршрут в Markdown",
             data=markdown_content,
             file_name=f"travelmind_trip_{trip_id}.md",
             mime="text/markdown",
@@ -1310,7 +1375,7 @@ with tab_ai:
 
     with download_json:
         st.download_button(
-            label="⬇️ Скачать маршрут в JSON",
+            label="⬇ Скачать маршрут в JSON",
             data=json_content,
             file_name=f"travelmind_trip_{trip_id}.json",
             mime="application/json",
