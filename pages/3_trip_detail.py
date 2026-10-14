@@ -48,7 +48,7 @@ if not trip:
         use_container_width=True,
     )
     st.stop()
-
+    auth.remember_trip(trip_id)
 try:
     data = json.loads(trip["data"])
 except (json.JSONDecodeError, TypeError):
@@ -644,6 +644,8 @@ details[data-testid="stExpander"] > div {
 """
 
 st.markdown(CSS, unsafe_allow_html=True)
+
+auth.render_main_menu_button()
 
 # ==========================================================
 # СЛОВАРИ И ФУНКЦИИ
