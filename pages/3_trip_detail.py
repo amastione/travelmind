@@ -1,6 +1,7 @@
 """Детали поездки: маршрут, карта, расходы, советы и экспорт."""
 import json
 from collections import defaultdict
+from datetime import date
 from urllib.parse import quote_plus
 
 import folium
@@ -13,7 +14,7 @@ import auth
 import db
 
 st.set_page_config(
-    page_title="Детали поездки",
+    page_title="Маршрут поездки",
     page_icon="🗺️",
     layout="wide",
 )
@@ -76,6 +77,80 @@ TIP_RU = {
     "money": "💳 Деньги",
 }
 
+TIER_STYLES = {
+    "Эконом": {
+        "label": "ЭКОНОМ",
+        "color": "#38bdf8",
+        "emoji": "💎",
+    },
+    "Оптимальный": {
+        "label": "ОПТИМАЛЬНЫЙ",
+        "color": "#34d399",
+        "emoji": "⭐",
+    },
+    "Премиум": {
+        "label": "ПРЕМИУМ",
+        "color": "#a78bfa",
+        "emoji": "👑",
+    },
+}
+
+# Тематические фото для учебного MVP:
+# фасад, холл и интерьер номера.
+HOTEL_IMAGES = {
+    "Эконом": {
+        "exterior": (
+            "https://images.unsplash.com/"
+            "photo-1566073771259-6a8506099945"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "lobby": (
+            "https://images.unsplash.com/"
+            "photo-1551882547-ff40c63fe5fa"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "room": (
+            "https://images.unsplash.com/"
+            "photo-1590490360182-c33d57733427"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+    },
+    "Оптимальный": {
+        "exterior": (
+            "https://images.unsplash.com/"
+            "photo-1542314831-068cd1dbfeeb"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "lobby": (
+            "https://images.unsplash.com/"
+            "photo-1600607687920-4e2a09cf159d"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "room": (
+            "https://images.unsplash.com/"
+            "photo-1618773928121-c32242e63f39"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+    },
+    "Премиум": {
+        "exterior": (
+            "https://images.unsplash.com/"
+            "photo-1571896349842-33c89424de2d"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "lobby": (
+            "https://images.unsplash.com/"
+            "photo-1582719508461-905c673771fd"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+        "room": (
+            "https://images.unsplash.com/"
+            "photo-1584132967334-10e028bd69f7"
+            "?auto=format&fit=crop&w=900&q=80"
+        ),
+    },
+}
+
 
 # ---------- ШАПКА СТРАНИЦЫ ----------
 
@@ -90,7 +165,6 @@ st.caption(
 
 st.write(data.get("overview", ""))
 
-# Получаем данные расходов
 expenses = db.get_expenses(trip_id)
 
 plan_sum = sum((expense["cost_plan"] or 0) for expense in expenses)
@@ -100,7 +174,6 @@ total_cost = data.get("total_cost")
 if not total_cost:
     total_cost = plan_sum
 
-# Основные метрики
 m1, m2, m3, m4 = st.columns(4)
 
 m1.metric("Плановый бюджет", f"{total_cost:.0f} {curr}")
@@ -109,32 +182,35 @@ actual_delta = None
 if actual_sum:
     actual_delta = f"{actual_sum - plan_sum:+.0f} {curr}"
 
-m2.metric("Фактические расходы", f"{actual_sum:.0f} {curr}", delta=actual_delta)
+m2.metric(
+    "Фактические расходы",
+    f"{actual_sum:.0f} {curr}",
+    delta=actual_delta,
+)
 
 m3.metric("Ожидаемые эмоции", f"{data.get('mood_score', '—')}/10")
-
 m4.metric("Дней в поездке", len(data.get("days", [])))
 
 if data.get("mood_reason"):
     st.caption(f"🙂 {data['mood_reason']}")
 
-# Вкладки страницы
 tabs = st.tabs(
     [
-        "📅 План поездки",
-        "🗺️ Карта",
-        "💰 План / факт",
-        "✨ Полезное",
-        "🔧 JSON",
+        "📅 Маршрут по дням",
+        "🗺️ Карта поездки",
+        "💰 Бюджет и расходы",
+        "✨ Советы путешественнику",
+        "🔧 Данные AI",
     ]
 )
 
 
-# ---------- ВКЛАДКА 1. ПЛАН ПОЕЗДКИ ----------
+# ---------- ВКЛАДКА 1. МАРШРУТ И ОТЕЛИ ----------
 
 with tabs[0]:
-        hotels = data.get("hotels") or []
+    hotels = data.get("hotels") or []
 
+    # Новый формат: три варианта отелей из AI-промпта v3.0
     if hotels:
         st.subheader("🏨 Где остановиться")
 
@@ -144,155 +220,98 @@ with tabs[0]:
             "на официальном сайте отеля или в сервисе бронирования."
         )
 
-        # Количество ночей: дата окончания минус дата начала.
-        # Для поездки с 10 по 13 июля — 3 ночи.
         try:
-            from datetime import date
-
             start_date = date.fromisoformat(str(trip["start_date"]))
             end_date = date.fromisoformat(str(trip["end_date"]))
             nights = max((end_date - start_date).days, 1)
         except (TypeError, ValueError):
             nights = max(len(data.get("days", [])) - 1, 1)
 
-        tier_styles = {
-            "Эконом": {
-                "label": "ЭКОНОМ",
-                "color": "#38bdf8",
-                "emoji": "💎",
-            },
-            "Оптимальный": {
-                "label": "ОПТИМАЛЬНЫЙ",
-                "color": "#34d399",
-                "emoji": "⭐",
-            },
-            "Премиум": {
-                "label": "ПРЕМИУМ",
-                "color": "#a78bfa",
-                "emoji": "👑",
-            },
-        }
-
-        # Демонстрационные изображения для учебного MVP.
-        # Это тематические фото: фасад, холл и интерьер номера.
-        hotel_images = {
-            "Эконом": {
-                "exterior": (
-                    "https://images.unsplash.com/"
-                    "photo-1566073771259-6a8506099945"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "lobby": (
-                    "https://images.unsplash.com/"
-                    "photo-1551882547-ff40c63fe5fa"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "room": (
-                    "https://images.unsplash.com/"
-                    "photo-1590490360182-c33d57733427"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-            },
-            "Оптимальный": {
-                "exterior": (
-                    "https://images.unsplash.com/"
-                    "photo-1542314831-068cd1dbfeeb"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "lobby": (
-                    "https://images.unsplash.com/"
-                    "photo-1600607687920-4e2a09cf159d"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "room": (
-                    "https://images.unsplash.com/"
-                    "photo-1618773928121-c32242e63f39"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-            },
-            "Премиум": {
-                "exterior": (
-                    "https://images.unsplash.com/"
-                    "photo-1571896349842-33c89424de2d"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "lobby": (
-                    "https://images.unsplash.com/"
-                    "photo-1582719508461-905c673771fd"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-                "room": (
-                    "https://images.unsplash.com/"
-                    "photo-1584132967334-10e028bd69f7"
-                    "?auto=format&fit=crop&w=900&q=80"
-                ),
-            },
-        }
-
         hotel_columns = st.columns(3)
 
         for index, hotel in enumerate(hotels[:3]):
             tier = hotel.get("tier", "Оптимальный")
-            style = tier_styles.get(
+
+            style = TIER_STYLES.get(
                 tier,
-                tier_styles["Оптимальный"],
+                TIER_STYLES["Оптимальный"],
             )
-            images = hotel_images.get(
+
+            images = HOTEL_IMAGES.get(
                 tier,
-                hotel_images["Оптимальный"],
+                HOTEL_IMAGES["Оптимальный"],
             )
 
             rooms = hotel.get("rooms") or {}
+
             economy_price = float(rooms.get("economy", 0) or 0)
             standard_price = float(rooms.get("standard", 0) or 0)
             luxury_price = float(rooms.get("luxury", 0) or 0)
 
-            # За основу общей цены берём стандартный номер.
             total_stay = standard_price * nights
 
             with hotel_columns[index]:
                 st.markdown(
                     f"""
                     <div style="
-                        border: 1px solid {style['color']};
+                        border: 1px solid {style["color"]};
                         border-radius: 16px;
                         padding: 12px 14px;
                         margin-bottom: 10px;
                         background: rgba(17, 24, 39, 0.55);
                     ">
                         <span style="
-                            color: {style['color']};
+                            color: {style["color"]};
                             font-size: 12px;
                             font-weight: 700;
                             letter-spacing: 1px;
                         ">
-                            {style['emoji']} {style['label']}
+                            {style["emoji"]} {style["label"]}
                         </span>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-                st.markdown(f"#### {hotel.get('name', 'Вариант проживания')}")
-                st.caption(f"📍 {hotel.get('area', 'Удобный район')}")
+                st.markdown(
+                    f"#### {hotel.get('name', 'Вариант проживания')}"
+                )
+
+                st.caption(
+                    f"📍 {hotel.get('area', 'Удобный район')}"
+                )
 
                 rating = hotel.get("rating", 0)
-                if rating and float(rating) > 0:
-                    st.write(f"⭐ Рейтинг: **{rating}/10**")
 
-                # Три фото: фасад, холл, номер.
+                try:
+                    rating_value = float(rating)
+                except (TypeError, ValueError):
+                    rating_value = 0
+
+                if rating_value > 0:
+                    st.write(f"⭐ Рейтинг: **{rating_value:.1f}/10**")
+
                 photo_1, photo_2, photo_3 = st.columns(3)
 
                 with photo_1:
-                    st.image(images["exterior"], use_container_width=True)
+                    st.image(
+                        images["exterior"],
+                        use_container_width=True,
+                    )
                     st.caption("Фасад")
 
                 with photo_2:
-                    st.image(images["lobby"], use_container_width=True)
+                    st.image(
+                        images["lobby"],
+                        use_container_width=True,
+                    )
                     st.caption("Холл")
 
                 with photo_3:
-                    st.image(images["room"], use_container_width=True)
+                    st.image(
+                        images["room"],
+                        use_container_width=True,
+                    )
                     st.caption("Номер")
 
                 st.write(hotel.get("why", ""))
@@ -300,9 +319,21 @@ with tabs[0]:
                 st.markdown("**Ориентировочная цена за ночь**")
 
                 price_col_1, price_col_2, price_col_3 = st.columns(3)
-                price_col_1.metric("Эконом", f"{economy_price:.0f} {curr}")
-                price_col_2.metric("Стандарт", f"{standard_price:.0f} {curr}")
-                price_col_3.metric("Люкс", f"{luxury_price:.0f} {curr}")
+
+                price_col_1.metric(
+                    "Эконом",
+                    f"{economy_price:.0f} {curr}",
+                )
+
+                price_col_2.metric(
+                    "Стандарт",
+                    f"{standard_price:.0f} {curr}",
+                )
+
+                price_col_3.metric(
+                    "Люкс",
+                    f"{luxury_price:.0f} {curr}",
+                )
 
                 st.info(
                     f"Стандартный номер: примерно "
@@ -326,10 +357,11 @@ with tabs[0]:
                 )
 
         st.divider()
+
+    # Поддержка старого поля accommodation для старых поездок
     accommodation = data.get("accommodation") or {}
 
-    # Поддержка старого формата: один объект проживания
-    if isinstance(accommodation, dict) and accommodation:
+    if not hotels and isinstance(accommodation, dict) and accommodation:
         st.info(
             f"🏨 **Проживание:** {accommodation.get('type', '')} "
             f"в районе {accommodation.get('area', '')} · "
@@ -337,8 +369,7 @@ with tabs[0]:
             f"{accommodation.get('why', '')}"
         )
 
-    # Поддержка нового формата: несколько вариантов проживания
-    elif isinstance(accommodation, list) and accommodation:
+    elif not hotels and isinstance(accommodation, list) and accommodation:
         st.subheader("🏨 Варианты проживания")
 
         for hotel in accommodation:
@@ -402,7 +433,6 @@ with tabs[0]:
 with tabs[1]:
     points = []
 
-    # Берём сгенерированные моделью координаты активностей
     for day in data.get("days", []):
         for activity in day.get("activities", []):
             lat = activity.get("lat")
@@ -426,8 +456,6 @@ with tabs[1]:
             sum(point[1] for point in points) / len(points),
         ]
 
-        # Нейтральная тёмная подложка CartoDB.
-        # API-ключ для неё не требуется.
         fmap = folium.Map(
             location=center,
             zoom_start=12,
@@ -437,7 +465,6 @@ with tabs[1]:
             attribution_control=False,
         )
 
-        # Добавляем маркеры активностей
         for lat, lon, activity, day_number in points:
             activity_type = activity.get("type", "")
             color = COLORS.get(activity_type, "blue")
@@ -458,7 +485,6 @@ with tabs[1]:
                 ),
             ).add_to(fmap)
 
-        # Соединяем активности линиями внутри одного дня
         points_by_day = defaultdict(list)
 
         for lat, lon, activity, day_number in points:
@@ -473,15 +499,15 @@ with tabs[1]:
                     color="#22d3ee",
                 ).add_to(fmap)
 
-        # returned_objects=[] предотвращает бесконечную перерисовку карты
-        
         st_folium(
             fmap,
             use_container_width=True,
             height=520,
             returned_objects=[],
         )
-st.caption("Картографические данные: © OpenStreetMap contributors")
+
+        st.caption("Картографические данные: © OpenStreetMap contributors")
+
 
 # ---------- ВКЛАДКА 3. ПЛАН / ФАКТ ----------
 
@@ -547,12 +573,13 @@ with tabs[2]:
         st.dataframe(chart_data, use_container_width=True)
 
         total_by_categories = chart_data["План"].sum()
+
         st.caption(
             f"Сумма по категориям: {total_by_categories:.0f} {curr}"
         )
 
 
-# ---------- ВКЛАДКА 4. WOW-МОМЕНТЫ, ЧЕМОДАН, ФРАЗЫ ----------
+# ---------- ВКЛАДКА 4. ПОЛЕЗНОЕ ----------
 
 with tabs[3]:
     wow_moments = data.get("wow_moments") or []
@@ -582,6 +609,7 @@ with tabs[3]:
         for phrase in phrases:
             russian = phrase.get("ru", "")
             local = phrase.get("local", "")
+
             st.markdown(f"**{russian}** — _{local}_")
 
     tips = data.get("tips") or {}
@@ -606,6 +634,7 @@ with tabs[4]:
     download_1, download_2 = st.columns(2)
 
     markdown_content = ai.to_markdown(data, curr)
+
     json_content = json.dumps(
         data,
         ensure_ascii=False,
