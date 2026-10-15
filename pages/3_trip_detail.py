@@ -967,6 +967,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+
 booking_col_1, booking_col_2, booking_col_3, booking_col_4 = st.columns(4)
 
 with booking_col_1:
