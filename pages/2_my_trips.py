@@ -560,7 +560,21 @@ def get_trip_travel_type(trip) -> str:
             return str(value)
 
     return ""
+def get_trip_cover_profile(trip) -> str:
+    """
+    Получает AI-профиль обложки из JSON-данных маршрута.
 
+    Новые маршруты содержат, например:
+    "cover_profile": "moscow"
+
+    У старых поездок этого поля может не быть — тогда вернётся
+    пустая строка, и cover_selector применит fallback-логику.
+    """
+    trip_data = get_trip_data(trip)
+
+    return str(
+        trip_data.get("cover_profile", "")
+    ).strip().lower()
 
 def build_cover_style(
     cover_url: str | None,
@@ -668,11 +682,17 @@ for trip in trips:
 
     travel_type = get_trip_travel_type(trip)
 
-    # Получаем тематическую обложку на основе города, даты и типа поездки.
+    # Для новых маршрутов профиль возвращает AI:
+    # например, moscow / caucasus_winter / saint_peter.
+    # Для старых маршрутов будет пустая строка, и модуль применит
+    # резервную классификацию по направлению, дате и типу поездки.
+    cover_profile = get_trip_cover_profile(trip)
+    
     cover_url = cover_selector.get_cover_data_url(
         destination=destination_raw,
         start_date=start_date_raw,
         travel_type=travel_type,
+        cover_profile=cover_profile,
     )
 
     cover_style = build_cover_style(
