@@ -1,16 +1,54 @@
 """Промпт и обращение к LLM для генерации маршрутов."""
+
 import json
 import re
 
 import streamlit as st
 from openai import OpenAI
 
-PROMPT_VERSION = "v3.0"
+
+PROMPT_VERSION = "v3.1"
 MAX_DAYS = 7
 
-# ---------- СИСТЕМНЫЙ ПРОМПТ ----------
+
+# ==========================================================
+# ДОПУСТИМЫЕ ПРОФИЛИ ОБЛОЖЕК
+# ==========================================================
+#
+# Эти значения должны совпадать с логикой в cover_selector.py
+# и с именами файлов в assets/covers/.
+# ==========================================================
+
+ALLOWED_COVER_PROFILES = {
+    "city_summer",
+    "city_autumn",
+    "city_winter",
+    "moscow",
+    "saint_peter",
+    "sochi",
+    "northern_city_autumn",
+    "northern_city_winter",
+    "caucasus_summer",
+    "caucasus_winter",
+    "mountains_summer",
+    "mountains_winter",
+    "sea_summer",
+    "sea_sunset",
+    "europe_city",
+    "europe_winter",
+    "tropical_island",
+    "desert_city",
+}
+
+
+# ==========================================================
+# СИСТЕМНЫЙ ПРОМПТ
+# ==========================================================
+#
 # Постоянная часть запроса. Провайдер может кэшировать её,
 # что уменьшает стоимость повторных обращений к модели.
+# ==========================================================
+
 SYSTEM_PROMPT = """Ты — опытный AI-планировщик путешествий.
 Твоя цель — создать реалистичный, персонализированный и удобный маршрут.
 
@@ -46,6 +84,51 @@ SYSTEM_PROMPT = """Ты — опытный AI-планировщик путеш�
   beach: море/пляж; culture: архитектура/история; food: гастрономия;
   nature: парки/леса/водопады; adventure: активный отдых; mixed: путешествие смешанного типа.
 
+Также обязательно верни поле cover_profile.
+cover_profile — это профиль изображения для визуальной обложки маршрута.
+Выбери РОВНО ОДНО значение строго из списка:
+city_summer, city_autumn, city_winter,
+moscow, saint_peter, sochi,
+northern_city_autumn, northern_city_winter,
+caucasus_summer, caucasus_winter,
+mountains_summer, mountains_winter,
+sea_summer, sea_sunset,
+europe_city, europe_winter,
+tropical_island, desert_city.
+
+ПРАВИЛА ВЫБОРА cover_profile:
+- Москва, а также локации Москвы и ближайшей московской агломерации
+  (например, Переделкино, Зеленоград, Химки, Мытищи, Одинцово)
+  → moscow.
+- Санкт-Петербург и связанные с ним локации
+  (Петергоф, Пушкин, Павловск, Кронштадт, Стрельна)
+  → saint_peter.
+- Сочи, Адлер, Красная Поляна, Роза Хутор и близкие курорты
+  → sochi.
+- Домбай, Архыз, Эльбрус, Приэльбрусье, Северный Кавказ:
+  в зимние месяцы или при зимнем отдыхе → caucasus_winter;
+  в остальные сезоны → caucasus_summer.
+- Другие горные направления:
+  зимой или при горнолыжном отдыхе → mountains_winter;
+  в остальные сезоны → mountains_summer.
+- Северные города и холодные регионы:
+  зимой → northern_city_winter;
+  в другие сезоны → northern_city_autumn.
+- Морские и пляжные курорты:
+  весной и летом → sea_summer;
+  осенью и зимой → sea_sunset.
+- Европейские исторические города:
+  зимой → europe_winter;
+  в остальные сезоны → europe_city.
+- Тропические острова и тропические курорты → tropical_island.
+- Дубай, ОАЭ, пустынные и восточные города → desert_city.
+- Если направление нельзя уверенно отнести к категории:
+  зимой → city_winter;
+  осенью → city_autumn;
+  весной или летом → city_summer.
+- Не придумывай новые значения cover_profile.
+- Не добавляй объяснение выбора cover_profile.
+
 ОТЕЛИ:
 - Верни ровно 3 объекта в hotels в порядке:
   1) «Эконом», 2) «Оптимальный», 3) «Премиум».
@@ -69,6 +152,7 @@ SYSTEM_PROMPT = """Ты — опытный AI-планировщик путеш�
   "title": str,
   "overview": str,
   "cover_theme": "city|mountains|beach|culture|food|nature|adventure|mixed",
+  "cover_profile": "city_summer|city_autumn|city_winter|moscow|saint_peter|sochi|northern_city_autumn|northern_city_winter|caucasus_summer|caucasus_winter|mountains_summer|mountains_winter|sea_summer|sea_sunset|europe_city|europe_winter|tropical_island|desert_city",
   "total_cost": num,
   "mood_score": int,
   "mood_reason": str,
@@ -145,9 +229,15 @@ SYSTEM_PROMPT = """Ты — опытный AI-планировщик путеш�
 }"""
 
 
-# ---------- ШАБЛОН ПОЛЬЗОВАТЕЛЬСКОГО ЗАПРОСА ----------
-# Переменная часть намеренно короткая: это снижает число входных токенов.
-USER_TEMPLATE = """Версия пресета: v3.0
+# ==========================================================
+# ШАБЛОН ПОЛЬЗОВАТЕЛЬСКОГО ЗАПРОСА
+# ==========================================================
+#
+# Переменная часть намеренно короткая: это снижает число
+# входных токенов.
+# ==========================================================
+
+USER_TEMPLATE = """Версия пресета: v3.1
 Направление: {dest}
 Даты: {start} — {end} ({days} дн.)
 Бюджет на всех без перелёта: {budget} {curr}
@@ -230,7 +320,18 @@ def validate(data: dict) -> list:
     if not data.get("title"):
         errors.append("Модель не вернула название маршрута.")
 
+    cover_profile = str(data.get("cover_profile", "")).strip().lower()
+
+    if not cover_profile:
+        errors.append("Модель не вернула профиль обложки маршрута.")
+    elif cover_profile not in ALLOWED_COVER_PROFILES:
+        errors.append(
+            "Модель вернула недопустимый профиль обложки: "
+            f"«{cover_profile}»."
+        )
+
     days = data.get("days")
+
     if not isinstance(days, list) or not days:
         errors.append("В ответе нет списка дней.")
         return errors
@@ -243,6 +344,7 @@ def validate(data: dict) -> list:
         errors.append("Нет основной рекомендации по проживанию.")
 
     hotels = data.get("hotels")
+
     if not isinstance(hotels, list) or len(hotels) != 3:
         errors.append("Модель не вернула 3 варианта отелей.")
     else:
@@ -257,6 +359,7 @@ def validate(data: dict) -> list:
                 break
 
             rooms = hotel.get("rooms")
+
             if not isinstance(rooms, dict):
                 errors.append(
                     f"У отеля «{hotel.get('name', 'без названия')}» "
@@ -318,7 +421,7 @@ def to_markdown(data: dict, curr: str) -> str:
             )
 
     else:
-        # Поддержка старых маршрутов, созданных до версии v3.0
+        # Поддержка старых маршрутов, созданных до версии v3.0.
         accommodation = data.get("accommodation") or {}
 
         if accommodation:
