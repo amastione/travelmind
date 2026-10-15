@@ -14,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 branding.apply_clean_layout()
-branding.show_author_mark()
 site_access.require_site_access()
 db.init()
 
