@@ -450,7 +450,17 @@ INTERESTS = [
     "бизнес и нетворкинг",
     "экология и осознанный туризм",
 ]
+# Даты сохраняются в session_state, поэтому выбор в календаре
+# не сбрасывается во время работы со страницей.
+today = date.today()
+default_start = today + timedelta(days=14)
+default_end = today + timedelta(days=17)
 
+if "trip_dates" not in st.session_state:
+    st.session_state["trip_dates"] = (
+        default_start,
+        default_end,
+    )
 with st.form("plan_form"):
     st.subheader("📍 Основные параметры")
 
@@ -463,17 +473,16 @@ with st.form("plan_form"):
         )
 
     with column_2:
-        today = date.today()
-
         dates = st.date_input(
             "Даты поездки",
-            value=(
-                today + timedelta(days=14),
-                today + timedelta(days=17),
-            ),
             min_value=today,
             format="DD/MM/YYYY",
-            help="Выберите дату начала и дату окончания поездки.",
+            key="trip_dates",
+            help=(
+                "Нажмите первую дату — это начало поездки. "
+                "Затем нажмите вторую дату — это окончание. "
+                "Все дни между ними будут выбраны автоматически."
+            ),
         )
 
     st.write("")
