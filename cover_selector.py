@@ -1,12 +1,12 @@
 """
-Модуль выбора тематических обложек путешествий TravelMind.
+Выбор тематических изображений-обложек для TravelMind.
 
-Обложка определяется на основе:
-- направления;
-- месяца начала поездки;
-- типа путешествия.
+Приоритет выбора:
+1. cover_profile, возвращённый AI при генерации маршрута.
+2. Резервная классификация по названию направления, дате и типу поездки.
+3. Универсальная городская обложка.
 
-Все изображения должны лежать в:
+Изображения должны находиться в:
 assets/covers/
 """
 
@@ -20,11 +20,41 @@ from typing import Any
 
 
 # ==========================================================
-# ПУТИ К ПАПКАМ ПРОЕКТА
+# ПУТИ К ФАЙЛАМ
 # ==========================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 COVERS_DIR = PROJECT_ROOT / "assets" / "covers"
+
+
+# ==========================================================
+# ПРОФИЛИ, КОТОРЫЕ МОЖЕТ ВЕРНУТЬ AI
+# ==========================================================
+#
+# Ключ — cover_profile из JSON маршрута.
+# Значение — реально существующий файл в assets/covers/.
+# ==========================================================
+
+COVER_PROFILE_FILES = {
+    "city_summer": "city_summer.webp",
+    "city_autumn": "city_autumn.webp",
+    "city_winter": "city_winter.webp",
+    "moscow": "moscow_summer.webp",
+    "saint_peter": "saint_peter.webp",
+    "sochi": "sochi.webp",
+    "northern_city_autumn": "northern_city_autumn.webp",
+    "northern_city_winter": "northern_city_winter.webp",
+    "caucasus_summer": "caucasus_summer.webp",
+    "caucasus_winter": "caucasus_winter.webp",
+    "mountains_summer": "mountains_summer.webp",
+    "mountains_winter": "mountains_winter.webp",
+    "sea_summer": "sea_summer.webp",
+    "sea_sunset": "sea_sunset.webp",
+    "europe_city": "europe_city.webp",
+    "europe_winter": "europe_winter.webp",
+    "tropical_island": "tropical_island.webp",
+    "desert_city": "desert_city.webp",
+}
 
 
 # ==========================================================
@@ -38,29 +68,46 @@ AUTUMN_MONTHS = {9, 10, 11}
 
 
 # ==========================================================
-# ИЗВЕСТНЫЕ НАПРАВЛЕНИЯ
+# FALLBACK-КЛАССИФИКАЦИЯ СТАРЫХ МАРШРУТОВ
+# ==========================================================
+#
+# Нужна только для поездок, созданных до cover_profile.
+# Для новых маршрутов решение принимает AI.
 # ==========================================================
 
 DESTINATION_GROUPS = {
-    # ------------------------------------------------------
-    # Отдельные персональные обложки
-    # ------------------------------------------------------
+    # Москва и Московская агломерация
     "москва": "moscow",
     "moscow": "moscow",
+    "переделкино": "moscow",
+    "зеленоград": "moscow",
+    "химки": "moscow",
+    "мытищи": "moscow",
+    "одинцово": "moscow",
+    "красногорск": "moscow",
+    "балашиха": "moscow",
 
+    # Санкт-Петербург и пригороды
     "санкт-петербург": "saint_peter",
     "санкт петербург": "saint_peter",
     "петербург": "saint_peter",
     "спб": "saint_peter",
     "saint petersburg": "saint_peter",
     "st petersburg": "saint_peter",
+    "петергоф": "saint_peter",
+    "пушкин": "saint_peter",
+    "павловск": "saint_peter",
+    "кронштадт": "saint_peter",
+    "стрельна": "saint_peter",
 
+    # Сочи и близкие курорты
     "сочи": "sochi",
     "sochi": "sochi",
+    "адлер": "sochi",
+    "красная поляна": "sochi",
+    "роза хутор": "sochi",
 
-    # ------------------------------------------------------
     # Северные города
-    # ------------------------------------------------------
     "сургут": "northern_city",
     "мурманск": "northern_city",
     "архангельск": "northern_city",
@@ -71,9 +118,7 @@ DESTINATION_GROUPS = {
     "новый уренгой": "northern_city",
     "салехард": "northern_city",
 
-    # ------------------------------------------------------
     # Кавказ
-    # ------------------------------------------------------
     "домбай": "caucasus",
     "архыз": "caucasus",
     "эльбрус": "caucasus",
@@ -85,9 +130,7 @@ DESTINATION_GROUPS = {
     "кавказ": "caucasus",
     "северный кавказ": "caucasus",
 
-    # ------------------------------------------------------
-    # Прочие горные направления
-    # ------------------------------------------------------
+    # Другие горные направления
     "алтай": "mountains",
     "горный алтай": "mountains",
     "грузия": "mountains",
@@ -98,10 +141,7 @@ DESTINATION_GROUPS = {
     "непал": "mountains",
     "гималаи": "mountains",
 
-    # ------------------------------------------------------
-    # Море и пляж
-    # ------------------------------------------------------
-    "адлер": "sea",
+    # Море / пляж
     "анапа": "sea",
     "геленджик": "sea",
     "ялта": "sea",
@@ -118,9 +158,7 @@ DESTINATION_GROUPS = {
     "майорка": "sea",
     "португалия": "sea",
 
-    # ------------------------------------------------------
     # Европейские города
-    # ------------------------------------------------------
     "казань": "europe_city",
     "калининград": "europe_city",
     "париж": "europe_city",
@@ -137,19 +175,8 @@ DESTINATION_GROUPS = {
     "будапешт": "europe_city",
     "лондон": "europe_city",
     "стамбул": "europe_city",
-    "италия": "europe_city",
-    "франция": "europe_city",
-    "испания": "europe_city",
-    "чехия": "europe_city",
-    "австрия": "europe_city",
-    "германия": "europe_city",
-    "нидерланды": "europe_city",
-    "венгрия": "europe_city",
-    "великобритания": "europe_city",
 
-    # ------------------------------------------------------
-    # Тропики и острова
-    # ------------------------------------------------------
+    # Тропики
     "бали": "tropical_island",
     "индонезия": "tropical_island",
     "пхукет": "tropical_island",
@@ -161,9 +188,7 @@ DESTINATION_GROUPS = {
     "шри ланка": "tropical_island",
     "гоа": "tropical_island",
 
-    # ------------------------------------------------------
     # Восток / пустыня
-    # ------------------------------------------------------
     "дубай": "desert_city",
     "абу-даби": "desert_city",
     "абу даби": "desert_city",
@@ -173,13 +198,16 @@ DESTINATION_GROUPS = {
     "каир": "desert_city",
     "марракеш": "desert_city",
     "марокко": "desert_city",
-    "иордания": "desert_city",
     "доха": "desert_city",
 }
 
 
+# ==========================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ==========================================================
+
 def normalize_text(value: Any) -> str:
-    """Нормализует текст для безопасного поиска."""
+    """Приводит текст к удобному для сравнения виду."""
     if value is None:
         return ""
 
@@ -193,7 +221,12 @@ def normalize_text(value: Any) -> str:
 
 
 def extract_month(start_date: Any) -> int | None:
-    """Получает месяц из date/datetime или из распространённых строковых форматов."""
+    """
+    Получает месяц из даты.
+
+    Поддерживаются date, datetime и строки:
+    YYYY-MM-DD, DD/MM/YYYY, DD.MM.YYYY.
+    """
     if start_date is None:
         return None
 
@@ -220,7 +253,7 @@ def extract_month(start_date: Any) -> int | None:
 
 
 def get_season(start_date: Any) -> str:
-    """Возвращает winter, spring, summer или autumn."""
+    """Возвращает сезон: winter, spring, summer или autumn."""
     month = extract_month(start_date)
 
     if month in WINTER_MONTHS:
@@ -239,13 +272,7 @@ def get_season(start_date: Any) -> str:
 
 
 def detect_destination_group(destination: Any) -> str | None:
-    """
-    Определяет группу направления.
-
-    Поддерживает, например:
-    «Домбай, Россия» → caucasus
-    «Путешествие в Сочи» → sochi
-    """
+    """Определяет группу направления для старых маршрутов."""
     normalized_destination = normalize_text(destination)
 
     if not normalized_destination:
@@ -254,8 +281,7 @@ def detect_destination_group(destination: Any) -> str | None:
     if normalized_destination in DESTINATION_GROUPS:
         return DESTINATION_GROUPS[normalized_destination]
 
-    # Сначала ищем длинные названия, затем короткие.
-    # Так «санкт-петербург» будет обработан корректно.
+    # Длинные названия проверяем раньше коротких.
     sorted_places = sorted(
         DESTINATION_GROUPS.items(),
         key=lambda item: len(item[0]),
@@ -270,7 +296,7 @@ def detect_destination_group(destination: Any) -> str | None:
 
 
 def detect_group_from_travel_type(travel_type: Any) -> str | None:
-    """Определяет тему, если конкретное направление неизвестно."""
+    """Определяет группу по типу путешествия, если город неизвестен."""
     normalized_type = normalize_text(travel_type)
 
     if not normalized_type:
@@ -297,24 +323,33 @@ def detect_group_from_travel_type(travel_type: Any) -> str | None:
     )):
         return "europe_city"
 
-    if any(word in normalized_type for word in (
-        "город", "city", "гастроном", "шопинг",
-    )):
-        return "city"
-
     return None
 
 
-def select_cover_filename(
+# ==========================================================
+# ВЫБОР ПРОФИЛЯ И ИМЕНИ ФАЙЛА
+# ==========================================================
+
+def normalize_cover_profile(cover_profile: Any) -> str:
+    """
+    Проверяет profile от AI.
+
+    Возвращает пустую строку, если профиль отсутствует
+    или его нет среди разрешённых.
+    """
+    profile = normalize_text(cover_profile)
+
+    return profile if profile in COVER_PROFILE_FILES else ""
+
+
+def select_fallback_profile(
     destination: Any,
     start_date: Any = None,
     travel_type: Any = None,
 ) -> str:
     """
-    Выбирает точное имя файла из assets/covers.
-
-    Важно: все названия в этой функции совпадают с именами
-    файлов, показанных на вашем скриншоте.
+    Резервный выбор профиля для старых маршрутов,
+    в которых нет cover_profile от AI.
     """
     season = get_season(start_date)
 
@@ -324,71 +359,101 @@ def select_cover_filename(
         or "city"
     )
 
-    # Индивидуальная обложка Москвы.
-    if group_name == "moscow":
-        return "moscow_summer.webp"
+    if group_name in {"moscow", "saint_peter", "sochi"}:
+        return group_name
 
-    # Индивидуальная обложка Санкт-Петербурга.
-    if group_name == "saint_peter":
-        return "saint_peter.webp"
-
-    # Индивидуальная обложка Сочи.
-    if group_name == "sochi":
-        return "sochi.webp"
-
-    # Северные города: зимой — снег, в остальные сезоны — северная осень.
     if group_name == "northern_city":
         if season in {"winter", "spring"}:
-            return "northern_city_winter.webp"
-        return "northern_city_autumn.webp"
+            return "northern_city_winter"
+        return "northern_city_autumn"
 
-    # Кавказ.
     if group_name == "caucasus":
         if season in {"winter", "spring"}:
-            return "caucasus_winter.webp"
-        return "caucasus_summer.webp"
+            return "caucasus_winter"
+        return "caucasus_summer"
 
-    # Универсальные горы.
     if group_name == "mountains":
         if season in {"winter", "spring"}:
-            return "mountains_winter.webp"
-        return "mountains_summer.webp"
+            return "mountains_winter"
+        return "mountains_summer"
 
-    # Море: летом и весной — дневной пляж, осенью и зимой — закат.
     if group_name == "sea":
         if season in {"spring", "summer"}:
-            return "sea_summer.webp"
-        return "sea_sunset.webp"
+            return "sea_summer"
+        return "sea_sunset"
 
-    # Тропические направления.
     if group_name == "tropical_island":
-        return "tropical_island.webp"
+        return "tropical_island"
 
-    # Города Востока и пустыня.
     if group_name == "desert_city":
-        return "desert_city.webp"
+        return "desert_city"
 
-    # Европейские города.
     if group_name == "europe_city":
         if season == "winter":
-            return "europe_winter.webp"
-        return "europe_city.webp"
+            return "europe_winter"
+        return "europe_city"
 
-    # Универсальные городские фоны.
     if season == "winter":
-        return "city_winter.webp"
+        return "city_winter"
 
     if season == "autumn":
-        return "city_autumn.webp"
+        return "city_autumn"
 
-    return "city_summer.webp"
+    return "city_summer"
 
+
+def select_cover_profile(
+    destination: Any,
+    start_date: Any = None,
+    travel_type: Any = None,
+    cover_profile: Any = None,
+) -> str:
+    """
+    Возвращает итоговый профиль.
+
+    Если у новой поездки есть корректный AI-профиль — берём его.
+    Если нет — используем fallback-правила.
+    """
+    ai_profile = normalize_cover_profile(cover_profile)
+
+    if ai_profile:
+        return ai_profile
+
+    return select_fallback_profile(
+        destination=destination,
+        start_date=start_date,
+        travel_type=travel_type,
+    )
+
+
+def select_cover_filename(
+    destination: Any,
+    start_date: Any = None,
+    travel_type: Any = None,
+    cover_profile: Any = None,
+) -> str:
+    """Возвращает имя файла картинки для выбранного профиля."""
+    profile = select_cover_profile(
+        destination=destination,
+        start_date=start_date,
+        travel_type=travel_type,
+        cover_profile=cover_profile,
+    )
+
+    return COVER_PROFILE_FILES.get(profile, "city_summer.webp")
+
+
+# ==========================================================
+# ПРЕОБРАЗОВАНИЕ КАРТИНКИ В CSS DATA URL
+# ==========================================================
 
 @lru_cache(maxsize=64)
 def _file_to_data_url(filename: str) -> str | None:
     """
-    Читает файл из assets/covers и превращает его в data URL.
-    Data URL можно безопасно использовать в CSS background-image.
+    Считывает картинку и возвращает data URL.
+
+    Такой URL можно вставить в:
+    background-image: url('data:image/webp;base64,...');
     """
     image_path = COVERS_DIR / filename
 
@@ -401,14 +466,12 @@ def _file_to_data_url(filename: str) -> str | None:
     except OSError:
         return None
 
-    suffix = image_path.suffix.lower()
-
     mime_type = {
         ".webp": "image/webp",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".png": "image/png",
-    }.get(suffix, "image/webp")
+    }.get(image_path.suffix.lower(), "image/webp")
 
     return f"data:{mime_type};base64,{encoded_image}"
 
@@ -417,46 +480,65 @@ def get_cover_data_url(
     destination: Any,
     start_date: Any = None,
     travel_type: Any = None,
+    cover_profile: Any = None,
 ) -> str | None:
     """
-    Основная функция для страниц.
+    Главная функция для Streamlit-страниц.
 
-    Возвращает data URL подходящей картинки или None,
-    если файл не удалось найти.
+    Новые поездки:
+        cover_profile от AI → картинка.
+
+    Старые поездки:
+        направление + дата + тип → fallback-картинка.
     """
     filename = select_cover_filename(
         destination=destination,
         start_date=start_date,
         travel_type=travel_type,
+        cover_profile=cover_profile,
     )
 
-    cover_data_url = _file_to_data_url(filename)
+    image_url = _file_to_data_url(filename)
 
-    # Безопасный запасной фон, если конкретное изображение отсутствует.
-    if cover_data_url is None and filename != "city_summer.webp":
-        cover_data_url = _file_to_data_url("city_summer.webp")
+    # Последняя страховка: универсальный летний городской фон.
+    if image_url is None and filename != "city_summer.webp":
+        image_url = _file_to_data_url("city_summer.webp")
 
-    return cover_data_url
+    return image_url
 
 
 def get_cover_metadata(
     destination: Any,
     start_date: Any = None,
     travel_type: Any = None,
+    cover_profile: Any = None,
 ) -> dict[str, str]:
-    """Возвращает служебную информацию для проверки и отладки."""
-    group_name = (
-        detect_destination_group(destination)
-        or detect_group_from_travel_type(travel_type)
-        or "city"
+    """
+    Служебная функция для отладки.
+
+    Можно использовать, чтобы проверить выбор:
+    {
+      "profile": "moscow",
+      "filename": "moscow_summer.webp",
+      "season": "autumn",
+      "source": "ai"
+    }
+    """
+    valid_ai_profile = normalize_cover_profile(cover_profile)
+
+    profile = select_cover_profile(
+        destination=destination,
+        start_date=start_date,
+        travel_type=travel_type,
+        cover_profile=cover_profile,
     )
 
     return {
-        "filename": select_cover_filename(
-            destination=destination,
-            start_date=start_date,
-            travel_type=travel_type,
+        "profile": profile,
+        "filename": COVER_PROFILE_FILES.get(
+            profile,
+            "city_summer.webp",
         ),
         "season": get_season(start_date),
-        "group": group_name,
+        "source": "ai" if valid_ai_profile else "fallback",
     }
