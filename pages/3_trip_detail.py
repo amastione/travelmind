@@ -920,31 +920,23 @@ if mood_reason:
     )
 
 st.markdown(
-    f"""
-    <div
-        class="tm-trip-hero-cover"
-        style="{hero_background_style}"
-    >
-        <div class="tm-trip-hero-content">
-            <div class="tm-hero-label">
-                TravelMind AI · Персональный маршрут
-            </div>
-
-            <div class="tm-hero-title">
-                🗺️ {escape(trip_title)}
-            </div>
-
-            <div class="tm-hero-meta">
-                📍 {escape(destination)}<br>
-                📅 {escape(start_date_text)} — {escape(end_date_text)}
-                · 👥 {people} чел.
-            </div>
-
-            {overview_html}
-            {mood_html}
-        </div>
-    </div>
-    """,
+    (
+        f'<div class="tm-trip-hero-cover" style="{hero_background_style}">'
+        '<div class="tm-trip-hero-content">'
+        '<div class="tm-hero-label">'
+        'TravelMind AI · Персональный маршрут'
+        '</div>'
+        f'<div class="tm-hero-title">🗺️ {escape(trip_title)}</div>'
+        '<div class="tm-hero-meta">'
+        f'📍 {escape(destination)}<br>'
+        f'📅 {escape(start_date_text)} — {escape(end_date_text)} '
+        f'· 👥 {people} чел.'
+        '</div>'
+        f'{overview_html}'
+        f'{mood_html}'
+        '</div>'
+        '</div>'
+    ),
     unsafe_allow_html=True,
 )
 
