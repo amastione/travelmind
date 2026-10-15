@@ -13,9 +13,10 @@ from streamlit_folium import st_folium
 
 import ai
 import auth
+import branding
+import cover_selector
 import db
 import site_access
-import branding
 
 st.set_page_config(
     page_title="Маршрут поездки",
@@ -133,7 +134,63 @@ button,
         "Material Icons" !important;
     font-style: normal !important;
 }
+/* ---------- Фото-обложка маршрута ---------- */
 
+.tm-trip-hero-cover {
+    position: relative;
+    overflow: hidden;
+    min-height: 330px;
+    margin-top: 1rem;
+    padding: 2.1rem;
+    border: 1px solid rgba(172, 226, 245, 0.30);
+    border-radius: 26px;
+    background-color: #0B1D3A;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    box-shadow:
+        0 20px 44px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.13);
+}
+
+.tm-trip-hero-cover::before {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(3, 9, 23, 0.94) 0%,
+            rgba(4, 13, 31, 0.82) 43%,
+            rgba(6, 15, 34, 0.37) 72%,
+            rgba(6, 15, 34, 0.20) 100%
+        ),
+        linear-gradient(
+            0deg,
+            rgba(3, 9, 23, 0.50) 0%,
+            transparent 56%
+        );
+    content: "";
+}
+
+.tm-trip-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+}
+
+@media (max-width: 760px) {
+    .tm-trip-hero-cover {
+        min-height: 290px;
+        padding: 1.45rem;
+        border-radius: 21px;
+        background-position: 62% center;
+    }
+
+    .tm-trip-hero-content {
+        max-width: 100%;
+    }
+}
 /* ---------- Шапка поездки ---------- */
 
 .tm-hero-label {
@@ -804,44 +861,92 @@ people = trip["people"] or 1
 overview = text_value(data.get("overview"))
 mood_reason = text_value(data.get("mood_reason"))
 
+# Новый маршруты получают профиль от AI:
+# moscow, caucasus_winter, saint_peter и т. д.
+# Старые маршруты используют fallback-логику cover_selector.
+cover_profile = text_value(data.get("cover_profile")).strip().lower()
+
+# Тип поездки может храниться в разных местах AI-ответа.
+travel_type = text_value(
+    data.get("travel_type")
+    or data.get("trip_type")
+    or data.get("type")
+    or data.get("category")
+)
+
+hero_cover_url = cover_selector.get_cover_data_url(
+    destination=destination,
+    start_date=trip["start_date"],
+    travel_type=travel_type,
+    cover_profile=cover_profile,
+)
+
+# Если картинка недоступна, остаётся фирменный градиент TravelMind.
+if hero_cover_url:
+    safe_hero_cover_url = escape(hero_cover_url, quote=True)
+
+    hero_background_style = f"""
+        background-image:
+            url('{safe_hero_cover_url}');
+    """
+else:
+    hero_background_style = """
+        background-image:
+            linear-gradient(
+                135deg,
+                #0B1D3A 0%,
+                #145DA0 52%,
+                #6D28D9 100%
+            );
+    """
+
 st.page_link(
     "pages/2_my_trips.py",
     label="← К моим путешествиям",
 )
 
-with st.container(border=True):
-    st.markdown(
-        '<div class="tm-hero-label">TravelMind AI · Персональный маршрут</div>',
-        unsafe_allow_html=True,
+overview_html = ""
+
+if overview:
+    overview_html = (
+        f'<div class="tm-overview-box">{escape(overview)}</div>'
     )
 
-    st.markdown(
-        f'<h1 class="tm-hero-title">🗺️ {escape(trip_title)}</h1>',
-        unsafe_allow_html=True,
+mood_html = ""
+
+if mood_reason:
+    mood_html = (
+        f'<div class="tm-mood-box">🙂 {escape(mood_reason)}</div>'
     )
 
-    st.markdown(
-        (
-            '<div class="tm-hero-meta">'
-            f'📍 {escape(destination)}<br>'
-            f'📅 {escape(start_date_text)} — {escape(end_date_text)} · '
-            f'👥 {people} чел.'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
+st.markdown(
+    f"""
+    <div
+        class="tm-trip-hero-cover"
+        style="{hero_background_style}"
+    >
+        <div class="tm-trip-hero-content">
+            <div class="tm-hero-label">
+                TravelMind AI · Персональный маршрут
+            </div>
 
-    if overview:
-        st.markdown(
-            f'<div class="tm-overview-box">{escape(overview)}</div>',
-            unsafe_allow_html=True,
-        )
+            <div class="tm-hero-title">
+                🗺️ {escape(trip_title)}
+            </div>
 
-    if mood_reason:
-        st.markdown(
-            f'<div class="tm-mood-box">🙂 {escape(mood_reason)}</div>',
-            unsafe_allow_html=True,
-        )
+            <div class="tm-hero-meta">
+                📍 {escape(destination)}<br>
+                📅 {escape(start_date_text)} — {escape(end_date_text)}
+                · 👥 {people} чел.
+            </div>
+
+            {overview_html}
+            {mood_html}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ==========================================================
 # БИЛЕТЫ И БРОНИРОВАНИЕ
