@@ -1,4 +1,5 @@
 """Страница истории поездок: список, открытие и удаление."""
+
 import json
 from datetime import datetime
 from html import escape
@@ -6,19 +7,25 @@ from html import escape
 import streamlit as st
 
 import auth
+import branding
+import cover_selector
 import db
 import site_access
-import branding
+
 
 st.set_page_config(
     page_title="Мои путешествия",
     page_icon="🧳",
     layout="wide",
 )
+
 branding.apply_clean_layout()
+branding.show_author_mark()
 site_access.require_site_access()
+
 # Без авторизации не пускаем на страницу.
 user_id = auth.require_auth()
+
 
 CSS = """
 <style>
@@ -94,20 +101,51 @@ h3 {
     font-weight: 600;
 }
 
+/* ==========================================================
+   ШАПКА КАРТОЧКИ С ФОТО-ОБЛОЖКОЙ
+   ========================================================== */
+
 .tm-trip-cover {
-    min-height: 155px;
-    padding: 1.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    position: relative;
+    overflow: hidden;
+    min-height: 190px;
+    padding: 1.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 20px 20px 0 0;
+    background-color: #10213C;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
     color: #FFFFFF;
     box-shadow:
-        inset 0 -60px 65px rgba(3, 8, 22, 0.42),
+        inset 0 -45px 60px rgba(3, 8, 22, 0.45),
         inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.tm-trip-cover::after {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(4, 10, 25, 0.91) 0%,
+            rgba(6, 15, 34, 0.74) 43%,
+            rgba(8, 15, 34, 0.28) 100%
+        );
+    content: "";
+}
+
+.tm-trip-cover-content {
+    position: relative;
+    z-index: 1;
+    max-width: 78%;
 }
 
 .tm-trip-cover-icon {
     margin-bottom: 0.55rem;
     font-size: 2rem;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
 }
 
 .tm-trip-cover-title {
@@ -115,12 +153,15 @@ h3 {
     font-size: 1.55rem;
     font-weight: 800;
     letter-spacing: -0.03rem;
+    line-height: 1.2;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.40);
 }
 
 .tm-trip-cover-place {
-    margin-top: 0.3rem;
-    color: rgba(245, 250, 255, 0.84);
+    margin-top: 0.42rem;
+    color: rgba(245, 250, 255, 0.88);
     font-size: 0.95rem;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
 }
 
 .tm-trip-body {
@@ -208,9 +249,7 @@ h3 {
     border-radius: 14px;
 }
 
-/* ----------------------------------------------------------
-   ЯРКИЕ КНОПКИ НАВИГАЦИИ STREAMLIT
-   ---------------------------------------------------------- */
+/* Яркие кнопки навигации Streamlit */
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
 [data-testid="stPageLink-NavLink"] {
@@ -276,6 +315,19 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     .tm-page-title {
         font-size: 2rem !important;
     }
+
+    .tm-trip-cover {
+        min-height: 175px;
+        padding: 1.2rem;
+    }
+
+    .tm-trip-cover-content {
+        max-width: 100%;
+    }
+
+    .tm-trip-cover-title {
+        font-size: 1.3rem;
+    }
 }
 </style>
 """
@@ -283,6 +335,7 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 st.markdown(CSS, unsafe_allow_html=True)
 
 auth.render_main_menu_button()
+
 
 # ==========================================================
 # ТЕМЫ КАРТОЧЕК ПОЕЗДОК
@@ -359,12 +412,7 @@ def trip_value(trip, key, default=None):
 
 
 def format_date_ru(value) -> str:
-    """
-    Преобразует дату YYYY-MM-DD в DD/MM/YYYY для интерфейса.
-
-    Пример:
-    2026-11-05 → 05/11/2026
-    """
+    """Преобразует дату YYYY-MM-DD в DD/MM/YYYY для интерфейса."""
     if not value:
         return ""
 
@@ -379,19 +427,24 @@ def format_date_ru(value) -> str:
         return text
 
 
-def get_trip_theme(trip):
-    """
-    Определяет тему карточки по AI cover_theme или названию поездки.
-    """
-    theme_key = ""
+def get_trip_data(trip) -> dict:
+    """Безопасно читает JSON-данные AI-маршрута из поля data."""
     raw_data = trip_value(trip, "data", "")
 
-    if raw_data:
-        try:
-            trip_data = json.loads(raw_data)
-            theme_key = str(trip_data.get("cover_theme", "")).lower()
-        except (json.JSONDecodeError, TypeError):
-            theme_key = ""
+    if not raw_data:
+        return {}
+
+    try:
+        parsed_data = json.loads(raw_data)
+        return parsed_data if isinstance(parsed_data, dict) else {}
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def get_trip_theme(trip):
+    """Определяет тему карточки по AI cover_theme или тексту поездки."""
+    trip_data = get_trip_data(trip)
+    theme_key = str(trip_data.get("cover_theme", "")).lower()
 
     if theme_key in THEMES:
         return THEMES[theme_key]
@@ -424,6 +477,7 @@ def get_trip_theme(trip):
             "турция",
             "анталья",
             "тайланд",
+            "таиланд",
             "пхукет",
             "египет",
         ]
@@ -485,6 +539,59 @@ def get_trip_theme(trip):
     return THEMES["city"]
 
 
+def get_trip_travel_type(trip) -> str:
+    """
+    Получает тип путешествия из JSON AI-данных.
+
+    Функция поддерживает несколько вероятных названий полей,
+    чтобы не ломать старые маршруты.
+    """
+    trip_data = get_trip_data(trip)
+
+    for key in (
+        "travel_type",
+        "trip_type",
+        "type",
+        "category",
+    ):
+        value = trip_data.get(key)
+
+        if value:
+            return str(value)
+
+    return ""
+
+
+def build_cover_style(
+    cover_url: str | None,
+    fallback_background: str,
+) -> str:
+    """
+    Формирует inline-CSS для обложки.
+
+    Если картинка не найдена, используется старый градиентный фон.
+    """
+    if not cover_url:
+        return f"background: {fallback_background};"
+
+    safe_cover_url = escape(cover_url, quote=True)
+
+    return f"""
+        background-color: #0B1D3A;
+        background-image:
+            linear-gradient(
+                90deg,
+                rgba(4, 10, 25, 0.91) 0%,
+                rgba(6, 15, 34, 0.74) 43%,
+                rgba(8, 15, 34, 0.28) 100%
+            ),
+            url('{safe_cover_url}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    """
+
+
 # ==========================================================
 # ШАПКА СТРАНИЦЫ
 # ==========================================================
@@ -507,6 +614,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 # ==========================================================
 # ПОЛУЧЕНИЕ ПОЕЗДОК
@@ -543,6 +651,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # ==========================================================
 # СПИСОК ПОЕЗДОК
 # ==========================================================
@@ -554,15 +663,28 @@ for trip in trips:
     title_raw = str(trip_value(trip, "title", "Поездка"))
     destination_raw = str(trip_value(trip, "destination", ""))
 
+    start_date_raw = trip_value(trip, "start_date", "")
+    end_date_raw = trip_value(trip, "end_date", "")
+
+    travel_type = get_trip_travel_type(trip)
+
+    # Получаем тематическую обложку на основе города, даты и типа поездки.
+    cover_url = cover_selector.get_cover_data_url(
+        destination=destination_raw,
+        start_date=start_date_raw,
+        travel_type=travel_type,
+    )
+
+    cover_style = build_cover_style(
+        cover_url=cover_url,
+        fallback_background=theme["background"],
+    )
+
     title = escape(title_raw)
     destination = escape(destination_raw)
 
-    start_date = escape(
-        format_date_ru(trip_value(trip, "start_date", ""))
-    )
-    end_date = escape(
-        format_date_ru(trip_value(trip, "end_date", ""))
-    )
+    start_date = escape(format_date_ru(start_date_raw))
+    end_date = escape(format_date_ru(end_date_raw))
 
     people = trip_value(trip, "people", 1)
     budget = float(trip_value(trip, "budget", 0) or 0)
@@ -570,11 +692,13 @@ for trip in trips:
 
     st.markdown(
         f"""
-        <div class="tm-trip-cover" style="background: {theme["background"]};">
-            <div class="tm-trip-cover-icon">{theme["icon"]}</div>
-            <div class="tm-trip-cover-title">{title}</div>
-            <div class="tm-trip-cover-place">
-                {theme["label"]} · {destination}
+        <div class="tm-trip-cover" style="{cover_style}">
+            <div class="tm-trip-cover-content">
+                <div class="tm-trip-cover-icon">{theme["icon"]}</div>
+                <div class="tm-trip-cover-title">{title}</div>
+                <div class="tm-trip-cover-place">
+                    {theme["label"]} · {destination}
+                </div>
             </div>
         </div>
         """,
