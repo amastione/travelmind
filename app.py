@@ -1,5 +1,8 @@
 """TravelMind — главная страница: вход и регистрация."""
 
+import base64
+from pathlib import Path
+
 import streamlit as st
 
 import auth
@@ -21,6 +24,35 @@ db.init()
 
 # Восстанавливает пользователя после обновления страницы.
 auth.restore_session()
+
+
+def get_logo_html():
+    """
+    Загружает PNG-логотип как data URL.
+    Такой способ позволяет аккуратно стилизовать изображение через HTML/CSS.
+    """
+    logo_path = Path("assets/brand/travelmind_logo.png")
+
+    if not logo_path.exists():
+        return """
+        <div class="tm-logo-fallback">
+            TravelMind
+        </div>
+        """
+
+    image_base64 = base64.b64encode(logo_path.read_bytes()).decode("utf-8")
+
+    return f"""
+    <div class="tm-brand-wrap">
+        <div class="tm-brand-card">
+            <img
+                class="tm-brand-image"
+                src="data:image/png;base64,{image_base64}"
+                alt="TravelMind"
+            >
+        </div>
+    </div>
+    """
 
 
 CSS = """
@@ -59,7 +91,7 @@ CSS = """
 
 .block-container {
     max-width: 850px;
-    padding-top: 3.5rem;
+    padding-top: 3.2rem;
     padding-bottom: 4rem;
 }
 
@@ -69,7 +101,7 @@ footer {
 }
 
 /*
- Важно: span намеренно не указан.
+ span намеренно не указан:
  Streamlit использует span для Material Icons.
 */
 h1,
@@ -105,6 +137,7 @@ h2,
 h3 {
     color: #F8FAFC !important;
 }
+
 /* ----------------------------------------------------------
    PNG-ЛОГОТИП TRAVELMIND
    ---------------------------------------------------------- */
@@ -113,40 +146,55 @@ h3 {
     display: flex;
     justify-content: center;
     width: 100%;
-    margin: 0 auto 0.55rem;
+    margin: 0 auto;
 }
 
 .tm-brand-card {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: min(100%, 610px);
-    padding: 1.1rem 1.55rem;
-    border: 1px solid rgba(103, 232, 249, 0.20);
-    border-radius: 25px;
+    width: min(100%, 620px);
+    min-height: 128px;
+    padding: 1rem 1.5rem;
+    border: 1px solid rgba(103, 232, 249, 0.23);
+    border-radius: 26px;
     background:
         radial-gradient(
-            circle at 15% 20%,
-            rgba(34, 211, 238, 0.12),
-            transparent 45%
+            circle at 15% 10%,
+            rgba(34, 211, 238, 0.15),
+            transparent 42%
+        ),
+        radial-gradient(
+            circle at 90% 90%,
+            rgba(139, 92, 246, 0.12),
+            transparent 38%
         ),
         linear-gradient(
             135deg,
-            rgba(255, 255, 255, 0.94),
-            rgba(220, 241, 255, 0.88)
+            rgba(16, 34, 57, 0.95),
+            rgba(12, 20, 42, 0.96)
         );
     box-shadow:
-        0 18px 42px rgba(0, 0, 0, 0.20),
-        0 0 32px rgba(34, 211, 238, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.84);
+        0 18px 42px rgba(0, 0, 0, 0.25),
+        0 0 36px rgba(34, 211, 238, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.tm-brand-card img {
+.tm-brand-image {
     display: block;
-    width: min(100%, 500px);
+    width: min(100%, 520px);
     height: auto;
-    max-height: 150px;
+    max-height: 145px;
     object-fit: contain;
+}
+
+.tm-logo-fallback {
+    margin: 0 auto;
+    color: #F8FAFC;
+    font-size: 2.6rem;
+    font-weight: 850;
+    letter-spacing: -0.08rem;
+    text-align: center;
 }
 
 .tm-brand-subtitle {
@@ -165,151 +213,6 @@ h3 {
     font-weight: 550;
     letter-spacing: 0.055rem;
     text-align: center;
-}
-
-@media (max-width: 640px) {
-    .tm-brand-card {
-        width: min(100%, 440px);
-        padding: 0.8rem 1rem;
-        border-radius: 19px;
-    }
-
-    .tm-brand-card img {
-        max-height: 105px;
-    }
-
-    .tm-brand-subtitle {
-        margin-top: 0.9rem;
-        font-size: 0.78rem;
-        letter-spacing: 0.045rem;
-    }
-
-    .tm-brand-description {
-        font-size: 0.65rem;
-        letter-spacing: 0.025rem;
-    }
-}
-/* ----------------------------------------------------------
-   ЛОГОТИП
-   ---------------------------------------------------------- */
-
-.tm-map-symbol {
-    position: relative;
-    width: 125px;
-    height: 100px;
-    margin: 0 auto;
-}
-
-.tm-map-left,
-.tm-map-center,
-.tm-map-right {
-    position: absolute;
-    bottom: 7px;
-    height: 50px;
-    transform: skewY(18deg);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.20);
-}
-
-.tm-map-left {
-    left: 4px;
-    width: 41px;
-    border-radius: 6px 0 0 6px;
-    background: linear-gradient(145deg, #25CDED, #168DE6);
-}
-
-.tm-map-center {
-    left: 44px;
-    width: 41px;
-    background: linear-gradient(145deg, #168EEA, #2778DA);
-}
-
-.tm-map-right {
-    left: 84px;
-    width: 37px;
-    border-radius: 0 6px 6px 0;
-    background: linear-gradient(145deg, #2586E2, #1B62BF);
-}
-
-.tm-map-fold-one,
-.tm-map-fold-two {
-    position: absolute;
-    bottom: 7px;
-    z-index: 2;
-    width: 3px;
-    height: 51px;
-    background: rgba(7, 24, 49, 0.65);
-    transform: skewY(18deg);
-}
-
-.tm-map-fold-one {
-    left: 43px;
-}
-
-.tm-map-fold-two {
-    left: 83px;
-}
-
-.tm-pin {
-    position: absolute;
-    z-index: 4;
-    top: 0;
-    left: 43px;
-    width: 52px;
-    height: 65px;
-    border-radius: 50% 50% 50% 9px;
-    background: linear-gradient(145deg, #27D7F1, #1975D5);
-    transform: rotate(-45deg);
-    box-shadow: 0 9px 20px rgba(34, 211, 238, 0.32);
-}
-
-.tm-pin::after {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #08172D;
-    content: "";
-}
-
-.tm-divider {
-    width: 2px;
-    height: 118px;
-    margin: 0 auto;
-    background: linear-gradient(
-        180deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.95) 14%,
-        rgba(255, 255, 255, 0.95) 86%,
-        transparent 100%
-    );
-}
-
-.tm-logo-title h1 {
-    margin: 0 !important;
-    padding: 0 !important;
-    color: #F8FAFC !important;
-    font-size: 2.55rem !important;
-    font-weight: 850 !important;
-    letter-spacing: -0.08rem !important;
-    line-height: 1.05 !important;
-}
-
-.tm-logo-subtitle {
-    margin-top: 0.35rem;
-    color: #67E8F9;
-    font-size: 1rem;
-    font-weight: 750;
-    letter-spacing: 0.08rem;
-}
-
-.tm-logo-description {
-    margin-top: 0.3rem;
-    color: #AAB8CE;
-    font-size: 0.83rem;
-    font-weight: 500;
-    letter-spacing: 0.055rem;
 }
 
 .tm-badge {
@@ -380,11 +283,6 @@ h3 {
     font-weight: 750 !important;
     letter-spacing: -0.01rem !important;
     white-space: nowrap !important;
-    transition:
-        background 180ms ease,
-        color 180ms ease,
-        border-color 180ms ease,
-        transform 180ms ease !important;
 }
 
 [data-testid="stTabs"] button[role="tab"] p,
@@ -421,12 +319,6 @@ h3 {
         0 8px 18px rgba(34, 211, 238, 0.21),
         0 5px 15px rgba(139, 92, 246, 0.16),
         inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
-}
-
-[data-testid="stTabs"] button[role="tab"]:focus-visible,
-.stTabs button[role="tab"]:focus-visible {
-    outline: 3px solid rgba(125, 235, 250, 0.78) !important;
-    outline-offset: 3px !important;
 }
 
 /* ----------------------------------------------------------
@@ -485,7 +377,7 @@ h3 {
 }
 
 /* ----------------------------------------------------------
-   СТАНДАРТНЫЕ КНОПКИ
+   КНОПКИ
    ---------------------------------------------------------- */
 
 .stButton > button,
@@ -551,88 +443,6 @@ h3 {
 }
 
 /* ----------------------------------------------------------
-   ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
-   ---------------------------------------------------------- */
-
-/*
- Добавлены несколько селекторов для поддержки разных версий
- Streamlit: разметка st.page_link может отличаться.
-*/
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
-section[data-testid="stMain"] [data-testid="stPageLink"] a,
-section[data-testid="stMain"] a[href*="1_new_trip"],
-section[data-testid="stMain"] a[href*="2_my_trips"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 72px !important;
-    padding: 1rem 1.2rem !important;
-    border: 1px solid rgba(236, 254, 255, 0.68) !important;
-    border-radius: 19px !important;
-    background:
-        radial-gradient(
-            circle at 24% 0%,
-            rgba(255, 255, 255, 0.28),
-            transparent 38%
-        ),
-        linear-gradient(
-            135deg,
-            #05B8D5 0%,
-            #22D3EE 43%,
-            #4E8DF2 73%,
-            #8257E7 100%
-        ) !important;
-    color: #FFFFFF !important;
-    text-decoration: none !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.015rem !important;
-    line-height: 1.2 !important;
-    box-shadow:
-        0 14px 28px rgba(34, 211, 238, 0.23),
-        0 8px 24px rgba(139, 92, 246, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
-    transition:
-        transform 190ms ease,
-        filter 190ms ease,
-        box-shadow 190ms ease !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span,
-section[data-testid="stMain"] [data-testid="stPageLink"] a p,
-section[data-testid="stMain"] [data-testid="stPageLink"] a span,
-section[data-testid="stMain"] a[href*="1_new_trip"] p,
-section[data-testid="stMain"] a[href*="1_new_trip"] span,
-section[data-testid="stMain"] a[href*="2_my_trips"] p,
-section[data-testid="stMain"] a[href*="2_my_trips"] span {
-    margin: 0 !important;
-    color: #FFFFFF !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
-section[data-testid="stMain"] [data-testid="stPageLink"] a:hover,
-section[data-testid="stMain"] a[href*="1_new_trip"]:hover,
-section[data-testid="stMain"] a[href*="2_my_trips"]:hover {
-    transform: translateY(-3px) !important;
-    filter: brightness(1.08) saturate(1.07) !important;
-    box-shadow:
-        0 18px 34px rgba(34, 211, 238, 0.30),
-        0 14px 28px rgba(139, 92, 246, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.37) !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
-section[data-testid="stMain"] [data-testid="stPageLink"] a:focus-visible,
-section[data-testid="stMain"] a[href*="1_new_trip"]:focus-visible,
-section[data-testid="stMain"] a[href*="2_my_trips"]:focus-visible {
-    outline: 3px solid rgba(103, 232, 249, 0.78) !important;
-    outline-offset: 3px !important;
-}
-
-/* ----------------------------------------------------------
    СООБЩЕНИЯ
    ---------------------------------------------------------- */
 
@@ -646,31 +456,30 @@ section[data-testid="stMain"] a[href*="2_my_trips"]:focus-visible {
 
 @media (max-width: 640px) {
     .block-container {
-        padding-top: 2.3rem;
+        padding-top: 2rem;
         padding-right: 1rem;
         padding-left: 1rem;
     }
 
-    .tm-map-symbol {
-        margin-left: -15px;
-        transform: scale(0.75);
+    .tm-brand-card {
+        width: min(100%, 440px);
+        min-height: 90px;
+        padding: 0.7rem 0.9rem;
+        border-radius: 19px;
     }
 
-    .tm-divider {
-        height: 88px;
+    .tm-brand-image {
+        max-height: 100px;
     }
 
-    .tm-logo-title h1 {
-        font-size: 1.75rem !important;
+    .tm-brand-subtitle {
+        margin-top: 0.9rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.045rem;
     }
 
-    .tm-logo-subtitle {
-        font-size: 0.74rem;
-        letter-spacing: 0.04rem;
-    }
-
-    .tm-logo-description {
-        font-size: 0.62rem;
+    .tm-brand-description {
+        font-size: 0.65rem;
         letter-spacing: 0.025rem;
     }
 
@@ -697,26 +506,6 @@ section[data-testid="stMain"] a[href*="2_my_trips"]:focus-visible {
     .stTabs [data-baseweb="tab"] p {
         font-size: 0.92rem !important;
     }
-
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
-    section[data-testid="stMain"] [data-testid="stPageLink"] a,
-    section[data-testid="stMain"] a[href*="1_new_trip"],
-    section[data-testid="stMain"] a[href*="2_my_trips"] {
-        min-height: 64px !important;
-        padding: 0.85rem 0.9rem !important;
-        font-size: 0.98rem !important;
-    }
-
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span,
-    section[data-testid="stMain"] [data-testid="stPageLink"] a p,
-    section[data-testid="stMain"] [data-testid="stPageLink"] a span,
-    section[data-testid="stMain"] a[href*="1_new_trip"] p,
-    section[data-testid="stMain"] a[href*="1_new_trip"] span,
-    section[data-testid="stMain"] a[href*="2_my_trips"] p,
-    section[data-testid="stMain"] a[href*="2_my_trips"] span {
-        font-size: 0.98rem !important;
-    }
 }
 </style>
 """
@@ -727,61 +516,18 @@ st.markdown(CSS, unsafe_allow_html=True)
 # ЛОГОТИП
 # ==========================================================
 
-# ==========================================================
-# ЛОГОТИП
-# ==========================================================
+st.markdown(get_logo_html(), unsafe_allow_html=True)
 
-logo_left, logo_center, logo_right = st.columns([1, 5, 1])
+st.markdown(
+    """
+    <div class="tm-brand-subtitle">AI-ПЛАНИРОВЩИК</div>
 
-with logo_center:
-    st.markdown(
-        """
-        <div class="tm-brand-wrap">
-            <div class="tm-brand-card">
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.image(
-        "assets/brand/travelmind_logo.png",
-        use_container_width=True,
-    )
-
-    st.markdown(
-        """
-            </div>
-        </div>
-
-        <div class="tm-brand-subtitle">AI-ПЛАНИРОВЩИК</div>
-
-        <div class="tm-brand-description">
-            ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with logo_text:
-    st.markdown(
-        '<div class="tm-logo-title">',
-        unsafe_allow_html=True,
-    )
-    st.title("TravelMind")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="tm-logo-subtitle">AI-ПЛАНИРОВЩИК</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        (
-            '<div class="tm-logo-description">'
-            'ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
+    <div class="tm-brand-description">
+        ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """
@@ -833,7 +579,10 @@ if "user_id" in st.session_state:
 
     st.write("")
 
-    if st.button("Выйти из аккаунта"):
+    if st.button(
+        "Выйти из аккаунта",
+        key="logout_button",
+    ):
         auth.logout()
         site_access.revoke_site_access()
         st.rerun()
