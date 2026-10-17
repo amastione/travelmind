@@ -727,29 +727,37 @@ st.markdown(CSS, unsafe_allow_html=True)
 # ЛОГОТИП
 # ==========================================================
 
-logo_map, logo_divider, logo_text = st.columns(
-    [1.1, 0.1, 2.3],
-    vertical_alignment="center",
-)
+# ==========================================================
+# ЛОГОТИП
+# ==========================================================
 
-with logo_map:
+logo_left, logo_center, logo_right = st.columns([1, 5, 1])
+
+with logo_center:
     st.markdown(
         """
-        <div class="tm-map-symbol" aria-label="Карта и геометка">
-            <div class="tm-map-left"></div>
-            <div class="tm-map-center"></div>
-            <div class="tm-map-right"></div>
-            <div class="tm-map-fold-one"></div>
-            <div class="tm-map-fold-two"></div>
-            <div class="tm-pin"></div>
-        </div>
+        <div class="tm-brand-wrap">
+            <div class="tm-brand-card">
         """,
         unsafe_allow_html=True,
     )
 
-with logo_divider:
+    st.image(
+        "assets/brand/travelmind_logo.png",
+        use_container_width=True,
+    )
+
     st.markdown(
-        '<div class="tm-divider"></div>',
+        """
+            </div>
+        </div>
+
+        <div class="tm-brand-subtitle">AI-ПЛАНИРОВЩИК</div>
+
+        <div class="tm-brand-description">
+            ПЕРСОНАЛЬНЫХ ПУТЕШЕСТВИЙ
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
