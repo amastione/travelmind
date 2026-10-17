@@ -725,18 +725,20 @@ if "user_id" in st.session_state:
     column_1, column_2 = st.columns(2, gap="medium")
 
     with column_1:
-        st.page_link(
-            "pages/1_new_trip.py",
-            label="✈️ Спланировать поездку",
+        if st.button(
+            "✈️ Спланировать поездку",
+            key="go_to_new_trip",
             use_container_width=True,
-        )
+        ):
+            st.switch_page("pages/1_new_trip.py")
 
     with column_2:
-        st.page_link(
-            "pages/2_my_trips.py",
-            label="🧳 Мои путешествия",
+        if st.button(
+            "🧳 Мои путешествия",
+            key="go_to_my_trips",
             use_container_width=True,
-        )
+        ):
+            st.switch_page("pages/2_my_trips.py")
 
     st.write("")
 
