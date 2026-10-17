@@ -3,57 +3,55 @@
 import hmac
 
 import streamlit as st
+from streamlit_cookies_manager import EncryptedCookieManager
 
 
 # ==========================================================
 # НАСТРОЙКИ ЗАКРЫТОГО ДОСТУПА
 # ==========================================================
 #
-# ТЕКУЩИЙ ПАРОЛЬ:
-# TravelMind2026
+# Пароль и секрет cookie хранятся в Streamlit Secrets:
 #
-# Чтобы поменять пароль и забрать доступ у всех пользователей:
+# SITE_ACCESS_PASSWORD = "пароль_для_бета-теста"
+# SITE_ACCESS_COOKIE_PASSWORD = "длинная_случайная_секретная_строка"
 #
-# 1. Измените MASTER_PASSWORD на новый пароль.
-# 2. Измените ACCESS_VERSION, например v2 → v3.
-# 3. Нажмите Commit changes в GitHub.
+# Чтобы забрать доступ у всех пользователей:
 #
-# После автоматического обновления Streamlit старый доступ
-# перестанет работать, а пользователям понадобится новый пароль.
+# 1. Измените ACCESS_VERSION.
+# 2. Нажмите Commit changes в GitHub.
 #
-# ВАЖНО:
-# Если GitHub-репозиторий публичный, пароль будет виден в коде.
-# Для учебного проекта это допустимо. Для публичного релиза
-# пароль следует хранить в Streamlit Secrets.
+# После нового развёртывания старые cookie будут считаться
+# неактуальными, и пользователи снова увидят форму доступа.
 # ==========================================================
 
-MASTER_PASSWORD = "TravelMind2026"
+ACCESS_VERSION = "2026-10-17-v3"
 
-ACCESS_VERSION = "2026-10-14-v2"
+COOKIE_NAME = "site_access"
 
 
-def _access_is_current() -> bool:
+def _get_cookie_manager() -> EncryptedCookieManager:
     """
-    Проверяет, прошёл ли пользователь общий пароль
-    именно для текущей версии доступа.
+    Создаёт менеджер зашифрованных cookie.
+
+    Cookie сохраняется в браузере пользователя, поэтому доступ
+    к закрытой бета-версии не пропадает после F5 / перезагрузки.
     """
-    return (
-        st.session_state.get("site_access_granted") is True
-        and st.session_state.get("site_access_version") == ACCESS_VERSION
+    return EncryptedCookieManager(
+        prefix="travelmind/",
+        password=st.secrets["SITE_ACCESS_COOKIE_PASSWORD"],
     )
 
 
-def require_site_access() -> None:
+def _access_is_current(cookies: EncryptedCookieManager) -> bool:
     """
-    Проверяет доступ к закрытой версии TravelMind.
-
-    Если пользователь ещё не ввёл верный мастер-пароль,
-    отображается экран закрытой бета-версии и работа страницы
-    останавливается через st.stop().
+    Проверяет, есть ли в браузере действующая cookie доступа
+    для текущей версии закрытой беты.
     """
-    if _access_is_current():
-        return
+    return cookies.get(COOKIE_NAME) == ACCESS_VERSION
 
+
+def _render_access_page() -> None:
+    """Отрисовывает интерфейс закрытого доступа."""
     st.markdown(
         """
         <style>
@@ -204,6 +202,41 @@ def require_site_access() -> None:
         unsafe_allow_html=True,
     )
 
+
+def require_site_access() -> None:
+    """
+    Проверяет доступ к закрытой бета-версии TravelMind.
+
+    При первом визите пользователь вводит общий пароль. После успешного
+    ввода в браузере сохраняется зашифрованная cookie. Поэтому при F5
+    и обычной перезагрузке страницы пароль повторно не запрашивается.
+    """
+    try:
+        master_password = st.secrets["SITE_ACCESS_PASSWORD"]
+        cookies = _get_cookie_manager()
+
+    except KeyError:
+        st.error(
+            "Не настроены Secrets для закрытого доступа. "
+            "Добавьте SITE_ACCESS_PASSWORD и "
+            "SITE_ACCESS_COOKIE_PASSWORD в Streamlit Secrets."
+        )
+        st.stop()
+
+    # Cookie-компонент может быть не готов на первом запуске страницы.
+    # После автоматического rerun Streamlit продолжит работу.
+    if not cookies.ready():
+        st.info("Проверяем доступ к TravelMind…")
+        st.stop()
+
+    # Допуск уже есть в постоянной cookie.
+    if _access_is_current(cookies):
+        st.session_state["site_access_granted"] = True
+        st.session_state["site_access_version"] = ACCESS_VERSION
+        return
+
+    _render_access_page()
+
     left, center, right = st.columns([1, 2.4, 1])
 
     with center:
@@ -221,11 +254,18 @@ def require_site_access() -> None:
 
                 if hmac.compare_digest(
                     entered_password,
-                    MASTER_PASSWORD,
+                    master_password,
                 ):
+                    # Сохраняем только факт прохождения доступа и версию.
+                    # Сам мастер-пароль в cookie не записывается.
+                    cookies[COOKIE_NAME] = ACCESS_VERSION
+                    cookies.save()
+
                     st.session_state["site_access_granted"] = True
                     st.session_state["site_access_version"] = ACCESS_VERSION
+
                     st.rerun()
+
                 else:
                     st.error("Неверный код доступа. Попробуйте ещё раз.")
 
@@ -238,15 +278,25 @@ def require_site_access() -> None:
             unsafe_allow_html=True,
         )
 
-    # Не позволяет открыть содержимое остальных страниц,
-    # пока пользователь не введёт корректный общий пароль.
     st.stop()
 
 
 def revoke_site_access() -> None:
     """
-    Удаляет доступ к закрытой бета-версии в текущем браузере.
-    Используется при полном выходе из сервиса.
+    Отзывает доступ к закрытой бета-версии в текущем браузере.
+
+    Вызывается при полном выходе пользователя из TravelMind.
     """
+    try:
+        cookies = _get_cookie_manager()
+
+        if cookies.ready():
+            cookies[COOKIE_NAME] = ""
+            cookies.save()
+
+    except KeyError:
+        # Если Secrets ещё не настроены, просто очищаем session_state.
+        pass
+
     st.session_state.pop("site_access_granted", None)
     st.session_state.pop("site_access_version", None)
