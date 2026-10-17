@@ -31,15 +31,17 @@ COOKIE_NAME = "travelmind_beta_access"
 COOKIE_DAYS = 30
 
 
-@st.cache_resource
 def _get_cookie_manager():
     """
     Создаёт менеджер browser-cookie.
 
-    cache_resource нужен, чтобы объект корректно использовался
-    на разных перезапусках Streamlit в рамках приложения.
+    Не используем @st.cache_resource: CookieManager содержит
+    Streamlit-компонент, а компоненты нельзя создавать в кэшируемых
+    функциях.
     """
-    return stx.CookieManager()
+    return stx.CookieManager(
+        key="travelmind_beta_cookie_manager",
+    )
 
 
 def _get_secret(name: str) -> str:
