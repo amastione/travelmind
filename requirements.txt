@@ -4,4 +4,3 @@ pandas
 bcrypt
 folium
 streamlit-folium
-extra-streamlit-components
