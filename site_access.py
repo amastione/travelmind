@@ -1,57 +1,125 @@
 """Общий пароль для доступа к закрытой бета-версии TravelMind."""
 
+import hashlib
 import hmac
 
 import streamlit as st
-from streamlit_cookies_manager import EncryptedCookieManager
 
 
 # ==========================================================
 # НАСТРОЙКИ ЗАКРЫТОГО ДОСТУПА
 # ==========================================================
 #
-# Пароль и секрет cookie хранятся в Streamlit Secrets:
+# Значения хранятся в Streamlit Secrets:
 #
-# SITE_ACCESS_PASSWORD = "пароль_для_бета-теста"
-# SITE_ACCESS_COOKIE_PASSWORD = "длинная_случайная_секретная_строка"
+# SITE_ACCESS_PASSWORD = "пароль_закрытой_беты"
+# SITE_ACCESS_COOKIE_PASSWORD = "длинный_случайный_секрет"
+#
+# SITE_ACCESS_COOKIE_PASSWORD используется не как пароль пользователя,
+# а как секрет для создания подписи доступа.
 #
 # Чтобы забрать доступ у всех пользователей:
-#
 # 1. Измените ACCESS_VERSION.
-# 2. Нажмите Commit changes в GitHub.
-#
-# После нового развёртывания старые cookie будут считаться
-# неактуальными, и пользователи снова увидят форму доступа.
+# 2. Сделайте Commit changes.
 # ==========================================================
 
-ACCESS_VERSION = "2026-10-17-v3"
+ACCESS_VERSION = "2026-10-17-v4"
 
-COOKIE_NAME = "site_access"
+# Параметр в URL. Он содержит версию и криптографическую подпись,
+# но не содержит мастер-пароль.
+ACCESS_QUERY_PARAM = "tm_beta"
 
 
-def _get_cookie_manager() -> EncryptedCookieManager:
+def _get_secret(name: str) -> str:
+    """Читает обязательный параметр из Streamlit Secrets."""
+    try:
+        return str(st.secrets[name])
+    except KeyError:
+        st.error(
+            f"Не найден параметр `{name}` в Streamlit Secrets. "
+            "Проверьте настройки приложения."
+        )
+        st.stop()
+
+
+def _create_access_signature() -> str:
     """
-    Создаёт менеджер зашифрованных cookie.
+    Формирует HMAC-подпись для текущей версии доступа.
 
-    Cookie сохраняется в браузере пользователя, поэтому доступ
-    к закрытой бета-версии не пропадает после F5 / перезагрузки.
+    Без значения SITE_ACCESS_COOKIE_PASSWORD пользователь не сможет
+    самостоятельно создать действительную ссылку доступа.
     """
-    return EncryptedCookieManager(
-        prefix="travelmind/",
-        password=st.secrets["SITE_ACCESS_COOKIE_PASSWORD"],
-    )
+    signing_secret = _get_secret("SITE_ACCESS_COOKIE_PASSWORD")
+
+    message = ACCESS_VERSION.encode("utf-8")
+    key = signing_secret.encode("utf-8")
+
+    return hmac.new(
+        key,
+        message,
+        hashlib.sha256,
+    ).hexdigest()
 
 
-def _access_is_current(cookies: EncryptedCookieManager) -> bool:
+def _get_query_value(name: str) -> str:
+    """Безопасно читает одиночный параметр из URL."""
+    value = st.query_params.get(name)
+
+    if isinstance(value, list):
+        value = value[0] if value else ""
+
+    return str(value or "")
+
+
+def _set_query_value(name: str, value: str) -> None:
+    """Добавляет или обновляет параметр в URL."""
+    st.query_params[name] = value
+
+
+def _remove_query_value(name: str) -> None:
+    """Удаляет параметр URL, если он существует."""
+    try:
+        del st.query_params[name]
+    except KeyError:
+        pass
+
+
+def _get_access_token() -> str:
     """
-    Проверяет, есть ли в браузере действующая cookie доступа
-    для текущей версии закрытой беты.
+    Возвращает значение signed-токена для текущей версии.
+
+    Формат:
+    ACCESS_VERSION.SHA256_HMAC_SIGNATURE
     """
-    return cookies.get(COOKIE_NAME) == ACCESS_VERSION
+    return f"{ACCESS_VERSION}.{_create_access_signature()}"
 
 
-def _render_access_page() -> None:
-    """Отрисовывает интерфейс закрытого доступа."""
+def _access_is_current() -> bool:
+    """
+    Проверяет доступ из session_state либо подписанного URL-параметра.
+
+    URL сохраняется при F5 / обновлении браузера, поэтому повторный
+    ввод общего пароля не требуется.
+    """
+    if (
+        st.session_state.get("site_access_granted") is True
+        and st.session_state.get("site_access_version") == ACCESS_VERSION
+    ):
+        return True
+
+    access_token = _get_query_value(ACCESS_QUERY_PARAM)
+    expected_token = _get_access_token()
+
+    if hmac.compare_digest(access_token, expected_token):
+        st.session_state["site_access_granted"] = True
+        st.session_state["site_access_version"] = ACCESS_VERSION
+        return True
+
+    return False
+
+
+def _render_access_styles() -> None:
+    """Подключает стили экрана закрытого доступа."""
     st.markdown(
         """
         <style>
@@ -169,12 +237,6 @@ def _render_access_page() -> None:
             color: #FFFFFF !important;
             font-size: 1rem;
             font-weight: 750;
-            transition: transform 0.2s ease, filter 0.2s ease;
-        }
-
-        .stFormSubmitButton > button:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.07);
         }
 
         .tm-access-note {
@@ -187,6 +249,21 @@ def _render_access_page() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def require_site_access() -> None:
+    """
+    Проверяет доступ к закрытой бете.
+
+    После правильного ввода мастер-пароля доступ сохраняется
+    в подписанном URL-параметре и переживает обновление страницы.
+    """
+    master_password = _get_secret("SITE_ACCESS_PASSWORD")
+
+    if _access_is_current():
+        return
+
+    _render_access_styles()
 
     st.markdown(
         """
@@ -201,41 +278,6 @@ def _render_access_page() -> None:
         """,
         unsafe_allow_html=True,
     )
-
-
-def require_site_access() -> None:
-    """
-    Проверяет доступ к закрытой бета-версии TravelMind.
-
-    При первом визите пользователь вводит общий пароль. После успешного
-    ввода в браузере сохраняется зашифрованная cookie. Поэтому при F5
-    и обычной перезагрузке страницы пароль повторно не запрашивается.
-    """
-    try:
-        master_password = st.secrets["SITE_ACCESS_PASSWORD"]
-        cookies = _get_cookie_manager()
-
-    except KeyError:
-        st.error(
-            "Не настроены Secrets для закрытого доступа. "
-            "Добавьте SITE_ACCESS_PASSWORD и "
-            "SITE_ACCESS_COOKIE_PASSWORD в Streamlit Secrets."
-        )
-        st.stop()
-
-    # Cookie-компонент может быть не готов на первом запуске страницы.
-    # После автоматического rerun Streamlit продолжит работу.
-    if not cookies.ready():
-        st.info("Проверяем доступ к TravelMind…")
-        st.stop()
-
-    # Допуск уже есть в постоянной cookie.
-    if _access_is_current(cookies):
-        st.session_state["site_access_granted"] = True
-        st.session_state["site_access_version"] = ACCESS_VERSION
-        return
-
-    _render_access_page()
 
     left, center, right = st.columns([1, 2.4, 1])
 
@@ -256,13 +298,14 @@ def require_site_access() -> None:
                     entered_password,
                     master_password,
                 ):
-                    # Сохраняем только факт прохождения доступа и версию.
-                    # Сам мастер-пароль в cookie не записывается.
-                    cookies[COOKIE_NAME] = ACCESS_VERSION
-                    cookies.save()
-
                     st.session_state["site_access_granted"] = True
                     st.session_state["site_access_version"] = ACCESS_VERSION
+
+                    # Сохраняем в URL не пароль, а подписанный токен.
+                    _set_query_value(
+                        ACCESS_QUERY_PARAM,
+                        _get_access_token(),
+                    )
 
                     st.rerun()
 
@@ -283,20 +326,11 @@ def require_site_access() -> None:
 
 def revoke_site_access() -> None:
     """
-    Отзывает доступ к закрытой бета-версии в текущем браузере.
+    Отзывает доступ в текущем браузере.
 
-    Вызывается при полном выходе пользователя из TravelMind.
+    Вызывается вместе с auth.logout() при полном выходе.
     """
-    try:
-        cookies = _get_cookie_manager()
-
-        if cookies.ready():
-            cookies[COOKIE_NAME] = ""
-            cookies.save()
-
-    except KeyError:
-        # Если Secrets ещё не настроены, просто очищаем session_state.
-        pass
+    _remove_query_value(ACCESS_QUERY_PARAM)
 
     st.session_state.pop("site_access_granted", None)
     st.session_state.pop("site_access_version", None)
