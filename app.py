@@ -1,10 +1,11 @@
 """TravelMind — главная страница: вход и регистрация."""
+
 import streamlit as st
 
 import auth
+import branding
 import db
 import site_access
-import branding
 
 
 st.set_page_config(
@@ -13,6 +14,7 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
 )
+
 branding.apply_clean_layout()
 site_access.require_site_access()
 db.init()
@@ -178,7 +180,6 @@ h3 {
 }
 
 .tm-pin::after {
-    content: "";
     position: absolute;
     top: 15px;
     left: 15px;
@@ -186,6 +187,7 @@ h3 {
     height: 22px;
     border-radius: 50%;
     background: #08172D;
+    content: "";
 }
 
 .tm-divider {
@@ -250,7 +252,6 @@ h3 {
     margin-top: 0.4rem;
 }
 
-/* Общий контейнер переключателя */
 [data-testid="stTabs"] [data-baseweb="tab-list"],
 .stTabs [data-baseweb="tab-list"] {
     display: flex !important;
@@ -271,7 +272,6 @@ h3 {
         inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Убираем стандартную линию Streamlit */
 [data-testid="stTabs"] [data-baseweb="tab-border"],
 [data-testid="stTabs"] [data-baseweb="tab-highlight"],
 .stTabs [data-baseweb="tab-border"],
@@ -279,7 +279,6 @@ h3 {
     display: none !important;
 }
 
-/* Неактивная вкладка */
 [data-testid="stTabs"] button[role="tab"],
 .stTabs button[role="tab"],
 .stTabs [data-baseweb="tab"] {
@@ -305,7 +304,6 @@ h3 {
         transform 180ms ease !important;
 }
 
-/* Текст внутри вкладки */
 [data-testid="stTabs"] button[role="tab"] p,
 .stTabs button[role="tab"] p,
 .stTabs [data-baseweb="tab"] p {
@@ -315,7 +313,6 @@ h3 {
     font-weight: 750 !important;
 }
 
-/* Hover неактивной вкладки */
 [data-testid="stTabs"] button[role="tab"]:hover,
 .stTabs button[role="tab"]:hover,
 .stTabs [data-baseweb="tab"]:hover {
@@ -324,7 +321,6 @@ h3 {
     color: #DFFBFF !important;
 }
 
-/* Активная вкладка */
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"],
 .stTabs button[role="tab"][aria-selected="true"],
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
@@ -344,7 +340,6 @@ h3 {
         inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
 }
 
-/* Фокус с клавиатуры */
 [data-testid="stTabs"] button[role="tab"]:focus-visible,
 .stTabs button[role="tab"]:focus-visible {
     outline: 3px solid rgba(125, 235, 250, 0.78) !important;
@@ -376,7 +371,6 @@ h3 {
     font-weight: 650 !important;
 }
 
-/* Поля: несколько селекторов для совместимости с версиями Streamlit */
 .stTextInput input,
 [data-testid="stTextInput"] input,
 [data-baseweb="input"] input {
@@ -401,7 +395,6 @@ h3 {
     box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
 }
 
-/* Кнопка показа пароля */
 [data-testid="stTextInput"] button {
     border-radius: 0 12px 12px 0 !important;
     background: rgba(16, 29, 50, 0.92) !important;
@@ -409,7 +402,7 @@ h3 {
 }
 
 /* ----------------------------------------------------------
-   СТАНДАРТНЫЕ КНОПКИ И ФОРМЫ
+   СТАНДАРТНЫЕ КНОПКИ
    ---------------------------------------------------------- */
 
 .stButton > button,
@@ -478,29 +471,25 @@ h3 {
    ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
    ---------------------------------------------------------- */
 
-/* ----------------------------------------------------------
-   ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
-   ---------------------------------------------------------- */
-
 /*
- Поддерживаются разные версии DOM Streamlit.
- В зависимости от версии ссылка может иметь data-testid
- на самом <a> или на родительском контейнере.
+ Добавлены несколько селекторов для поддержки разных версий
+ Streamlit: разметка st.page_link может отличаться.
 */
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
 section[data-testid="stMain"] [data-testid="stPageLink"] a,
-section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] {
+section[data-testid="stMain"] a[href*="1_new_trip"],
+section[data-testid="stMain"] a[href*="2_my_trips"] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     min-height: 72px !important;
     padding: 1rem 1.2rem !important;
-    border: 1px solid rgba(236, 254, 255, 0.62) !important;
+    border: 1px solid rgba(236, 254, 255, 0.68) !important;
     border-radius: 19px !important;
     background:
         radial-gradient(
             circle at 24% 0%,
-            rgba(255, 255, 255, 0.25),
+            rgba(255, 255, 255, 0.28),
             transparent 38%
         ),
         linear-gradient(
@@ -530,8 +519,10 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span,
 section[data-testid="stMain"] [data-testid="stPageLink"] a p,
 section[data-testid="stMain"] [data-testid="stPageLink"] a span,
-section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] p,
-section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] span {
+section[data-testid="stMain"] a[href*="1_new_trip"] p,
+section[data-testid="stMain"] a[href*="1_new_trip"] span,
+section[data-testid="stMain"] a[href*="2_my_trips"] p,
+section[data-testid="stMain"] a[href*="2_my_trips"] span {
     margin: 0 !important;
     color: #FFFFFF !important;
     font-size: 1.1rem !important;
@@ -540,7 +531,8 @@ section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] span {
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
 section[data-testid="stMain"] [data-testid="stPageLink"] a:hover,
-section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:hover {
+section[data-testid="stMain"] a[href*="1_new_trip"]:hover,
+section[data-testid="stMain"] a[href*="2_my_trips"]:hover {
     transform: translateY(-3px) !important;
     filter: brightness(1.08) saturate(1.07) !important;
     box-shadow:
@@ -551,7 +543,8 @@ section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:hover {
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 section[data-testid="stMain"] [data-testid="stPageLink"] a:focus-visible,
-section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:focus-visible {
+section[data-testid="stMain"] a[href*="1_new_trip"]:focus-visible,
+section[data-testid="stMain"] a[href*="2_my_trips"]:focus-visible {
     outline: 3px solid rgba(103, 232, 249, 0.78) !important;
     outline-offset: 3px !important;
 }
@@ -576,8 +569,8 @@ section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:focus-visible {
     }
 
     .tm-map-symbol {
-        transform: scale(0.75);
         margin-left: -15px;
+        transform: scale(0.75);
     }
 
     .tm-divider {
@@ -622,14 +615,23 @@ section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:focus-visible {
         font-size: 0.92rem !important;
     }
 
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+    section[data-testid="stMain"] [data-testid="stPageLink"] a,
+    section[data-testid="stMain"] a[href*="1_new_trip"],
+    section[data-testid="stMain"] a[href*="2_my_trips"] {
         min-height: 64px !important;
         padding: 0.85rem 0.9rem !important;
         font-size: 0.98rem !important;
     }
 
     section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span,
+    section[data-testid="stMain"] [data-testid="stPageLink"] a p,
+    section[data-testid="stMain"] [data-testid="stPageLink"] a span,
+    section[data-testid="stMain"] a[href*="1_new_trip"] p,
+    section[data-testid="stMain"] a[href*="1_new_trip"] span,
+    section[data-testid="stMain"] a[href*="2_my_trips"] p,
+    section[data-testid="stMain"] a[href*="2_my_trips"] span {
         font-size: 0.98rem !important;
     }
 }
@@ -669,7 +671,10 @@ with logo_divider:
     )
 
 with logo_text:
-    st.markdown('<div class="tm-logo-title">', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tm-logo-title">',
+        unsafe_allow_html=True,
+    )
     st.title("TravelMind")
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -755,6 +760,7 @@ tab_login, tab_register = st.tabs(
 
 with tab_login:
     st.markdown("#### С возвращением")
+
     st.caption(
         "Войдите, чтобы открыть сохранённые маршруты, карту и бюджет поездок."
     )
@@ -783,6 +789,7 @@ with tab_login:
 
 with tab_register:
     st.markdown("#### Создайте аккаунт")
+
     st.caption(
         "Сохраняйте маршруты, отслеживайте бюджет и возвращайтесь к планам."
     )
@@ -821,6 +828,7 @@ with tab_register:
                 else:
                     auth.login(username, password)
                     st.rerun()
+
 st.markdown(
     """
     <div class="tm-author">
