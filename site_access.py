@@ -15,38 +15,36 @@ import streamlit as st
 # SITE_ACCESS_PASSWORD = "пароль_закрытой_беты"
 # SITE_ACCESS_COOKIE_PASSWORD = "длинная_случайная_секретная_строка"
 #
-# SITE_ACCESS_COOKIE_PASSWORD используется как секрет для подписи
-# доступа. Пользователь его НЕ вводит и в URL он НЕ попадает.
+# SITE_ACCESS_COOKIE_PASSWORD используется только для создания
+# криптографической подписи. Пользователь его не вводит.
 #
 # Чтобы отозвать доступ у всех бета-тестеров:
 # 1. Измените ACCESS_VERSION.
 # 2. Сделайте Commit changes в GitHub.
 #
-# После нового развёртывания ранее выданные ссылки доступа
-# станут недействительными.
+# После этого старые подтверждения доступа перестанут работать.
 # ==========================================================
 
-ACCESS_VERSION = "2026-10-18-v1"
+ACCESS_VERSION = "2026-10-18-v2"
 
-# Название параметра доступа в URL.
-# В нём хранится не пароль, а подписанный служебный токен.
+# Название служебного параметра в URL.
+# Он не содержит мастер-пароль.
 ACCESS_QUERY_PARAM = "tm_beta"
 
 
 def _get_secret(name: str) -> str:
-    """Возвращает обязательный параметр из Streamlit Secrets."""
+    """Получает обязательное значение из Streamlit Secrets."""
     try:
         return str(st.secrets[name])
     except KeyError:
         st.error(
-            f"В Streamlit Secrets отсутствует параметр: `{name}`. "
-            "Проверьте настройки приложения."
+            f"В Streamlit Secrets отсутствует параметр: `{name}`."
         )
         st.stop()
 
 
 def _get_query_value(name: str) -> str:
-    """Безопасно читает одиночный параметр из URL."""
+    """Безопасно получает один параметр из URL."""
     value = st.query_params.get(name)
 
     if isinstance(value, list):
@@ -56,12 +54,12 @@ def _get_query_value(name: str) -> str:
 
 
 def _set_query_value(name: str, value: str) -> None:
-    """Добавляет или обновляет один параметр URL."""
+    """Создаёт или обновляет конкретный параметр URL."""
     st.query_params[name] = str(value)
 
 
 def _remove_query_value(name: str) -> None:
-    """Удаляет параметр URL, если он существует."""
+    """Удаляет конкретный параметр URL."""
     try:
         del st.query_params[name]
     except KeyError:
@@ -70,13 +68,12 @@ def _remove_query_value(name: str) -> None:
 
 def _create_access_token() -> str:
     """
-    Создаёт подписанный токен доступа.
+    Создаёт подписанный маркер доступа.
 
-    Формат токена:
+    В URL записывается:
     ACCESS_VERSION.HMAC_SHA256_SIGNATURE
 
-    В нём нет общего пароля. Без SITE_ACCESS_COOKIE_PASSWORD
-    невозможно корректно сформировать подпись.
+    Мастер-пароль в URL не записывается.
     """
     signing_secret = _get_secret("SITE_ACCESS_COOKIE_PASSWORD")
 
@@ -89,28 +86,12 @@ def _create_access_token() -> str:
     return f"{ACCESS_VERSION}.{signature}"
 
 
-def _sync_access_to_url() -> None:
-    """
-    Добавляет подтверждение бета-доступа в URL.
-
-    Это важно для F5: после обновления Streamlit создаёт новую
-    session_state, но URL сохраняется в браузере.
-    """
-    expected_token = _create_access_token()
-
-    if _get_query_value(ACCESS_QUERY_PARAM) != expected_token:
-        _set_query_value(
-            ACCESS_QUERY_PARAM,
-            expected_token,
-        )
-
-
 def _access_is_current() -> bool:
     """
-    Проверяет доступ двумя способами:
+    Проверяет бета-доступ:
 
-    1. Внутри текущей Streamlit-сессии.
-    2. По подписанному токену из URL — после F5 или нового запуска.
+    1. В session_state — во время работы текущей сессии.
+    2. В URL — после F5 или нового запуска Streamlit-сессии.
     """
     if (
         st.session_state.get("site_access_granted") is True
@@ -133,8 +114,25 @@ def _access_is_current() -> bool:
     return False
 
 
+def _sync_access_to_url() -> None:
+    """
+    Сохраняет подписанное подтверждение в URL.
+
+    Не удаляет другие параметры, нужные auth.py:
+    - tm_auth — пользовательская авторизация;
+    - tm_trip — текущая открытая поездка.
+    """
+    expected_token = _create_access_token()
+
+    if _get_query_value(ACCESS_QUERY_PARAM) != expected_token:
+        _set_query_value(
+            ACCESS_QUERY_PARAM,
+            expected_token,
+        )
+
+
 def _render_access_styles() -> None:
-    """Подключает стили экрана закрытой бета-версии."""
+    """Подключает стили для страницы закрытой беты."""
     st.markdown(
         """
         <style>
@@ -246,74 +244,4 @@ def _render_access_styles() -> None:
                 linear-gradient(
                     135deg,
                     #06B6D4 0%,
-                    #22D3EE 45%,
-                    #8B5CF6 100%
-                ) !important;
-            color: #FFFFFF !important;
-            font-size: 1rem;
-            font-weight: 750;
-            transition: transform 0.2s ease, filter 0.2s ease;
-        }
-
-        .stFormSubmitButton > button:hover {
-            transform: translateY(-1px);
-            filter: brightness(1.07);
-        }
-
-        .tm-access-note {
-            margin-top: 1rem;
-            color: #71829A;
-            font-size: 0.82rem;
-            text-align: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def require_site_access() -> None:
-    """
-    Проверяет пароль закрытой бета-версии.
-
-    После первого успешного ввода:
-    - доступ остаётся в session_state;
-    - в URL записывается подписанное подтверждение;
-    - после F5 доступ восстанавливается автоматически.
-    """
-    master_password = _get_secret("SITE_ACCESS_PASSWORD")
-
-    if _access_is_current():
-        # При переходе между страницами Streamlit может очищать
-        # query-параметры. На каждой странице добавляем токен обратно.
-        _sync_access_to_url()
-        return
-
-    _render_access_styles()
-
-    st.markdown(
-        """
-        <div class="tm-access-card">
-            <div class="tm-access-icon">✦</div>
-            <h1 class="tm-access-title">TravelMind закрытая бета</h1>
-            <p class="tm-access-text">
-                Сервис находится в тестовом режиме. Введите код доступа,
-                полученный от команды проекта.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    left, center, right = st.columns([1, 2.4, 1])
-
-    with center:
-        with st.form("site_access_form"):
-            password = st.text_input(
-                "Код доступа",
-                type="password",
-                placeholder="Введите мастер-пароль",
-            )
-
-            submitted = st.form_submit_button(
-                "О
+                    #22D
