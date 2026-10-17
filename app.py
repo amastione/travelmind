@@ -105,7 +105,90 @@ h2,
 h3 {
     color: #F8FAFC !important;
 }
+/* ----------------------------------------------------------
+   PNG-ЛОГОТИП TRAVELMIND
+   ---------------------------------------------------------- */
 
+.tm-brand-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto 0.55rem;
+}
+
+.tm-brand-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 610px);
+    padding: 1.1rem 1.55rem;
+    border: 1px solid rgba(103, 232, 249, 0.20);
+    border-radius: 25px;
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(34, 211, 238, 0.12),
+            transparent 45%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.94),
+            rgba(220, 241, 255, 0.88)
+        );
+    box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.20),
+        0 0 32px rgba(34, 211, 238, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.tm-brand-card img {
+    display: block;
+    width: min(100%, 500px);
+    height: auto;
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.tm-brand-subtitle {
+    margin-top: 1.15rem;
+    color: #67E8F9;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.09rem;
+    text-align: center;
+}
+
+.tm-brand-description {
+    margin-top: 0.34rem;
+    color: #AAB8CE;
+    font-size: 0.83rem;
+    font-weight: 550;
+    letter-spacing: 0.055rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .tm-brand-card {
+        width: min(100%, 440px);
+        padding: 0.8rem 1rem;
+        border-radius: 19px;
+    }
+
+    .tm-brand-card img {
+        max-height: 105px;
+    }
+
+    .tm-brand-subtitle {
+        margin-top: 0.9rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.045rem;
+    }
+
+    .tm-brand-description {
+        font-size: 0.65rem;
+        letter-spacing: 0.025rem;
+    }
+}
 /* ----------------------------------------------------------
    ЛОГОТИП
    ---------------------------------------------------------- */
