@@ -34,22 +34,28 @@ trip_id = st.session_state.get("current_trip_id")
 
 if not trip_id:
     st.warning("Поездка не выбрана. Откройте её из списка путешествий.")
-    st.page_link(
-        "pages/2_my_trips.py",
-        label="← Перейти к моим путешествиям",
+
+    if st.button(
+        "← Перейти к моим путешествиям",
+        key="no_trip_go_to_my_trips",
         use_container_width=True,
-    )
+    ):
+        st.switch_page("pages/2_my_trips.py")
+
     st.stop()
 
 trip = db.get_trip(trip_id, user_id)
 
 if not trip:
     st.error("Поездка не найдена или была удалена.")
-    st.page_link(
-        "pages/2_my_trips.py",
-        label="← Перейти к моим путешествиям",
+
+    if st.button(
+        "← Перейти к моим путешествиям",
+        key="missing_trip_go_to_my_trips",
         use_container_width=True,
-    )
+    ):
+        st.switch_page("pages/2_my_trips.py")
+
     st.stop()
 
 auth.remember_trip(trip_id)
@@ -900,10 +906,15 @@ else:
             );
     """
 
-st.page_link(
-    "pages/2_my_trips.py",
-    label="← К моим путешествиям",
-)
+navigation_left, navigation_space = st.columns([1.35, 2.65])
+
+with navigation_left:
+    if st.button(
+        "← К моим путешествиям",
+        key="hero_go_to_my_trips",
+        use_container_width=True,
+    ):
+        st.switch_page("pages/2_my_trips.py")
 
 overview_html = ""
 
