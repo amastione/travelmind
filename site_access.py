@@ -2,9 +2,7 @@
 
 import hashlib
 import hmac
-from datetime import datetime, timedelta, timezone
 
-import extra_streamlit_components as stx
 import streamlit as st
 
 
@@ -15,32 +13,28 @@ import streamlit as st
 # Обязательные параметры в Streamlit Secrets:
 #
 # SITE_ACCESS_PASSWORD = "пароль_закрытой_беты"
-# SITE_ACCESS_COOKIE_PASSWORD = "длинный_случайный_секрет"
+# SITE_ACCESS_COOKIE_PASSWORD = "длинная_случайная_секретная_строка"
 #
-# SITE_ACCESS_COOKIE_PASSWORD — это технический секрет для
-# криптографической подписи cookie. Пользователь его не вводит.
+# SITE_ACCESS_COOKIE_PASSWORD используется как секрет для подписи
+# доступа. Пользователь его НЕ вводит и в URL он НЕ попадает.
 #
 # Чтобы отозвать доступ у всех бета-тестеров:
 # 1. Измените ACCESS_VERSION.
 # 2. Сделайте Commit changes в GitHub.
 #
-# После обновления пользователям снова потребуется ввести
-# пароль закрытой беты.
+# После нового развёртывания ранее выданные ссылки доступа
+# станут недействительными.
 # ==========================================================
 
-ACCESS_VERSION = "2026-10-17-v6"
+ACCESS_VERSION = "2026-10-18-v1"
 
-COOKIE_NAME = "travelmind_beta_access"
-COOKIE_DAYS = 30
-
-# Ключ Streamlit-компонента CookieManager.
-# Он должен быть постоянным, но менеджер должен создаваться
-# только ОДИН раз за запуск страницы.
-COOKIE_MANAGER_KEY = "travelmind_beta_cookie_manager"
+# Название параметра доступа в URL.
+# В нём хранится не пароль, а подписанный служебный токен.
+ACCESS_QUERY_PARAM = "tm_beta"
 
 
 def _get_secret(name: str) -> str:
-    """Безопасно получает обязательное значение из Streamlit Secrets."""
+    """Возвращает обязательный параметр из Streamlit Secrets."""
     try:
         return str(st.secrets[name])
     except KeyError:
@@ -51,26 +45,38 @@ def _get_secret(name: str) -> str:
         st.stop()
 
 
-def _get_cookie_manager():
-    """
-    Создаёт менеджер browser-cookie.
+def _get_query_value(name: str) -> str:
+    """Безопасно читает одиночный параметр из URL."""
+    value = st.query_params.get(name)
 
-    Важно: CookieManager является Streamlit-компонентом, поэтому
-    его нельзя создавать внутри @st.cache_resource / @st.cache_data.
-    """
-    return stx.CookieManager(
-        key=COOKIE_MANAGER_KEY,
-    )
+    if isinstance(value, list):
+        value = value[0] if value else ""
+
+    return str(value or "")
+
+
+def _set_query_value(name: str, value: str) -> None:
+    """Добавляет или обновляет один параметр URL."""
+    st.query_params[name] = str(value)
+
+
+def _remove_query_value(name: str) -> None:
+    """Удаляет параметр URL, если он существует."""
+    try:
+        del st.query_params[name]
+    except KeyError:
+        pass
 
 
 def _create_access_token() -> str:
     """
-    Создаёт подписанный токен для cookie.
+    Создаёт подписанный токен доступа.
 
-    В cookie сохраняется не пароль закрытой беты, а строка вида:
+    Формат токена:
     ACCESS_VERSION.HMAC_SHA256_SIGNATURE
 
-    Подделать корректную подпись без SITE_ACCESS_COOKIE_PASSWORD нельзя.
+    В нём нет общего пароля. Без SITE_ACCESS_COOKIE_PASSWORD
+    невозможно корректно сформировать подпись.
     """
     signing_secret = _get_secret("SITE_ACCESS_COOKIE_PASSWORD")
 
@@ -83,43 +89,48 @@ def _create_access_token() -> str:
     return f"{ACCESS_VERSION}.{signature}"
 
 
-def _access_is_current(manager) -> bool:
+def _sync_access_to_url() -> None:
     """
-    Проверяет cookie с подтверждением доступа.
+    Добавляет подтверждение бета-доступа в URL.
 
-    При успешной проверке также восстанавливает доступ
-    в текущем st.session_state.
+    Это важно для F5: после обновления Streamlit создаёт новую
+    session_state, но URL сохраняется в браузере.
     """
-    saved_token = manager.get(COOKIE_NAME)
     expected_token = _create_access_token()
 
-    if (
-        saved_token
-        and hmac.compare_digest(
-            str(saved_token),
+    if _get_query_value(ACCESS_QUERY_PARAM) != expected_token:
+        _set_query_value(
+            ACCESS_QUERY_PARAM,
             expected_token,
         )
+
+
+def _access_is_current() -> bool:
+    """
+    Проверяет доступ двумя способами:
+
+    1. Внутри текущей Streamlit-сессии.
+    2. По подписанному токену из URL — после F5 или нового запуска.
+    """
+    if (
+        st.session_state.get("site_access_granted") is True
+        and st.session_state.get("site_access_version")
+        == ACCESS_VERSION
+    ):
+        return True
+
+    saved_token = _get_query_value(ACCESS_QUERY_PARAM)
+    expected_token = _create_access_token()
+
+    if saved_token and hmac.compare_digest(
+        saved_token,
+        expected_token,
     ):
         st.session_state["site_access_granted"] = True
         st.session_state["site_access_version"] = ACCESS_VERSION
         return True
 
     return False
-
-
-def _save_access_cookie(manager) -> None:
-    """
-    Сохраняет отметку о бета-доступе в браузере на COOKIE_DAYS дней.
-    """
-    expires_at = datetime.now(timezone.utc) + timedelta(
-        days=COOKIE_DAYS
-    )
-
-    manager.set(
-        COOKIE_NAME,
-        _create_access_token(),
-        expires_at=expires_at,
-    )
 
 
 def _render_access_styles() -> None:
@@ -263,30 +274,19 @@ def _render_access_styles() -> None:
 
 def require_site_access() -> None:
     """
-    Проверяет доступ к закрытой бета-версии TravelMind.
+    Проверяет пароль закрытой бета-версии.
 
-    Логика:
-    1. Если доступ есть в текущем session_state — продолжаем работу.
-    2. Если страницу обновили — восстанавливаем доступ из cookie.
-    3. Если доступа нет — показываем форму с общим паролем.
+    После первого успешного ввода:
+    - доступ остаётся в session_state;
+    - в URL записывается подписанное подтверждение;
+    - после F5 доступ восстанавливается автоматически.
     """
     master_password = _get_secret("SITE_ACCESS_PASSWORD")
 
-    # Создаём компонент РОВНО ОДИН РАЗ за текущий запуск страницы.
-    # Это устраняет StreamlitDuplicateElementKey.
-    manager = _get_cookie_manager()
-
-    # Быстрая проверка текущей сессии Streamlit.
-    if (
-        st.session_state.get("site_access_granted") is True
-        and st.session_state.get("site_access_version")
-        == ACCESS_VERSION
-    ):
-        return
-
-    # Восстановление доступа после F5, закрытия/повторного открытия
-    # вкладки и нового запуска Streamlit-сессии.
-    if _access_is_current(manager):
+    if _access_is_current():
+        # При переходе между страницами Streamlit может очищать
+        # query-параметры. На каждой странице добавляем токен обратно.
+        _sync_access_to_url()
         return
 
     _render_access_styles()
@@ -316,49 +316,4 @@ def require_site_access() -> None:
             )
 
             submitted = st.form_submit_button(
-                "Открыть TravelMind →"
-            )
-
-            if submitted:
-                entered_password = password.strip()
-
-                if hmac.compare_digest(
-                    entered_password,
-                    master_password,
-                ):
-                    # Сначала сохраняем cookie, затем обновляем session_state.
-                    _save_access_cookie(manager)
-
-                    st.session_state["site_access_granted"] = True
-                    st.session_state["site_access_version"] = ACCESS_VERSION
-
-                    st.rerun()
-
-                else:
-                    st.error("Неверный код доступа. Попробуйте ещё раз.")
-
-        st.markdown(
-            """
-            <div class="tm-access-note">
-                Доступ предоставляется только участникам тестирования.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.stop()
-
-
-def revoke_site_access() -> None:
-    """
-    Очищает только текущий session_state бета-доступа.
-
-    Cookie специально не удаляется. Это сделано для удобства:
-    после обычного выхода из аккаунта пользователь остаётся допущен
-    к закрытой бете и может войти в другой аккаунт без повторного
-    ввода общего пароля.
-
-    Чтобы принудительно отозвать доступ у всех, измените ACCESS_VERSION.
-    """
-    st.session_state.pop("site_access_granted", None)
-    st.session_state.pop("site_access_version", None)
+                "О
