@@ -690,25 +690,7 @@ div[data-testid="stExpander"] details > summary:hover {
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 48px !important;
-    padding: 0.7rem 1rem !important;
-    border: 1px solid rgba(234, 252, 255, 0.60) !important;
-    border-radius: 14px !important;
-    background:
-        linear-gradient(
-            135deg,
-            #069FBE 0%,
-            #1DCDE6 46%,
-            #568DF0 72%,
-            #8057E9 100%
-        ) !important;
-    color: #FFFFFF !important;
-    text-decoration: none !important;
-    font-size: 0.96rem !important;
-    font-weight: 800 !important;
-}
+
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p {
     color: #FFFFFF !important;
