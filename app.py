@@ -478,38 +478,29 @@ h3 {
    ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
    ---------------------------------------------------------- */
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
+/* ----------------------------------------------------------
+   ОСНОВНЫЕ CTA-КНОПКИ ГЛАВНОЙ СТРАНИЦЫ
+   ---------------------------------------------------------- */
+
+/*
+ Поддерживаются разные версии DOM Streamlit.
+ В зависимости от версии ссылка может иметь data-testid
+ на самом <a> или на родительском контейнере.
+*/
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+section[data-testid="stMain"] [data-testid="stPageLink"] a,
+section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     min-height: 72px !important;
     padding: 1rem 1.2rem !important;
-    border-radius: 19px !important;
-    text-decoration: none !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.015rem !important;
-    line-height: 1.2 !important;
-    transition:
-        transform 190ms ease,
-        filter 190ms ease,
-        border-color 190ms ease,
-        box-shadow 190ms ease !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span {
-    color: #FFFFFF !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"] {
     border: 1px solid rgba(236, 254, 255, 0.62) !important;
+    border-radius: 19px !important;
     background:
         radial-gradient(
-            circle at 25% 0%,
-            rgba(255, 255, 255, 0.28),
+            circle at 24% 0%,
+            rgba(255, 255, 255, 0.25),
             transparent 38%
         ),
         linear-gradient(
@@ -519,42 +510,48 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_t
             #4E8DF2 73%,
             #8257E7 100%
         ) !important;
+    color: #FFFFFF !important;
+    text-decoration: none !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.015rem !important;
+    line-height: 1.2 !important;
     box-shadow:
         0 14px 28px rgba(34, 211, 238, 0.23),
         0 8px 24px rgba(139, 92, 246, 0.16),
         inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+    transition:
+        transform 190ms ease,
+        filter 190ms ease,
+        box-shadow 190ms ease !important;
 }
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"] {
-    border: 1px solid rgba(103, 232, 249, 0.46) !important;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(20, 48, 71, 0.94),
-            rgba(30, 37, 78, 0.92)
-        ) !important;
-    box-shadow:
-        0 12px 26px rgba(0, 0, 0, 0.17),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] span,
+section[data-testid="stMain"] [data-testid="stPageLink"] a p,
+section[data-testid="stMain"] [data-testid="stPageLink"] a span,
+section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] p,
+section[data-testid="stMain"] [data-testid="stPageLink-NavLink"] span {
+    margin: 0 !important;
+    color: #FFFFFF !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
 }
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="1_new_trip"]:hover {
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+section[data-testid="stMain"] [data-testid="stPageLink"] a:hover,
+section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:hover {
     transform: translateY(-3px) !important;
     filter: brightness(1.08) saturate(1.07) !important;
+    box-shadow:
+        0 18px 34px rgba(34, 211, 238, 0.30),
+        0 14px 28px rgba(139, 92, 246, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.37) !important;
 }
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"][href*="2_my_trips"]:hover {
-    transform: translateY(-3px) !important;
-    border-color: rgba(167, 139, 250, 0.82) !important;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(27, 73, 96, 0.98),
-            rgba(57, 43, 106, 0.98)
-        ) !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible {
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
+section[data-testid="stMain"] [data-testid="stPageLink"] a:focus-visible,
+section[data-testid="stMain"] [data-testid="stPageLink-NavLink"]:focus-visible {
     outline: 3px solid rgba(103, 232, 249, 0.78) !important;
     outline-offset: 3px !important;
 }
