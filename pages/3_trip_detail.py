@@ -1419,35 +1419,12 @@ def text_value(value, default=""):
 def format_money(value, currency):
     """Форматирует денежную сумму."""
     return f"{as_float(value):,.0f} {currency}".replace(",", " ")
+
+
 def calculate_distance_km(lat_1, lon_1, lat_2, lon_2):
     """
-    Рассчитывает расстояние между двумя точками по формуле гаверсинуса.
-    Результат — примерное расстояние по прямой в километрах.
-    """
-    from math import asin, cos, radians, sin, sqrt
-
-    earth_radius_km = 6371.0
-
-    lat_1_rad = radians(float(lat_1))
-    lon_1_rad = radians(float(lon_1))
-    lat_2_rad = radians(float(lat_2))
-    lon_2_rad = radians(float(lon_2))
-
-    delta_lat = lat_2_rad - lat_1_rad
-    delta_lon = lon_2_rad - lon_1_rad
-
-    distance_formula = (
-        sin(delta_lat / 2) ** 2
-        + cos(lat_1_rad)
-        * cos(lat_2_rad)
-        * sin(delta_lon / 2) ** 2
-    )
-
-    return earth_radius_km * 2 * asin(sqrt(distance_formula))
-def calculate_distance_km(lat_1, lon_1, lat_2, lon_2):
-    """
-    Рассчитывает расстояние между двумя точками по формуле гаверсинуса.
-    Результат — примерное расстояние по прямой в километрах.
+    Рассчитывает примерное расстояние между двумя точками по прямой
+    по формуле гаверсинуса. Результат — в километрах.
     """
     from math import asin, cos, radians, sin, sqrt
 
@@ -1905,9 +1882,8 @@ with tab_route:
 # ==========================================================
 # ВКЛАДКА: КАРТА
 # ==========================================================
-
 # ==========================================================
-# ВКЛАДКА: КАРТА
+# ВКЛАДКА: КАРТА И АНАЛИЗ ЛОГИСТИКИ
 # ==========================================================
 
 with tab_map:
@@ -1927,16 +1903,6 @@ with tab_map:
         unsafe_allow_html=True,
     )
 
-    map_type_labels = {
-        "A": "🏛️ Достопримечательность",
-        "F": "🍽️ Еда",
-        "T": "🚌 Транспорт",
-        "S": "🏨 Проживание",
-        "L": "🌿 Отдых и прогулка",
-        "H": "🛍️ Покупки",
-        "W": "✨ Яркое впечатление",
-    }
-
     map_type_colors = {
         "A": "#818CF8",
         "F": "#FB923C",
@@ -1955,16 +1921,12 @@ with tab_map:
         activities = day.get("activities") or []
 
         for activity_index, activity in enumerate(activities, start=1):
-            raw_lat = activity.get("lat")
-            raw_lon = activity.get("lon")
-
             try:
-                lat = float(raw_lat)
-                lon = float(raw_lon)
+                lat = float(activity.get("lat"))
+                lon = float(activity.get("lon"))
             except (TypeError, ValueError):
                 continue
 
-            # Исключаем очевидно некорректные координаты.
             if not (-90 <= lat <= 90 and -180 <= lon <= 180):
                 continue
 
@@ -1996,9 +1958,10 @@ with tab_map:
     if not all_map_points:
         st.info(
             "Для этой поездки AI не вернул координаты мест. "
-            "Откройте места по отдельным ссылкам на карте во вкладке "
+            "Откройте места по отдельным ссылкам во вкладке "
             "«Маршрут по дням»."
         )
+
     else:
         available_map_days = sorted(
             {
@@ -2042,8 +2005,8 @@ with tab_map:
         with map_info_col:
             st.markdown(
                 (
-                    '<div style="padding-top: 2rem; color: #AFC0D7; '
-                    'font-size: 0.9rem; font-weight: 650;">'
+                    '<div style="padding-top:2rem; color:#AFC0D7; '
+                    'font-size:0.9rem; font-weight:650;">'
                     f'{escape(map_filter_caption)}'
                     '</div>'
                 ),
@@ -2060,6 +2023,7 @@ with tab_map:
             for point in visible_map_points
         ) / len(visible_map_points)
 
+        # OpenStreetMap не требует API-ключа.
         fmap = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=12,
@@ -2074,7 +2038,7 @@ with tab_map:
         for point in visible_map_points:
             points_by_day[point["day"]].append(point)
 
-        # Соединяем активности линиями в хронологическом порядке.
+        # Линии между активностями одного дня.
         for day_number, day_points in points_by_day.items():
             sorted_day_points = sorted(
                 day_points,
@@ -2093,10 +2057,10 @@ with tab_map:
                     tooltip=f"Маршрут: день {day_number}",
                 ).add_to(fmap)
 
+        # Пронумерованные маркеры.
         for point in visible_map_points:
-            activity_type = point["type"]
             marker_color = map_type_colors.get(
-                activity_type,
+                point["type"],
                 "#22D3EE",
             )
 
@@ -2158,7 +2122,6 @@ with tab_map:
                 ),
             ).add_to(fmap)
 
-        # Автоматически показывает все точки в выбранном диапазоне.
         if len(visible_map_points) > 1:
             fmap.fit_bounds(
                 [
@@ -2167,8 +2130,9 @@ with tab_map:
                 ],
                 padding=(35, 35),
             )
-        # Убираем служебную атрибуцию Leaflet внутри iframe карты:
-        # источник карт указан отдельной подписью под картой.
+
+        # Скрываем стандартную подпись Leaflet внутри карты:
+        # источник указан под картой.
         fmap.get_root().html.add_child(
             folium.Element(
                 """
@@ -2180,6 +2144,7 @@ with tab_map:
                 """
             )
         )
+
         legend_html = """
         <div style="
             position: fixed;
@@ -2231,10 +2196,11 @@ with tab_map:
         st.caption(
             "Цифра на точке — порядок активности в рамках выбранного дня. "
             "Линии соединяют места в последовательности маршрута. "
-            "Картографические данные: © OpenStreetMap contributors, © CARTO."
+            "Картографические данные: © OpenStreetMap contributors."
         )
+
         # ==================================================
-        # АНАЛИЗ И ОПТИМИЗАЦИЯ ЛОГИСТИКИ
+        # АНАЛИЗ ЛОГИСТИКИ
         # ==================================================
 
         st.markdown(
@@ -2245,14 +2211,16 @@ with tab_map:
         st.markdown(
             (
                 '<div class="tm-section-text">'
-                'TravelMind анализирует последовательность мест по '
-                'координатам и помогает заметить слишком длинные '
-                'переезды между активностями.'
+                'TravelMind оценивает примерные расстояния между точками '
+                'маршрута. Расчёт выполняется по прямой между координатами, '
+                'поэтому реальный путь по дорогам может быть длиннее.'
                 '</div>'
             ),
             unsafe_allow_html=True,
         )
 
+        # Используется тот же фильтр, что и для карты.
+        # Отдельный selectbox здесь не нужен.
         logistics_by_day = {}
 
         for day_number, day_points in points_by_day.items():
@@ -2265,7 +2233,6 @@ with tab_map:
             longest_jump_km = 0.0
             longest_jump_from = None
             longest_jump_to = None
-            route_segments = []
 
             for point_index in range(len(ordered_points) - 1):
                 current_point = ordered_points[point_index]
@@ -2280,14 +2247,6 @@ with tab_map:
 
                 total_distance_km += segment_distance_km
 
-                route_segments.append(
-                    {
-                        "from": current_point,
-                        "to": next_point,
-                        "distance": segment_distance_km,
-                    }
-                )
-
                 if segment_distance_km > longest_jump_km:
                     longest_jump_km = segment_distance_km
                     longest_jump_from = current_point
@@ -2299,34 +2258,16 @@ with tab_map:
                 "longest_jump_km": longest_jump_km,
                 "longest_jump_from": longest_jump_from,
                 "longest_jump_to": longest_jump_to,
-                "segments": route_segments,
             }
 
         if not logistics_by_day:
             st.info(
-                "Для анализа логистики нужно минимум две активности "
-                "с координатами в одном дне."
+                "Для анализа нужно минимум две активности с координатами "
+                "внутри одного дня."
             )
+
         else:
-            logistics_days = sorted(logistics_by_day.keys())
-
-            selected_logistics_day = st.selectbox(
-                "День для анализа",
-                options=["Все дни"] + logistics_days,
-                key=f"logistics_day_filter_{trip_id}",
-                format_func=lambda value: (
-                    value
-                    if value == "Все дни"
-                    else f"День {value}"
-                ),
-            )
-
-            if selected_logistics_day == "Все дни":
-                visible_logistics_days = logistics_days
-            else:
-                visible_logistics_days = [selected_logistics_day]
-
-            for day_number in visible_logistics_days:
+            for day_number in sorted(logistics_by_day.keys()):
                 logistics = logistics_by_day[day_number]
 
                 points_count = logistics["points_count"]
@@ -2335,14 +2276,11 @@ with tab_map:
                 longest_from = logistics["longest_jump_from"]
                 longest_to = logistics["longest_jump_to"]
 
-                # Порог 4 км выбран для городского маршрута:
-                # выше этого значения обычно лучше проверить транспорт
-                # или переставить активности местами.
                 if points_count < 2:
                     status_icon = "🔵"
                     status_title = "Недостаточно точек для оценки"
                     status_text = (
-                        "Для этого дня есть только одна активность "
+                        "В этот день есть только одна активность "
                         "с координатами."
                     )
                     status_type = "info"
@@ -2352,131 +2290,8 @@ with tab_map:
                     status_title = "Логистика требует оптимизации"
                     status_text = (
                         "В маршруте есть заметно удалённые точки. "
-                        "Рекомендуем изменить порядок активностей "
-                        "или заменить одну из них вариантом поближе."
-                    )
-                    status_type = "error"
-        # ==================================================
-        # АНАЛИЗ И ОПТИМИЗАЦИЯ ЛОГИСТИКИ
-        # ==================================================
-
-        st.markdown(
-            '<div class="tm-section-title">✨ Анализ логистики</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            (
-                '<div class="tm-section-text">'
-                'TravelMind анализирует последовательность мест по '
-                'координатам и помогает заметить слишком длинные '
-                'переезды между активностями.'
-                '</div>'
-            ),
-            unsafe_allow_html=True,
-        )
-
-        logistics_by_day = {}
-
-        for day_number, day_points in points_by_day.items():
-            ordered_points = sorted(
-                day_points,
-                key=lambda item: item["order"],
-            )
-
-            total_distance_km = 0.0
-            longest_jump_km = 0.0
-            longest_jump_from = None
-            longest_jump_to = None
-            route_segments = []
-
-            for point_index in range(len(ordered_points) - 1):
-                current_point = ordered_points[point_index]
-                next_point = ordered_points[point_index + 1]
-
-                segment_distance_km = calculate_distance_km(
-                    current_point["lat"],
-                    current_point["lon"],
-                    next_point["lat"],
-                    next_point["lon"],
-                )
-
-                total_distance_km += segment_distance_km
-
-                route_segments.append(
-                    {
-                        "from": current_point,
-                        "to": next_point,
-                        "distance": segment_distance_km,
-                    }
-                )
-
-                if segment_distance_km > longest_jump_km:
-                    longest_jump_km = segment_distance_km
-                    longest_jump_from = current_point
-                    longest_jump_to = next_point
-
-            logistics_by_day[day_number] = {
-                "points_count": len(ordered_points),
-                "total_distance_km": total_distance_km,
-                "longest_jump_km": longest_jump_km,
-                "longest_jump_from": longest_jump_from,
-                "longest_jump_to": longest_jump_to,
-                "segments": route_segments,
-            }
-
-        if not logistics_by_day:
-            st.info(
-                "Для анализа логистики нужно минимум две активности "
-                "с координатами в одном дне."
-            )
-        else:
-            logistics_days = sorted(logistics_by_day.keys())
-
-            selected_logistics_day = st.selectbox(
-                "День для анализа",
-                options=["Все дни"] + logistics_days,
-                key=f"logistics_day_filter_{trip_id}",
-                format_func=lambda value: (
-                    value
-                    if value == "Все дни"
-                    else f"День {value}"
-                ),
-            )
-
-            if selected_logistics_day == "Все дни":
-                visible_logistics_days = logistics_days
-            else:
-                visible_logistics_days = [selected_logistics_day]
-
-            for day_number in visible_logistics_days:
-                logistics = logistics_by_day[day_number]
-
-                points_count = logistics["points_count"]
-                total_distance_km = logistics["total_distance_km"]
-                longest_jump_km = logistics["longest_jump_km"]
-                longest_from = logistics["longest_jump_from"]
-                longest_to = logistics["longest_jump_to"]
-
-                # Порог 4 км выбран для городского маршрута:
-                # выше этого значения обычно лучше проверить транспорт
-                # или переставить активности местами.
-                if points_count < 2:
-                    status_icon = "🔵"
-                    status_title = "Недостаточно точек для оценки"
-                    status_text = (
-                        "Для этого дня есть только одна активность "
-                        "с координатами."
-                    )
-                    status_type = "info"
-
-                elif longest_jump_km >= 8 or total_distance_km >= 18:
-                    status_icon = "🔴"
-                    status_title = "Логистика требует оптимизации"
-                    status_text = (
-                        "В маршруте есть заметно удалённые точки. "
-                        "Рекомендуем изменить порядок активностей "
-                        "или заменить одну из них вариантом поближе."
+                        "Стоит изменить порядок активностей или заменить "
+                        "одну из них альтернативой ближе к остальным."
                     )
                     status_type = "error"
 
@@ -2484,8 +2299,8 @@ with tab_map:
                     status_icon = "🟡"
                     status_title = "Есть длинные перемещения"
                     status_text = (
-                        "Маршрут выполним, но в этот день стоит "
-                        "заложить время на транспорт и переходы."
+                        "Маршрут выполним, но стоит заложить время "
+                        "на транспорт и переходы."
                     )
                     status_type = "warning"
 
@@ -2493,7 +2308,7 @@ with tab_map:
                     status_icon = "🟢"
                     status_title = "Логистика выглядит комфортной"
                     status_text = (
-                        "Точки расположены достаточно близко друг к другу. "
+                        "Точки расположены достаточно близко. "
                         "Маршрут подходит для спокойного городского дня."
                     )
                     status_type = "success"
@@ -2547,28 +2362,24 @@ with tab_map:
                             )
                         )
 
-                        st.caption(
-                            "Фактическое расстояние по дорогам может быть "
-                            "больше. Проверьте транспорт или попросите AI "
-                            "перестроить день."
-                        )
-
                     if (
                         points_count >= 2
-                        and (longest_jump_km >= 4 or total_distance_km >= 10)
+                        and (
+                            longest_jump_km >= 4
+                            or total_distance_km >= 10
+                        )
                     ):
                         logistics_request = (
                             f"Оптимизируй логистику дня {day_number}. "
-                            f"Сохрани основные впечатления, но переставь "
-                            f"активности в более удобный географический "
-                            f"порядок. Если какое-то место слишком далеко, "
-                            f"замени его похожей альтернативой ближе к "
-                            f"остальным точкам этого дня. "
-                            f"Учитывай время, темп маршрута и бюджет."
+                            "Сохрани ключевые впечатления и бюджет, "
+                            "но переставь активности в более удобном "
+                            "географическом порядке. Если одна из точек "
+                            "слишком далеко, замени её похожим местом "
+                            "ближе к остальным активностям этого дня."
                         )
 
                         if st.button(
-                            f"✨ Оптимизировать день {day_number} с AI",
+                            f"✨ Подготовить AI-команду для дня {day_number}",
                             key=(
                                 f"optimize_logistics_"
                                 f"{trip_id}_{day_number}"
@@ -2580,13 +2391,14 @@ with tab_map:
                             ] = logistics_request
 
                             st.success(
-                                "Команда подготовлена. Перейдите во вкладку "
-                                "«💬 Изменить с AI» и нажмите кнопку "
+                                "Команда подготовлена. Откройте вкладку "
+                                "«💬 Изменить с AI», при необходимости "
+                                "отредактируйте текст и нажмите "
                                 "«✦ Обновить маршрут с AI»."
                             )
-# ==========================================================
-# ВКЛАДКА: БЮДЖЕТ
-# ==========================================================
+
+
+
 # ==========================================================
 # ВКЛАДКА: БЮДЖЕТ
 # ==========================================================
