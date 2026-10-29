@@ -968,6 +968,107 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
     }
 }
 
+/* ==========================================================
+   КАРТОЧКИ ФАКТИЧЕСКИХ РАСХОДОВ
+   ========================================================== */
+
+.tm-expense-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.tm-expense-title {
+    color: #F8FAFC;
+    font-size: 1.04rem;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.tm-expense-day {
+    flex: 0 0 auto;
+    padding: 0.34rem 0.68rem;
+    border: 1px solid rgba(103, 232, 249, 0.25);
+    border-radius: 999px;
+    background: rgba(34, 211, 238, 0.08);
+    color: #A8F1FC;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.tm-expense-label {
+    margin-bottom: 0.3rem;
+    color: #AABDD3;
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.03rem;
+    text-transform: uppercase;
+}
+
+.tm-expense-plan-value {
+    color: #FFFFFF;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.tm-expense-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    margin-top: 0.55rem;
+    padding: 0.28rem 0.6rem;
+    border: 1px solid rgba(148, 163, 184, 0.20);
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.08);
+    color: #B9C8D9;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.tm-expense-status.is-saving {
+    border-color: rgba(74, 222, 128, 0.25);
+    background: rgba(74, 222, 128, 0.10);
+    color: #A7F3D0;
+}
+
+.tm-expense-status.is-over {
+    border-color: rgba(251, 113, 133, 0.28);
+    background: rgba(251, 113, 133, 0.10);
+    color: #FDA4AF;
+}
+
+.tm-expense-fact-label {
+    margin-bottom: 0.45rem;
+    color: #AABDD3;
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.03rem;
+    text-transform: uppercase;
+}
+
+/* Сохранение в карточке расхода */
+.tm-expense-save-note {
+    margin-top: 0.55rem;
+    color: #91A6BF;
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+    .tm-expense-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .tm-expense-title {
+        font-size: 1rem;
+    }
+}
+
 /* ---------- Кнопки ---------- */
 
 .stButton > button,
@@ -1670,62 +1771,119 @@ with tab_budget:
     if not expenses:
         st.info("Для этой поездки пока нет запланированных расходов.")
 
-    for expense in expenses:
-        columns = st.columns([4, 1.35, 1.8, 0.8])
-
+        for expense in expenses:
         day_number = expense["day"]
         category = expense["category"]
         title = text_value(expense["title"])
         plan_cost = as_float(expense["cost_plan"])
         actual_cost = as_float(expense["cost_actual"])
 
-        with columns[0]:
+        difference = actual_cost - plan_cost
+
+        if actual_cost == 0:
+            status_text = "○ Факт пока не внесён"
+            status_class = ""
+        elif abs(difference) < 0.01:
+            status_text = "✓ Совпадает с планом"
+            status_class = ""
+        elif difference < 0:
+            status_text = (
+                f"↓ Экономия: {format_money(abs(difference), curr)}"
+            )
+            status_class = "is-saving"
+        else:
+            status_text = (
+                f"↑ Превышение: {format_money(difference, curr)}"
+            )
+            status_class = "is-over"
+
+        with st.container(border=True):
             st.markdown(
-                f"**День {day_number} · "
-                f"{ICONS.get(category, '•')} {title}**"
+                f"""
+                <div class="tm-expense-heading">
+                    <div class="tm-expense-title">
+                        {ICONS.get(category, "📍")} {escape(title)}
+                    </div>
+                    <div class="tm-expense-day">
+                        День {escape(str(day_number))}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-        with columns[1]:
-            st.caption("План")
-            st.write(format_money(plan_cost, curr))
-
-            difference = actual_cost - plan_cost
-
-            if actual_cost == 0:
-                st.caption("Факт пока не внесён")
-            elif abs(difference) < 0.01:
-                st.caption("✅ Совпадает с планом")
-            elif difference < 0:
-                st.caption(
-                    f"🟢 Экономия: {format_money(abs(difference), curr)}"
-                )
-            else:
-                st.caption(
-                    f"🔴 Превышение: {format_money(difference, curr)}"
-                )
-
-        with columns[2]:
-            actual_value = st.number_input(
-                "Факт",
-                min_value=0.0,
-                max_value=10000000.0,
-                value=float(actual_cost),
-                step=10.0,
-                format="%.2f",
-                key=f"actual_{expense['id']}",
-                label_visibility="collapsed",
+            plan_column, fact_column, save_column = st.columns(
+                [1.25, 2.2, 0.95],
+                vertical_alignment="bottom",
             )
 
-        with columns[3]:
-            if st.button("💾", key=f"save_{expense['id']}"):
-                db.update_expense_actual(
-                    expense["id"],
-                    float(actual_value),
+            with plan_column:
+                st.markdown(
+                    '<div class="tm-expense-label">План</div>',
+                    unsafe_allow_html=True,
                 )
-                st.toast("Расход сохранён")
-                st.rerun()
+                st.markdown(
+                    (
+                        '<div class="tm-expense-plan-value">'
+                        f'{format_money(plan_cost, curr)}'
+                        '</div>'
+                    ),
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    (
+                        f'<div class="tm-expense-status {status_class}">'
+                        f'{status_text}'
+                        '</div>'
+                    ),
+                    unsafe_allow_html=True,
+                )
 
-        st.divider()
+            with fact_column:
+                st.markdown(
+                    '<div class="tm-expense-fact-label">'
+                    'Фактический расход'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+
+                actual_value = st.number_input(
+                    "Фактический расход",
+                    min_value=0.0,
+                    max_value=10000000.0,
+                    value=float(actual_cost),
+                    step=10.0,
+                    format="%.2f",
+                    key=f"actual_{expense['id']}",
+                    label_visibility="collapsed",
+                )
+
+            with save_column:
+                st.markdown(
+                    '<div class="tm-expense-label">Действие</div>',
+                    unsafe_allow_html=True,
+                )
+
+                if st.button(
+                    "💾 Сохранить",
+                    key=f"save_{expense['id']}",
+                    use_container_width=True,
+                ):
+                    db.update_expense_actual(
+                        expense["id"],
+                        float(actual_value),
+                    )
+                    st.toast("Расход сохранён")
+                    st.rerun()
+
+                st.markdown(
+                    (
+                        '<div class="tm-expense-save-note">'
+                        'Сумма сохранится в фактических расходах.'
+                        '</div>'
+                    ),
+                    unsafe_allow_html=True,
+                )
 
     budget_breakdown = data.get("budget_breakdown") or {}
 
