@@ -14,10 +14,6 @@ MAX_DAYS = 7
 # ==========================================================
 # ДОПУСТИМЫЕ ПРОФИЛИ ОБЛОЖЕК
 # ==========================================================
-#
-# Эти значения должны совпадать с логикой в cover_selector.py
-# и с именами файлов в assets/covers/.
-# ==========================================================
 
 ALLOWED_COVER_PROFILES = {
     "city_summer",
@@ -42,11 +38,7 @@ ALLOWED_COVER_PROFILES = {
 
 
 # ==========================================================
-# СИСТЕМНЫЙ ПРОМПТ
-# ==========================================================
-#
-# Постоянная часть запроса. Провайдер может кэшировать её,
-# что уменьшает стоимость повторных обращений к модели.
+# СИСТЕМНЫЙ ПРОМПТ ДЛЯ ГЕНЕРАЦИИ МАРШРУТА
 # ==========================================================
 
 SYSTEM_PROMPT = """Ты — опытный AI-планировщик путешествий.
@@ -82,7 +74,8 @@ SYSTEM_PROMPT = """Ты — опытный AI-планировщик путеш�
   nature, adventure, mixed.
 - city: городская панорама; mountains: горы/озёра/трекинг;
   beach: море/пляж; culture: архитектура/история; food: гастрономия;
-  nature: парки/леса/водопады; adventure: активный отдых; mixed: путешествие смешанного типа.
+  nature: парки/леса/водопады; adventure: активный отдых;
+  mixed: путешествие смешанного типа.
 
 Также обязательно верни поле cover_profile.
 cover_profile — это профиль изображения для визуальной обложки маршрута.
@@ -156,14 +149,12 @@ tropical_island, desert_city.
   "total_cost": num,
   "mood_score": int,
   "mood_reason": str,
-
   "accommodation": {
     "area": str,
     "type": str,
     "price_per_night": num,
     "why": str
   },
-
   "hotels": [
     {
       "tier": "Эконом|Оптимальный|Премиум",
@@ -184,7 +175,6 @@ tropical_island, desert_city.
       }
     }
   ],
-
   "days": [
     {
       "day": int,
@@ -208,7 +198,6 @@ tropical_island, desert_city.
       "day_cost": num
     }
   ],
-
   "budget_breakdown": {
     "accommodation": num,
     "food": num,
@@ -216,7 +205,6 @@ tropical_island, desert_city.
     "transport": num,
     "other": num
   },
-
   "wow_moments": [str],
   "packing": [str],
   "phrases": [{"ru": str, "local": str}],
@@ -232,10 +220,6 @@ tropical_island, desert_city.
 # ==========================================================
 # ШАБЛОН ПОЛЬЗОВАТЕЛЬСКОГО ЗАПРОСА
 # ==========================================================
-#
-# Переменная часть намеренно короткая: это снижает число
-# входных токенов.
-# ==========================================================
 
 USER_TEMPLATE = """Версия пресета: v3.1
 Направление: {dest}
@@ -246,6 +230,7 @@ USER_TEMPLATE = """Версия пресета: v3.1
 Темп: {pace}
 Интересы: {interests}
 Пожелания: {notes}"""
+
 
 def build_prompt(
     dest,
@@ -278,12 +263,9 @@ def build_prompt(
 
 def _parse_json(text: str) -> dict:
     """
-    Надёжно извлекает JSON из ответа модели.
+    Надёжно извлекает JSON-объект из ответа модели.
 
-    Поддерживает:
-    - чистый JSON;
-    - JSON в блоке ```json;
-    - короткий текст до или после JSON.
+    Поддерживает чистый JSON, блок ```json и текст до/после JSON.
     """
     if not text:
         raise json.JSONDecodeError(
@@ -346,8 +328,21 @@ def _parse_json(text: str) -> dict:
 
     return result
 
+
+def _create_llm_client() -> OpenAI:
+    """Создаёт клиент совместимого с OpenAI API-провайдера."""
+    return OpenAI(
+        api_key=st.secrets["LLM_API_KEY"],
+        base_url=st.secrets.get(
+            "LLM_BASE_URL",
+            "https://api.deepseek.com",
+        ),
+    )
+
+
+@st.cache_data(ttl=24 * 3600, show_spinner=False)
 def generate(user_prompt: str) -> dict:
-    """Запрос к модели. Одинаковые запросы кэшируются на 24 часа."""
+    """Генерирует маршрут. Идентичные запросы кэшируются на 24 часа."""
     client = _create_llm_client()
 
     response = client.chat.completions.create(
@@ -361,11 +356,14 @@ def generate(user_prompt: str) -> dict:
         response_format={"type": "json_object"},
     )
 
+    usage = response.usage
+
     return {
         "data": _parse_json(response.choices[0].message.content),
-        "tokens_in": response.usage.prompt_tokens,
-        "tokens_out": response.usage.completion_tokens,
+        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
+        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
+
 
 # ==========================================================
 # AI-РЕДАКТИРОВАНИЕ СОХРАНЁННОГО МАРШРУТА
@@ -417,36 +415,12 @@ EDIT_SYSTEM_PROMPT = """Ты — AI-редактор маршрутов TravelMi
 """
 
 
-def _create_llm_client() -> OpenAI:
-    """Создаёт клиент совместимого с OpenAI API-провайдера."""
-    return OpenAI(
-        api_key=st.secrets["LLM_API_KEY"],
-        base_url=st.secrets.get(
-            "LLM_BASE_URL",
-            "https://api.deepseek.com",
-        ),
-    )
-
-
 def edit_trip_with_ai(
     current_data: dict,
     trip_context: dict,
     user_request: str,
 ) -> dict:
-    """
-    Изменяет сохранённый маршрут по команде пользователя.
-
-    current_data — текущий JSON маршрута.
-    trip_context — метаданные поездки из SQLite.
-    user_request — текстовая команда пользователя.
-
-    Возвращает:
-    {
-        "data": {... обновлённый маршрут ...},
-        "tokens_in": int,
-        "tokens_out": int,
-    }
-    """
+    """Изменяет существующий маршрут согласно команде пользователя."""
     destination = str(trip_context.get("destination") or "")
     start_date = str(trip_context.get("start_date") or "")
     end_date = str(trip_context.get("end_date") or "")
@@ -479,18 +453,9 @@ def edit_trip_with_ai(
     response = client.chat.completions.create(
         model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
         messages=[
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT,
-            },
-            {
-                "role": "system",
-                "content": EDIT_SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": edit_prompt,
-            },
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": EDIT_SYSTEM_PROMPT},
+            {"role": "user", "content": edit_prompt},
         ],
         temperature=0.45,
         max_tokens=6500,
@@ -504,6 +469,8 @@ def edit_trip_with_ai(
         "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
         "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
+
+
 # ==========================================================
 # AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
 # ==========================================================
@@ -511,62 +478,44 @@ def edit_trip_with_ai(
 BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый AI-помощник TravelMind.
 
 Твоя задача — кратко проанализировать бюджет путешествия на основе
-переданных агрегированных данных о плановых, фактических и внеплановых
-расходах.
+агрегированных данных о плановых, фактических и внеплановых расходах.
 
 СТРОГИЕ ПРАВИЛА:
-- Верни ТОЛЬКО валидный JSON без Markdown и текста вне JSON.
-- Все значения и тексты — на русском языке.
-- Используй только цифры и факты из переданного контекста.
-- Не выдумывай конкретные цены, скидки, рестораны, билеты, маршруты
-  или несуществующие акции.
-- Можно давать общие практические советы: контролировать такси,
-  выбрать общественный транспорт, ограничить необязательные покупки,
-  распределить лимит на оставшиеся дни.
-- Не пиши категоричных финансовых гарантий.
-- Рекомендации должны быть короткими, практичными и понятными.
-- Не повторяй одинаковые советы.
-- Верни от 2 до 4 рекомендаций.
-- potential_saving_min и potential_saving_max указывай только если
-  можешь обосновать оценку данными. Иначе верни 0.
-- Если фактических расходов пока нет, объясни, что анализ основан
-  преимущественно на плане, и предложи начать вносить реальные траты.
+- Верни только один валидный JSON-объект.
+- Не используй Markdown, блоки ```json, комментарии или текст вне JSON.
+- Все текстовые значения должны быть на русском языке.
+- Используй только данные из переданного контекста.
+- Не выдумывай конкретные цены, скидки, рестораны, билеты, маршруты,
+  акции или фактические траты.
+- Верни от 2 до 4 коротких, понятных и практичных рекомендаций.
+- Не повторяй одинаковые рекомендации.
+- Если фактических расходов нет, укажи, что анализ основан в основном
+  на плановых значениях, и посоветуй начать вносить фактические траты.
+- potential_saving_min и potential_saving_max должны быть числами.
+- Если экономию невозможно обосновать по данным, верни 0.
 
-СХЕМА JSON:
+ФОРМАТ ОТВЕТА:
 {
   "status": "safe|attention|over_budget|no_data",
-  "summary": str,
+  "summary": "краткий вывод по бюджету",
   "recommendations": [
     {
       "priority": "low|medium|high",
-      "title": str,
-      "text": str
+      "title": "краткое название рекомендации",
+      "text": "конкретный практический совет"
     }
   ],
-  "potential_saving_min": num,
-  "potential_saving_max": num
+  "potential_saving_min": 0,
+  "potential_saving_max": 0
 }"""
 
 
 def analyze_budget_with_ai(budget_context: dict) -> dict:
     """
-    Анализирует бюджет поездки через LLM.
+    Выполняет AI-анализ бюджета.
 
-    budget_context должен содержать только агрегированные данные:
-    бюджет, факт, план, остаток, категории и внеплановые расходы.
-
-    Возвращает:
-    {
-        "data": {
-            "status": "...",
-            "summary": "...",
-            "recommendations": [...],
-            "potential_saving_min": 0,
-            "potential_saving_max": 0
-        },
-        "tokens_in": int,
-        "tokens_out": int,
-    }
+    В модель отправляются только агрегированные данные:
+    бюджет, план, факт, остаток, категории и внеплановые расходы.
     """
     compact_context = json.dumps(
         budget_context,
@@ -575,10 +524,10 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     )
 
     user_prompt = (
-        "Проанализируй бюджет поездки по данным ниже.\n"
-        "Контекст JSON:\n"
+        "Проанализируй бюджет поездки.\n"
+        "Данные поездки в JSON:\n"
         f"{compact_context}\n\n"
-        "Верни результат строго по заданной JSON-схеме."
+        "Верни только JSON-объект по указанной схеме."
     )
 
     client = _create_llm_client()
@@ -595,13 +544,21 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
                 "content": user_prompt,
             },
         ],
-        temperature=0.25,
+        temperature=0.15,
         max_tokens=900,
         response_format={"type": "json_object"},
     )
 
-    usage = response.usage
-    result = _parse_json(response.choices[0].message.content)
+    content = response.choices[0].message.content
+
+    if not content:
+        raise json.JSONDecodeError(
+            "AI вернул пустой ответ.",
+            "",
+            0,
+        )
+
+    result = _parse_json(content)
 
     if not isinstance(result, dict):
         raise ValueError("AI вернул некорректный формат анализа бюджета.")
@@ -609,103 +566,15 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     if not isinstance(result.get("recommendations"), list):
         result["recommendations"] = []
 
-    return {
-        "data": result,
-        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
-        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
-    }
-# ==========================================================
-# AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
-# ==========================================================
-
-BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый AI-помощник TravelMind.
-
-Твоя задача — кратко проанализировать бюджет путешествия на основе
-переданных агрегированных данных о плановых, фактических и внеплановых
-расходах.
-
-СТРОГИЕ ПРАВИЛА:
-- Верни ТОЛЬКО валидный JSON без Markdown и текста вне JSON.
-- Все значения и тексты — на русском языке.
-- Используй только цифры и факты из переданного контекста.
-- Не выдумывай конкретные цены, скидки, рестораны, билеты, маршруты
-  или несуществующие акции.
-- Можно давать общие практические советы: контролировать такси,
-  выбрать общественный транспорт, ограничить необязательные покупки,
-  распределить лимит на оставшиеся дни.
-- Не пиши категоричных финансовых гарантий.
-- Рекомендации должны быть короткими, практичными и понятными.
-- Не повторяй одинаковые советы.
-- Верни от 2 до 4 рекомендаций.
-- potential_saving_min и potential_saving_max указывай только если
-  можешь обосновать оценку данными. Иначе верни 0.
-- Если фактических расходов пока нет, объясни, что анализ основан
-  преимущественно на плане, и предложи начать вносить реальные траты.
-
-СХЕМА JSON:
-{
-  "status": "safe|attention|over_budget|no_data",
-  "summary": str,
-  "recommendations": [
-    {
-      "priority": "low|medium|high",
-      "title": str,
-      "text": str
-    }
-  ],
-  "potential_saving_min": num,
-  "potential_saving_max": num
-}"""
-
-
-def analyze_budget_with_ai(budget_context: dict) -> dict:
-    """Запрашивает у LLM краткий структурированный анализ бюджета."""
-    compact_context = json.dumps(
-        budget_context,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-    user_prompt = (
-        "Проанализируй бюджет поездки по данным ниже.\n"
-        "Контекст JSON:\n"
-        f"{compact_context}\n\n"
-        "Верни результат строго по заданной JSON-схеме."
-    )
-
-    client = _create_llm_client()
-
-    response = client.chat.completions.create(
-        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
-        messages=[
-            {
-                "role": "system",
-                "content": BUDGET_ANALYSIS_SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": user_prompt,
-            },
-        ],
-        temperature=0.25,
-        max_tokens=900,
-        response_format={"type": "json_object"},
-    )
-
     usage = response.usage
-    result = _parse_json(response.choices[0].message.content)
-
-    if not isinstance(result, dict):
-        raise ValueError("AI вернул некорректный формат анализа бюджета.")
-
-    if not isinstance(result.get("recommendations"), list):
-        result["recommendations"] = []
 
     return {
         "data": result,
         "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
         "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
+
+
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
     errors = []
@@ -814,7 +683,6 @@ def to_markdown(data: dict, curr: str) -> str:
             )
 
     else:
-        # Поддержка старых маршрутов, созданных до версии v3.0.
         accommodation = data.get("accommodation") or {}
 
         if accommodation:
