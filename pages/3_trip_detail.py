@@ -1981,7 +1981,109 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
+        st.markdown(
+        '<div style="height: 0.25rem;"></div>',
+        unsafe_allow_html=True,
+    )
 
+    max_trip_day = max(
+        len(data.get("days", [])),
+        max(
+            (
+                int(item["day"])
+                for item in expenses
+                if item["day"] is not None
+            ),
+            default=1,
+        ),
+    )
+
+    category_options = {
+        "🏛️ Активности": "A",
+        "🍽️ Еда": "F",
+        "🚌 Транспорт": "T",
+        "🏨 Проживание": "S",
+        "🌿 Отдых и прогулки": "L",
+        "🛍️ Покупки": "H",
+        "✨ Прочее": "W",
+    }
+
+    with st.expander("＋ Добавить расход вручную", expanded=False):
+        st.caption(
+            "Добавьте траты, которых не было в первоначальном AI-маршруте: "
+            "такси, кофе, сувениры, билеты или покупки."
+        )
+
+        with st.form(f"manual_expense_form_{trip_id}", clear_on_submit=True):
+            manual_title = st.text_input(
+                "Название расхода",
+                placeholder="Например: Такси из аэропорта",
+                key=f"manual_expense_title_{trip_id}",
+            )
+
+            manual_col_1, manual_col_2 = st.columns(2)
+
+            with manual_col_1:
+                manual_category_label = st.selectbox(
+                    "Категория",
+                    options=list(category_options.keys()),
+                    key=f"manual_expense_category_{trip_id}",
+                )
+
+                manual_day = st.selectbox(
+                    "День поездки",
+                    options=list(range(1, max_trip_day + 1)),
+                    key=f"manual_expense_day_{trip_id}",
+                )
+
+            with manual_col_2:
+                manual_plan = st.number_input(
+                    "Плановая сумма",
+                    min_value=0.0,
+                    max_value=10000000.0,
+                    value=0.0,
+                    step=100.0,
+                    format="%.2f",
+                    key=f"manual_expense_plan_{trip_id}",
+                )
+
+                manual_actual = st.number_input(
+                    "Фактическая сумма",
+                    min_value=0.0,
+                    max_value=10000000.0,
+                    value=0.0,
+                    step=100.0,
+                    format="%.2f",
+                    key=f"manual_expense_actual_{trip_id}",
+                )
+
+            manual_submitted = st.form_submit_button(
+                "＋ Добавить расход",
+                use_container_width=True,
+            )
+
+        if manual_submitted:
+            if not manual_title.strip():
+                st.warning("Введите название расхода.")
+            elif manual_actual <= 0:
+                st.warning("Укажите фактическую сумму расхода.")
+            else:
+                try:
+                    db.add_manual_expense(
+                        trip_id=trip_id,
+                        user_id=user_id,
+                        day=int(manual_day),
+                        category=category_options[manual_category_label],
+                        title=manual_title,
+                        cost_plan=float(manual_plan),
+                        cost_actual=float(manual_actual),
+                    )
+
+                    st.toast("Расход добавлен в бюджет поездки.")
+                    st.rerun()
+
+                except ValueError as error:
+                    st.error(str(error))
     if not expenses:
         st.info("Для этой поездки пока нет запланированных расходов.")
 
