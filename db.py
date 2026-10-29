@@ -234,7 +234,129 @@ def delete_trip(trip_id: int, user_id: int):
             (trip_id, user_id),
         )
 
+# ==========================================================
+# AI-РЕДАКТИРОВАНИЕ СОХРАНЁННОГО МАРШРУТА
+# ==========================================================
 
+def update_trip_from_ai(
+    trip_id: int,
+    user_id: int,
+    updated_data: dict,
+):
+    """
+    Сохраняет маршрут после AI-редактирования.
+
+    Обновляет:
+    - JSON-маршрут trips.data;
+    - название trips.title;
+    - бюджет trips.budget на основе total_cost.
+
+    Плановые расходы пересоздаются по новому маршруту.
+    Фактические расходы сохраняются, если совпали:
+    день + категория + название активности.
+    """
+    import json
+
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT *
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        # Сохраняем введённые пользователем фактические расходы,
+        # чтобы они не исчезли после изменения маршрута AI.
+        old_expenses = connection.execute(
+            """
+            SELECT day, category, title, cost_actual
+            FROM expenses
+            WHERE trip_id = ?
+            """,
+            (trip_id,),
+        ).fetchall()
+
+        actual_costs = {}
+
+        for expense in old_expenses:
+            key = (
+                expense["day"],
+                expense["category"],
+                expense["title"],
+            )
+
+            actual_costs[key] = expense["cost_actual"]
+
+        # Удаляем старый план расходов.
+        connection.execute(
+            "DELETE FROM expenses WHERE trip_id = ?",
+            (trip_id,),
+        )
+
+        # Сохраняем новый JSON и базовые данные поездки.
+        connection.execute(
+            """
+            UPDATE trips
+            SET
+                title = ?,
+                budget = ?,
+                data = ?
+            WHERE id = ? AND user_id = ?
+            """,
+            (
+                updated_data.get("title") or trip["title"],
+                float(updated_data.get("total_cost") or trip["budget"] or 0),
+                json.dumps(updated_data, ensure_ascii=False),
+                trip_id,
+                user_id,
+            ),
+        )
+
+        # Создаём обновлённые плановые расходы.
+        for day_data in updated_data.get("days", []):
+            for index, activity in enumerate(
+                day_data.get("activities", [])
+            ):
+                day_number = day_data.get("day")
+                category = activity.get("type")
+                title = activity.get("title")
+
+                expense_key = (
+                    day_number,
+                    category,
+                    title,
+                )
+
+                saved_actual = actual_costs.get(expense_key)
+
+                connection.execute(
+                    """
+                    INSERT INTO expenses(
+                        trip_id,
+                        day,
+                        activity_idx,
+                        category,
+                        title,
+                        cost_plan,
+                        cost_actual
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        trip_id,
+                        day_number,
+                        index,
+                        category,
+                        title,
+                        float(activity.get("cost") or 0),
+                        saved_actual,
+                    ),
+                )
 # ==========================================================
 # РАСХОДЫ: ПЛАН / ФАКТ
 # ==========================================================
