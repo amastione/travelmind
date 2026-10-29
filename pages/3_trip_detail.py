@@ -2208,10 +2208,111 @@ with tab_budget:
                 ),
                 unsafe_allow_html=True,
             )               
-    if not expenses:
-        st.info("Для этой поездки пока нет запланированных расходов.")
+        st.markdown(
+        '<div class="tm-section-title">◫ Все расходы маршрута</div>',
+        unsafe_allow_html=True,
+    )
 
-    for expense in expenses:
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'Используйте фильтры, чтобы быстро найти нужную трату '
+            'или позиции без внесённой фактической суммы.'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+    expense_category_labels = {
+        "A": "🏛️ Активности",
+        "F": "🍽️ Еда",
+        "T": "🚌 Транспорт",
+        "S": "🏨 Проживание",
+        "L": "🌿 Отдых и прогулки",
+        "H": "🛍️ Покупки",
+        "W": "✨ Прочее",
+    }
+
+    available_days = sorted(
+        {
+            int(item["day"])
+            for item in expenses
+            if item["day"] is not None
+        }
+    )
+
+    available_categories = sorted(
+        {
+            text_value(item["category"])
+            for item in expenses
+            if item["category"]
+        }
+    )
+
+    filter_col_1, filter_col_2, filter_col_3 = st.columns(
+        [1.1, 1.45, 1.45],
+    )
+
+    with filter_col_1:
+        selected_day = st.selectbox(
+            "День",
+            options=["Все дни"] + available_days,
+            key=f"expense_filter_day_{trip_id}",
+        )
+
+    with filter_col_2:
+        selected_category = st.selectbox(
+            "Категория",
+            options=["Все категории"] + available_categories,
+            format_func=lambda value: (
+                value
+                if value == "Все категории"
+                else expense_category_labels.get(value, value)
+            ),
+            key=f"expense_filter_category_{trip_id}",
+        )
+
+    with filter_col_3:
+        only_without_actual = st.checkbox(
+            "Только без факта",
+            value=False,
+            key=f"expense_filter_without_actual_{trip_id}",
+            help=(
+                "Показывает расходы, для которых фактическая "
+                "сумма ещё не внесена."
+            ),
+        )
+
+    filtered_expenses = []
+
+    for item in expenses:
+        item_day = item["day"]
+        item_category = text_value(item["category"])
+        item_actual = item["cost_actual"]
+
+        if selected_day != "Все дни" and item_day != selected_day:
+            continue
+
+        if (
+            selected_category != "Все категории"
+            and item_category != selected_category
+        ):
+            continue
+
+        if only_without_actual and (
+            item_actual is not None and as_float(item_actual) > 0
+        ):
+            continue
+
+        filtered_expenses.append(item)
+
+    if not filtered_expenses:
+        st.info(
+            "По выбранным фильтрам расходов не найдено. "
+            "Измените условия фильтрации."
+        )
+
+    for expense in filtered_expenses:
         day_number = expense["day"]
         category = expense["category"]
         title = text_value(expense["title"])
