@@ -2043,7 +2043,271 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
+    # ======================================================
+    # AI-АНАЛИЗ БЮДЖЕТА
+    # ======================================================
 
+    st.markdown(
+        '<div class="tm-section-title">✨ AI-анализ бюджета</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'TravelMind проанализирует плановые, фактические и '
+            'внеплановые расходы и предложит способы держать бюджет '
+            'под контролем.'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+    category_labels_for_ai = {
+        "A": "Активности",
+        "F": "Еда",
+        "T": "Транспорт",
+        "S": "Проживание",
+        "L": "Отдых и прогулки",
+        "H": "Покупки",
+        "W": "Прочее",
+    }
+
+    category_summary = {}
+
+    for expense in expenses:
+        category_code = text_value(expense["category"], "W")
+        category_name = category_labels_for_ai.get(
+            category_code,
+            "Прочее",
+        )
+
+        if category_name not in category_summary:
+            category_summary[category_name] = {
+                "planned": 0.0,
+                "actual": 0.0,
+                "manual_actual": 0.0,
+            }
+
+        category_summary[category_name]["planned"] += as_float(
+            expense["cost_plan"]
+        )
+        category_summary[category_name]["actual"] += as_float(
+            expense["cost_actual"]
+        )
+
+        if int(expense["is_manual"] or 0) == 1:
+            category_summary[category_name]["manual_actual"] += as_float(
+                expense["cost_actual"]
+            )
+
+    category_summary_for_ai = []
+
+    for category_name, values in category_summary.items():
+        category_summary_for_ai.append(
+            {
+                "category": category_name,
+                "planned": round(values["planned"], 2),
+                "actual": round(values["actual"], 2),
+                "difference": round(
+                    values["actual"] - values["planned"],
+                    2,
+                ),
+                "unplanned_actual": round(
+                    values["manual_actual"],
+                    2,
+                ),
+            }
+        )
+
+    category_summary_for_ai.sort(
+        key=lambda item: item["actual"],
+        reverse=True,
+    )
+
+    manual_expenses_for_ai = [
+        expense
+        for expense in expenses
+        if int(expense["is_manual"] or 0) == 1
+    ]
+
+    manual_actual_sum = sum(
+        as_float(expense["cost_actual"])
+        for expense in manual_expenses_for_ai
+    )
+
+    days_count = max(len(data.get("days", [])), 1)
+
+    budget_ai_context = {
+        "destination": destination,
+        "currency": curr,
+        "trip_days": days_count,
+        "total_budget": round(total_cost, 2),
+        "planned_total": round(plan_sum, 2),
+        "actual_total": round(actual_sum, 2),
+        "remaining_budget": round(remaining_budget, 2),
+        "budget_used_percent": round(budget_percent, 1),
+        "unplanned_expenses_count": len(manual_expenses_for_ai),
+        "unplanned_actual_total": round(manual_actual_sum, 2),
+        "categories": category_summary_for_ai,
+    }
+
+    budget_ai_state_key = f"budget_ai_analysis_{trip_id}"
+
+    if st.button(
+        "✨ Получить рекомендации AI",
+        key=f"run_budget_ai_analysis_{trip_id}",
+        use_container_width=True,
+    ):
+        with st.spinner(
+            "TravelMind анализирует расходы и готовит рекомендации…"
+        ):
+            try:
+                analysis_result = ai.analyze_budget_with_ai(
+                    budget_ai_context
+                )
+
+                st.session_state[budget_ai_state_key] = {
+                    "data": analysis_result["data"],
+                    "generated_at": datetime.now().strftime(
+                        "%d/%m/%Y %H:%M"
+                    ),
+                    "tokens_in": analysis_result["tokens_in"],
+                    "tokens_out": analysis_result["tokens_out"],
+                }
+
+                st.rerun()
+
+            except json.JSONDecodeError:
+                st.error(
+                    "AI вернул ответ в неверном формате. "
+                    "Попробуйте запросить анализ ещё раз."
+                )
+
+            except Exception as error:
+                st.error(
+                    "Не удалось выполнить AI-анализ бюджета: "
+                    f"{error}"
+                )
+
+    saved_budget_analysis = st.session_state.get(budget_ai_state_key)
+
+    if saved_budget_analysis:
+        analysis_data = saved_budget_analysis.get("data") or {}
+        analysis_status = text_value(analysis_data.get("status"))
+        analysis_summary = text_value(
+            analysis_data.get("summary"),
+            "AI подготовил рекомендации по бюджету.",
+        )
+        recommendations = analysis_data.get("recommendations") or []
+
+        status_config = {
+            "safe": {
+                "icon": "🟢",
+                "title": "Бюджет под контролем",
+            },
+            "attention": {
+                "icon": "🟡",
+                "title": "Стоит обратить внимание",
+            },
+            "over_budget": {
+                "icon": "🔴",
+                "title": "Есть риск превышения бюджета",
+            },
+            "no_data": {
+                "icon": "🔵",
+                "title": "Недостаточно фактических данных",
+            },
+        }
+
+        current_status = status_config.get(
+            analysis_status,
+            {
+                "icon": "✨",
+                "title": "Рекомендации TravelMind AI",
+            },
+        )
+
+        with st.container(border=True):
+            st.markdown(
+                (
+                    f"### {current_status['icon']} "
+                    f"{current_status['title']}"
+                )
+            )
+
+            st.write(analysis_summary)
+
+            if recommendations:
+                st.markdown("##### Что можно сделать")
+
+                priority_icons = {
+                    "low": "🟢",
+                    "medium": "🟡",
+                    "high": "🔴",
+                }
+
+                for recommendation in recommendations[:4]:
+                    priority = text_value(
+                        recommendation.get("priority"),
+                        "low",
+                    )
+                    recommendation_title = text_value(
+                        recommendation.get("title"),
+                        "Рекомендация",
+                    )
+                    recommendation_text = text_value(
+                        recommendation.get("text"),
+                    )
+
+                    st.markdown(
+                        (
+                            f"{priority_icons.get(priority, '✨')} "
+                            f"**{recommendation_title}**  \n"
+                            f"{recommendation_text}"
+                        )
+                    )
+
+            saving_min = as_float(
+                analysis_data.get("potential_saving_min")
+            )
+            saving_max = as_float(
+                analysis_data.get("potential_saving_max")
+            )
+
+            if saving_min > 0 or saving_max > 0:
+                if saving_max < saving_min:
+                    saving_min, saving_max = saving_max, saving_min
+
+                if saving_min == saving_max:
+                    saving_text = format_money(saving_min, curr)
+                else:
+                    saving_text = (
+                        f"{format_money(saving_min, curr)} — "
+                        f"{format_money(saving_max, curr)}"
+                    )
+
+                st.success(
+                    "Оценка потенциальной экономии: "
+                    f"{saving_text}."
+                )
+
+            generated_at = text_value(
+                saved_budget_analysis.get("generated_at")
+            )
+
+            if generated_at:
+                st.caption(
+                    "Анализ сформирован: "
+                    f"{generated_at}. "
+                    "После изменения расходов нажмите кнопку "
+                    "ещё раз, чтобы обновить рекомендации."
+                )
+
+            st.caption(
+                "ℹ️ AI-рекомендации являются ориентировочными и не "
+                "заменяют проверку актуальных цен."
+            )
     max_trip_day = max(
         len(data.get("days", [])),
         max(
