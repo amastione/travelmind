@@ -2200,19 +2200,21 @@ with tab_budget:
             (
                 '<div class="tm-section-text">'
                 'Здесь отображаются траты, которые вы добавили вручную '
-                'во время планирования или поездки.'
+                'во время планирования или поездки. Их можно изменить '
+                'или удалить.'
                 '</div>'
             ),
             unsafe_allow_html=True,
         )
 
         for manual_expense in manual_expenses:
+            manual_expense_id = manual_expense["id"]
             manual_category = text_value(manual_expense["category"])
             manual_title_text = text_value(
                 manual_expense["title"],
                 "Расход без названия",
             )
-            manual_day_number = manual_expense["day"]
+            manual_day_number = int(manual_expense["day"] or 1)
             manual_plan_cost = as_float(manual_expense["cost_plan"])
             manual_actual_cost = as_float(manual_expense["cost_actual"])
 
@@ -2234,7 +2236,7 @@ with tab_budget:
                     f'{escape(manual_title_text)}'
                     '</div>'
                     '<div class="tm-manual-expense-meta">'
-                    f'Добавлено вручную · День {escape(str(manual_day_number))}'
+                    f'Добавлено вручную · День {manual_day_number}'
                     '</div>'
                     f'{plan_text}'
                     '</div>'
@@ -2247,7 +2249,132 @@ with tab_budget:
                     '</div>'
                 ),
                 unsafe_allow_html=True,
-            )               
+            )
+
+            action_col_1, action_col_2 = st.columns(2)
+
+            with action_col_1:
+                with st.expander(
+                    "✏️ Изменить расход",
+                    expanded=False,
+                ):
+                    with st.form(
+                        f"edit_manual_expense_form_{manual_expense_id}",
+                    ):
+                        edit_title = st.text_input(
+                            "Название расхода",
+                            value=manual_title_text,
+                            key=f"edit_manual_title_{manual_expense_id}",
+                        )
+
+                        edit_col_1, edit_col_2 = st.columns(2)
+
+                        category_labels = list(category_options.keys())
+                        category_values = list(category_options.values())
+
+                        try:
+                            current_category_index = category_values.index(
+                                manual_category
+                            )
+                        except ValueError:
+                            current_category_index = 0
+
+                        with edit_col_1:
+                            edit_category_label = st.selectbox(
+                                "Категория",
+                                options=category_labels,
+                                index=current_category_index,
+                                key=(
+                                    f"edit_manual_category_"
+                                    f"{manual_expense_id}"
+                                ),
+                            )
+
+                            edit_day = st.selectbox(
+                                "День поездки",
+                                options=list(
+                                    range(1, max_trip_day + 1)
+                                ),
+                                index=min(
+                                    max(manual_day_number - 1, 0),
+                                    max_trip_day - 1,
+                                ),
+                                key=f"edit_manual_day_{manual_expense_id}",
+                            )
+
+                        with edit_col_2:
+                            edit_plan = st.number_input(
+                                "Плановая сумма",
+                                min_value=0.0,
+                                max_value=10000000.0,
+                                value=float(manual_plan_cost),
+                                step=100.0,
+                                format="%.2f",
+                                key=f"edit_manual_plan_{manual_expense_id}",
+                            )
+
+                            edit_actual = st.number_input(
+                                "Фактическая сумма",
+                                min_value=0.0,
+                                max_value=10000000.0,
+                                value=float(manual_actual_cost),
+                                step=100.0,
+                                format="%.2f",
+                                key=f"edit_manual_actual_{manual_expense_id}",
+                            )
+
+                        edit_submitted = st.form_submit_button(
+                            "✓ Сохранить изменения",
+                            use_container_width=True,
+                        )
+
+                    if edit_submitted:
+                        if not edit_title.strip():
+                            st.warning("Введите название расхода.")
+                        elif edit_actual <= 0:
+                            st.warning(
+                                "Укажите фактическую сумму расхода."
+                            )
+                        else:
+                            try:
+                                db.update_manual_expense(
+                                    expense_id=manual_expense_id,
+                                    trip_id=trip_id,
+                                    user_id=user_id,
+                                    day=int(edit_day),
+                                    category=category_options[
+                                        edit_category_label
+                                    ],
+                                    title=edit_title,
+                                    cost_plan=float(edit_plan),
+                                    cost_actual=float(edit_actual),
+                                )
+
+                                st.toast("Ручной расход обновлён.")
+                                st.rerun()
+
+                            except ValueError as error:
+                                st.error(str(error))
+
+            with action_col_2:
+                if st.button(
+                    "🗑️ Удалить расход",
+                    key=f"delete_manual_expense_{manual_expense_id}",
+                    use_container_width=True,
+                ):
+                    try:
+                        db.delete_manual_expense(
+                            expense_id=manual_expense_id,
+                            trip_id=trip_id,
+                            user_id=user_id,
+                        )
+
+                        st.toast("Ручной расход удалён.")
+                        st.rerun()
+
+                    except ValueError as error:
+                        st.error(str(error))
+    
     st.markdown(
         '<div class="tm-section-title">◫ Все расходы маршрута</div>',
         unsafe_allow_html=True,
