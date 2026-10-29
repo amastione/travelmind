@@ -1981,10 +1981,11 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
+    
         st.markdown(
-        '<div style="height: 0.25rem;"></div>',
-        unsafe_allow_html=True,
-    )
+            '<div style="height: 0.25rem;"></div>',
+            unsafe_allow_html=True,
+        )
 
     max_trip_day = max(
         len(data.get("days", [])),
