@@ -514,7 +514,7 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     """
     Выполняет AI-анализ бюджета.
 
-    В модель отправляются только агрегированные данные:
+    В модель передаются только агрегированные данные:
     бюджет, план, факт, остаток, категории и внеплановые расходы.
     """
     compact_context = json.dumps(
@@ -523,12 +523,30 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
         separators=(",", ":"),
     )
 
-    user_prompt = (
-        "Проанализируй бюджет поездки.\n"
-        "Данные поездки в JSON:\n"
-        f"{compact_context}\n\n"
-        "Верни только JSON-объект по указанной схеме."
-    )
+    user_prompt = f"""Проанализируй бюджет поездки.
+
+Данные поездки:
+{compact_context}
+
+Верни только JSON-объект строго в таком формате:
+
+{{
+  "status": "safe",
+  "summary": "Краткий вывод по бюджету.",
+  "recommendations": [
+    {{
+      "priority": "medium",
+      "title": "Название рекомендации",
+      "text": "Короткий практический совет."
+    }}
+  ],
+  "potential_saving_min": 0,
+  "potential_saving_max": 0
+}}
+
+Допустимые status: safe, attention, over_budget, no_data.
+Допустимые priority: low, medium, high.
+Не используй Markdown, ```json, комментарии и текст до или после JSON."""
 
     client = _create_llm_client()
 
@@ -544,29 +562,121 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
                 "content": user_prompt,
             },
         ],
-        temperature=0.15,
-        max_tokens=900,
+        temperature=0.1,
+        max_tokens=1200,
         response_format={"type": "json_object"},
     )
 
-    content = response.choices[0].message.content
+    usage = response.usage
+    message = response.choices[0].message
+    content = message.content
+
+    # Некоторые OpenAI-совместимые провайдеры могут вернуть content
+    # не строкой, а списком текстовых блоков.
+    if isinstance(content, list):
+        parts = []
+
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(
+                    str(
+                        item.get("text")
+                        or item.get("content")
+                        or ""
+                    )
+                )
+            else:
+                parts.append(str(item))
+
+        content = "".join(parts)
+
+    content = str(content or "").strip()
 
     if not content:
-        raise json.JSONDecodeError(
-            "AI вернул пустой ответ.",
-            "",
-            0,
+        finish_reason = getattr(
+            response.choices[0],
+            "finish_reason",
+            "неизвестно",
         )
 
-    result = _parse_json(content)
+        raise ValueError(
+            "AI вернул пустой ответ. "
+            f"Причина завершения: {finish_reason}."
+        )
+
+    try:
+        result = _parse_json(content)
+
+    except Exception as error:
+        # Важно: это намеренно ValueError, а не JSONDecodeError.
+        # Так сообщение не будет скрыто общим текстом в интерфейсе.
+        preview = content[:1000].replace("\n", " ")
+
+        raise ValueError(
+            "Не удалось разобрать ответ AI как JSON. "
+            f"Ответ модели: {preview}"
+        ) from error
 
     if not isinstance(result, dict):
-        raise ValueError("AI вернул некорректный формат анализа бюджета.")
+        raise ValueError(
+            "AI вернул JSON, но его корень не является объектом."
+        )
+
+    # Безопасные значения по умолчанию, если модель пропустила поля.
+    allowed_statuses = {
+        "safe",
+        "attention",
+        "over_budget",
+        "no_data",
+    }
+
+    if result.get("status") not in allowed_statuses:
+        result["status"] = "attention"
+
+    if not isinstance(result.get("summary"), str):
+        result["summary"] = (
+            "AI не смог подготовить краткое текстовое резюме."
+        )
 
     if not isinstance(result.get("recommendations"), list):
         result["recommendations"] = []
 
-    usage = response.usage
+    normalized_recommendations = []
+
+    for item in result["recommendations"][:4]:
+        if not isinstance(item, dict):
+            continue
+
+        priority = str(item.get("priority") or "low").lower()
+
+        if priority not in {"low", "medium", "high"}:
+            priority = "low"
+
+        normalized_recommendations.append(
+            {
+                "priority": priority,
+                "title": str(
+                    item.get("title") or "Рекомендация"
+                ),
+                "text": str(item.get("text") or ""),
+            }
+        )
+
+    result["recommendations"] = normalized_recommendations
+
+    try:
+        result["potential_saving_min"] = float(
+            result.get("potential_saving_min") or 0
+        )
+    except (TypeError, ValueError):
+        result["potential_saving_min"] = 0
+
+    try:
+        result["potential_saving_max"] = float(
+            result.get("potential_saving_max") or 0
+        )
+    except (TypeError, ValueError):
+        result["potential_saving_max"] = 0
 
     return {
         "data": result,
