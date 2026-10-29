@@ -819,6 +819,144 @@ div[data-testid="stExpander"] details > summary:hover {
         0 12px 27px rgba(139, 92, 246, 0.23),
         inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
 }
+
+/* ---------- Поля расходов и кнопки +/- ---------- */
+
+/* Общий контейнер числового поля */
+[data-testid="stNumberInput"] {
+    border-radius: 14px !important;
+}
+
+/* Само поле с числом */
+[data-testid="stNumberInput"] input,
+.stNumberInput input {
+    min-height: 46px !important;
+    border: 1px solid rgba(103, 232, 249, 0.28) !important;
+    border-radius: 0 !important;
+    background: rgba(5, 13, 28, 0.88) !important;
+    color: #F8FAFC !important;
+    font-size: 0.98rem !important;
+    font-weight: 750 !important;
+    text-align: center !important;
+}
+
+/* Контейнер внутреннего BaseWeb input */
+[data-testid="stNumberInput"] [data-baseweb="input"],
+.stNumberInput [data-baseweb="input"] {
+    overflow: hidden !important;
+    border: 1px solid rgba(103, 232, 249, 0.28) !important;
+    border-radius: 14px !important;
+    background: rgba(5, 13, 28, 0.88) !important;
+}
+
+/* Кнопки уменьшения и увеличения */
+[data-testid="stNumberInput"] button,
+.stNumberInput button,
+[data-baseweb="input"] button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 46px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(20, 61, 84, 0.98),
+            rgba(33, 35, 82, 0.98)
+        ) !important;
+    color: #9BF3FF !important;
+    transition:
+        background 160ms ease,
+        filter 160ms ease,
+        transform 160ms ease !important;
+}
+
+/* Левая кнопка «минус» */
+[data-testid="stNumberInput"] button:first-child,
+.stNumberInput button:first-child {
+    border-right: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border-radius: 13px 0 0 13px !important;
+}
+
+/* Правая кнопка «плюс» */
+[data-testid="stNumberInput"] button:last-child,
+.stNumberInput button:last-child {
+    border-left: 1px solid rgba(103, 232, 249, 0.22) !important;
+    border-radius: 0 13px 13px 0 !important;
+}
+
+/* Иконки +/- */
+[data-testid="stNumberInput"] button svg,
+[data-testid="stNumberInput"] button span,
+.stNumberInput button svg,
+.stNumberInput button span {
+    color: #9BF3FF !important;
+    fill: currentColor !important;
+}
+
+/* Hover для +/- */
+[data-testid="stNumberInput"] button:hover,
+.stNumberInput button:hover,
+[data-baseweb="input"] button:hover {
+    background:
+        linear-gradient(
+            135deg,
+            #078EAA 0%,
+            #18BCD5 55%,
+            #5C66D9 100%
+        ) !important;
+    color: #FFFFFF !important;
+    filter: brightness(1.08) !important;
+}
+
+/* Фокус на поле фактической суммы */
+[data-testid="stNumberInput"] input:focus,
+.stNumberInput input:focus {
+    border-color: #22D3EE !important;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14) !important;
+    outline: none !important;
+}
+
+/* Убираем белую стрелку браузера внутри input type=number */
+[data-testid="stNumberInput"] input::-webkit-outer-spin-button,
+[data-testid="stNumberInput"] input::-webkit-inner-spin-button {
+    margin: 0;
+    appearance: none;
+}
+
+[data-testid="stNumberInput"] input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+/* Компактная кнопка сохранения расхода */
+[data-testid="stButton"] button[key^="save_"],
+button[kind="secondary"] {
+    border: 1px solid rgba(220, 252, 255, 0.45) !important;
+}
+
+/*
+ Стили кнопок сохранения.
+ Streamlit не всегда оставляет key в HTML, поэтому селектор
+ ниже затрагивает стандартные кнопки страницы; общий дизайн сохраняется.
+*/
+.stButton > button {
+    border: 1px solid rgba(220, 252, 255, 0.34) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #069EBA 0%,
+            #1FC9E1 48%,
+            #725BE6 100%
+        ) !important;
+    box-shadow:
+        0 9px 19px rgba(34, 211, 238, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
 /* ---------- Кнопки ---------- */
 
 .stButton > button,
