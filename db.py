@@ -430,7 +430,20 @@ def get_expenses(trip_id: int):
             (trip_id,),
         ).fetchall()
 
-
+def get_manual_expenses(trip_id: int):
+    """Возвращает расходы, которые пользователь добавил вручную."""
+    with _conn() as connection:
+        return connection.execute(
+            """
+            SELECT *
+            FROM expenses
+            WHERE trip_id = ?
+              AND is_manual = 1
+            ORDER BY day DESC, id DESC
+            """,
+            (trip_id,),
+        ).fetchall()
+        
 def update_expense_actual(expense_id: int, actual: float):
     """Обновляет фактическую сумму расхода."""
     with _conn() as connection:
