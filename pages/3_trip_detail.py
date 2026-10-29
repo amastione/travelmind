@@ -23,8 +23,10 @@ st.set_page_config(
     page_icon="🗺️",
     layout="wide",
 )
+
 branding.apply_clean_layout()
 site_access.require_site_access()
+
 # ==========================================================
 # АВТОРИЗАЦИЯ И ЗАГРУЗКА ДАННЫХ
 # ==========================================================
@@ -140,6 +142,7 @@ button,
         "Material Icons" !important;
     font-style: normal !important;
 }
+
 /* ---------- Фото-обложка маршрута ---------- */
 
 .tm-trip-hero-cover {
@@ -185,18 +188,6 @@ button,
     max-width: 760px;
 }
 
-@media (max-width: 760px) {
-    .tm-trip-hero-cover {
-        min-height: 290px;
-        padding: 1.45rem;
-        border-radius: 21px;
-        background-position: 62% center;
-    }
-
-    .tm-trip-hero-content {
-        max-width: 100%;
-    }
-}
 /* ---------- Шапка поездки ---------- */
 
 .tm-hero-label {
@@ -414,18 +405,8 @@ button,
     line-height: 1.68;
 }
 
-/* ==========================================================
-   СОБСТВЕННЫЕ КАРТОЧКИ ДНЕЙ
-   Здесь нет st.expander, поэтому белый фон исключён.
-   ========================================================== */
+/* ---------- Дни маршрута ---------- */
 
-/* ==========================================================
-   БЫСТРЫЕ РАСКРЫВАЕМЫЕ ДНИ МАРШРУТА
-   Используем нативный st.expander без полного st.rerun().
-   Важно: не стилизуем summary * — это ломает Material Icons.
-   ========================================================== */
-
-/* Внешняя тёмная карточка дня */
 details[data-testid="stExpander"],
 div[data-testid="stExpander"] details {
     overflow: hidden !important;
@@ -438,7 +419,6 @@ div[data-testid="stExpander"] details {
         inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Заголовок закрытого дня */
 details[data-testid="stExpander"] > summary,
 div[data-testid="stExpander"] details > summary {
     min-height: 68px !important;
@@ -455,10 +435,6 @@ div[data-testid="stExpander"] details > summary {
     cursor: pointer !important;
 }
 
-/*
- Текст заголовка. Стилизуем только markdown-контейнер
- и его абзац — не span, не svg и не системную иконку стрелки.
-*/
 details[data-testid="stExpander"] > summary [data-testid="stMarkdownContainer"],
 details[data-testid="stExpander"] > summary [data-testid="stMarkdownContainer"] p,
 div[data-testid="stExpander"] details > summary [data-testid="stMarkdownContainer"],
@@ -467,18 +443,11 @@ div[data-testid="stExpander"] details > summary [data-testid="stMarkdownContaine
     padding: 0 !important;
     background: transparent !important;
     color: #F8FAFC !important;
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif !important;
     font-size: 1.04rem !important;
     font-weight: 750 !important;
     line-height: 1.45 !important;
 }
 
-/* Стрелка раскрытия: сохраняем Material Icon, меняем только цвет */
 details[data-testid="stExpander"] > summary [data-testid="stIconMaterial"],
 details[data-testid="stExpander"] > summary .material-symbols-rounded,
 details[data-testid="stExpander"] > summary .material-icons,
@@ -488,7 +457,6 @@ div[data-testid="stExpander"] details > summary .material-icons {
     color: #7DEBFA !important;
 }
 
-/* Открытый день */
 details[data-testid="stExpander"][open] > summary,
 div[data-testid="stExpander"] details[open] > summary {
     border-bottom: 1px solid rgba(103, 232, 249, 0.24) !important;
@@ -501,32 +469,12 @@ div[data-testid="stExpander"] details[open] > summary {
         ) !important;
 }
 
-/* Текст активного заголовка */
-details[data-testid="stExpander"][open] > summary [data-testid="stMarkdownContainer"],
-details[data-testid="stExpander"][open] > summary [data-testid="stMarkdownContainer"] p,
-div[data-testid="stExpander"] details[open] > summary [data-testid="stMarkdownContainer"],
-div[data-testid="stExpander"] details[open] > summary [data-testid="stMarkdownContainer"] p {
-    color: #FFFFFF !important;
-}
-
-/* Контент раскрытого дня — только тёмный фон */
 details[data-testid="stExpander"] [data-testid="stExpanderDetails"],
 details[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div,
 div[data-testid="stExpander"] [data-testid="stExpanderDetails"],
 div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
     background: rgba(8, 18, 35, 0.92) !important;
     color: #F8FAFC !important;
-}
-
-/* Наведение */
-details[data-testid="stExpander"] > summary:hover,
-div[data-testid="stExpander"] details > summary:hover {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(25, 87, 116, 0.88),
-            rgba(55, 57, 132, 0.80)
-        ) !important;
 }
 
 /* ---------- Активности ---------- */
@@ -588,6 +536,7 @@ div[data-testid="stExpander"] details > summary:hover {
     font-size: 0.96rem;
     line-height: 1.62;
 }
+
 /* ---------- Диалог с AI ---------- */
 
 .tm-ai-edit-card {
@@ -635,6 +584,7 @@ div[data-testid="stExpander"] details > summary:hover {
     font-size: 0.88rem;
     line-height: 1.55;
 }
+
 /* ---------- Бюджет ---------- */
 
 .tm-budget-card {
@@ -699,6 +649,7 @@ div[data-testid="stExpander"] details > summary:hover {
     text-align: right;
     white-space: nowrap;
 }
+
 /* ---------- Форма диалога с AI ---------- */
 
 [data-testid="stForm"] {
@@ -716,7 +667,6 @@ div[data-testid="stExpander"] details > summary:hover {
         inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Подпись «Что изменить в маршруте?» */
 [data-testid="stForm"] [data-testid="stWidgetLabel"] p,
 [data-testid="stForm"] label {
     color: #DCEBFA !important;
@@ -724,12 +674,6 @@ div[data-testid="stExpander"] details > summary:hover {
     font-weight: 750 !important;
 }
 
-/* Контейнер поля ввода */
-[data-testid="stForm"] [data-testid="stTextArea"] {
-    border-radius: 14px !important;
-}
-
-/* Само текстовое поле */
 [data-testid="stForm"] textarea,
 [data-testid="stTextArea"] textarea {
     min-height: 130px !important;
@@ -737,24 +681,16 @@ div[data-testid="stExpander"] details > summary:hover {
     border-radius: 14px !important;
     background: rgba(5, 12, 26, 0.82) !important;
     color: #F8FAFC !important;
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif !important;
     font-size: 0.98rem !important;
     line-height: 1.55 !important;
 }
 
-/* Текст-подсказка внутри поля */
 [data-testid="stForm"] textarea::placeholder,
 [data-testid="stTextArea"] textarea::placeholder {
     color: #7D91AE !important;
     opacity: 1 !important;
 }
 
-/* Активное поле */
 [data-testid="stForm"] textarea:focus,
 [data-testid="stTextArea"] textarea:focus {
     border-color: #22D3EE !important;
@@ -762,11 +698,8 @@ div[data-testid="stExpander"] details > summary:hover {
     outline: none !important;
 }
 
-/* Кнопка «Обновить маршрут с AI» */
 [data-testid="stFormSubmitButton"] > button,
-.stFormSubmitButton > button,
-[data-testid="stForm"] button[kind="primary"],
-[data-testid="stForm"] button {
+.stFormSubmitButton > button {
     width: 100% !important;
     min-height: 52px !important;
     border: 1px solid rgba(235, 254, 255, 0.56) !important;
@@ -787,140 +720,157 @@ div[data-testid="stExpander"] details > summary:hover {
     color: #FFFFFF !important;
     font-size: 1rem !important;
     font-weight: 800 !important;
-    box-shadow:
-        0 12px 25px rgba(34, 211, 238, 0.23),
-        0 8px 20px rgba(139, 92, 246, 0.17),
-        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
-    transition:
-        transform 180ms ease,
-        filter 180ms ease,
-        box-shadow 180ms ease !important;
 }
 
-/* Текст внутри submit-кнопки */
-[data-testid="stFormSubmitButton"] > button p,
-.stFormSubmitButton > button p,
-[data-testid="stForm"] button[kind="primary"] p,
-[data-testid="stForm"] button p {
-    color: #FFFFFF !important;
-    font-size: 1rem !important;
-    font-weight: 800 !important;
+/* ==========================================================
+   ФАКТИЧЕСКИЕ РАСХОДЫ: РАЗДЕЛЬНЫЕ КНОПКИ «− / +»
+   ========================================================== */
+
+[data-testid="stNumberInput"],
+.stNumberInput {
+    width: 100% !important;
 }
 
-/* Наведение на кнопку генерации */
-[data-testid="stFormSubmitButton"] > button:hover,
-.stFormSubmitButton > button:hover,
-[data-testid="stForm"] button[kind="primary"]:hover,
-[data-testid="stForm"] button:hover {
-    transform: translateY(-2px) !important;
-    filter: brightness(1.09) saturate(1.05) !important;
-    box-shadow:
-        0 17px 32px rgba(34, 211, 238, 0.30),
-        0 12px 27px rgba(139, 92, 246, 0.23),
-        inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
-}
-
-/* ---------- Поля расходов и кнопки +/- ---------- */
-
-/* Общий контейнер числового поля */
-[data-testid="stNumberInput"] {
-    border-radius: 14px !important;
-}
-
-/* Само поле с числом */
-[data-testid="stNumberInput"] input,
-.stNumberInput input {
-    min-height: 46px !important;
-    border: 1px solid rgba(103, 232, 249, 0.28) !important;
-    border-radius: 0 !important;
-    background: rgba(5, 13, 28, 0.88) !important;
-    color: #F8FAFC !important;
-    font-size: 0.98rem !important;
-    font-weight: 750 !important;
-    text-align: center !important;
-}
-
-/* Контейнер внутреннего BaseWeb input */
+/*
+ Убираем общий фон и общую рамку BaseWeb-контейнера,
+ чтобы +, сумма и − выглядели отдельными элементами.
+*/
 [data-testid="stNumberInput"] [data-baseweb="input"],
 .stNumberInput [data-baseweb="input"] {
-    overflow: hidden !important;
-    border: 1px solid rgba(103, 232, 249, 0.28) !important;
-    border-radius: 14px !important;
-    background: rgba(5, 13, 28, 0.88) !important;
-}
-
-/* Кнопки уменьшения и увеличения */
-[data-testid="stNumberInput"] button,
-.stNumberInput button,
-[data-baseweb="input"] button {
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    width: 42px !important;
-    min-width: 42px !important;
-    height: 46px !important;
+    gap: 0.42rem !important;
+    overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(20, 61, 84, 0.98),
-            rgba(33, 35, 82, 0.98)
-        ) !important;
-    color: #9BF3FF !important;
-    transition:
-        background 160ms ease,
-        filter 160ms ease,
-        transform 160ms ease !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
-/* Левая кнопка «минус» */
-[data-testid="stNumberInput"] button:first-child,
-.stNumberInput button:first-child {
-    border-right: 1px solid rgba(103, 232, 249, 0.22) !important;
-    border-radius: 13px 0 0 13px !important;
+/* Центральное поле фактической суммы */
+[data-testid="stNumberInput"] input,
+.stNumberInput input {
+    min-width: 0 !important;
+    min-height: 46px !important;
+    height: 46px !important;
+    padding: 0 0.45rem !important;
+    border: 1px solid rgba(103, 232, 249, 0.30) !important;
+    border-radius: 11px !important;
+    background: rgba(5, 13, 28, 0.90) !important;
+    color: #F8FAFC !important;
+    font-size: 0.96rem !important;
+    font-weight: 750 !important;
+    text-align: center !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
 }
 
-/* Правая кнопка «плюс» */
-[data-testid="stNumberInput"] button:last-child,
-.stNumberInput button:last-child {
-    border-left: 1px solid rgba(103, 232, 249, 0.22) !important;
-    border-radius: 0 13px 13px 0 !important;
-}
-
-/* Иконки +/- */
-[data-testid="stNumberInput"] button svg,
-[data-testid="stNumberInput"] button span,
-.stNumberInput button svg,
-.stNumberInput button span {
-    color: #9BF3FF !important;
-    fill: currentColor !important;
-}
-
-/* Hover для +/- */
-[data-testid="stNumberInput"] button:hover,
-.stNumberInput button:hover,
-[data-baseweb="input"] button:hover {
-    background:
-        linear-gradient(
-            135deg,
-            #078EAA 0%,
-            #18BCD5 55%,
-            #5C66D9 100%
-        ) !important;
-    color: #FFFFFF !important;
-    filter: brightness(1.08) !important;
-}
-
-/* Фокус на поле фактической суммы */
 [data-testid="stNumberInput"] input:focus,
 .stNumberInput input:focus {
     border-color: #22D3EE !important;
-    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14) !important;
     outline: none !important;
+    box-shadow:
+        0 0 0 3px rgba(34, 211, 238, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Убираем белую стрелку браузера внутри input type=number */
+/*
+ Каждая кнопка + или − независимая:
+ квадратная форма, мягкое скругление, отдельная граница.
+*/
+[data-testid="stNumberInput"] button,
+.stNumberInput button {
+    display: inline-flex !important;
+    flex: 0 0 46px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid rgba(103, 232, 249, 0.30) !important;
+    border-radius: 11px !important;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25, 62, 88, 0.98),
+            rgba(24, 30, 72, 0.98)
+        ) !important;
+    color: #A7F3FF !important;
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    transition:
+        transform 160ms ease,
+        filter 160ms ease,
+        background 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease !important;
+}
+
+/*
+ Центрирование символов «+» и «−».
+ Не изменяем font-family, чтобы Material Symbols Streamlit
+ продолжали отображаться корректно.
+*/
+[data-testid="stNumberInput"] button svg,
+[data-testid="stNumberInput"] button [data-testid="stIconMaterial"],
+[data-testid="stNumberInput"] button .material-symbols-rounded,
+[data-testid="stNumberInput"] button .material-icons,
+.stNumberInput button svg,
+.stNumberInput button [data-testid="stIconMaterial"],
+.stNumberInput button .material-symbols-rounded,
+.stNumberInput button .material-icons {
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #A7F3FF !important;
+    fill: currentColor !important;
+    font-size: 1.22rem !important;
+    line-height: 20px !important;
+    text-align: center !important;
+}
+
+/* Hover для каждой отдельной кнопки */
+[data-testid="stNumberInput"] button:hover,
+.stNumberInput button:hover {
+    border-color: rgba(236, 254, 255, 0.72) !important;
+    background:
+        linear-gradient(
+            135deg,
+            #078CA8 0%,
+            #1DC5DE 50%,
+            #6862DE 100%
+        ) !important;
+    color: #FFFFFF !important;
+    box-shadow:
+        0 10px 20px rgba(34, 211, 238, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+    transform: translateY(-1px) !important;
+}
+
+[data-testid="stNumberInput"] button:hover svg,
+[data-testid="stNumberInput"] button:hover [data-testid="stIconMaterial"],
+[data-testid="stNumberInput"] button:hover .material-symbols-rounded,
+[data-testid="stNumberInput"] button:hover .material-icons,
+.stNumberInput button:hover svg,
+.stNumberInput button:hover [data-testid="stIconMaterial"],
+.stNumberInput button:hover .material-symbols-rounded,
+.stNumberInput button:hover .material-icons {
+    color: #FFFFFF !important;
+}
+
+/* Небольшой эффект нажатия */
+[data-testid="stNumberInput"] button:active,
+.stNumberInput button:active {
+    transform: translateY(0) scale(0.96) !important;
+}
+
+/* Убираем встроенные браузерные стрелки number input */
 [data-testid="stNumberInput"] input::-webkit-outer-spin-button,
 [data-testid="stNumberInput"] input::-webkit-inner-spin-button {
     margin: 0;
@@ -930,31 +880,6 @@ div[data-testid="stExpander"] details > summary:hover {
 [data-testid="stNumberInput"] input[type="number"] {
     appearance: textfield;
     -moz-appearance: textfield;
-}
-
-/* Компактная кнопка сохранения расхода */
-[data-testid="stButton"] button[key^="save_"],
-button[kind="secondary"] {
-    border: 1px solid rgba(220, 252, 255, 0.45) !important;
-}
-
-/*
- Стили кнопок сохранения.
- Streamlit не всегда оставляет key в HTML, поэтому селектор
- ниже затрагивает стандартные кнопки страницы; общий дизайн сохраняется.
-*/
-.stButton > button {
-    border: 1px solid rgba(220, 252, 255, 0.34) !important;
-    background:
-        linear-gradient(
-            135deg,
-            #069EBA 0%,
-            #1FC9E1 48%,
-            #725BE6 100%
-        ) !important;
-    box-shadow:
-        0 9px 19px rgba(34, 211, 238, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
 }
 
 /* ---------- Кнопки ---------- */
@@ -984,26 +909,20 @@ button[kind="secondary"] {
     transform: translateY(-1px);
 }
 
-.stNumberInput input {
-    border: 1px solid rgba(148, 163, 184, 0.34) !important;
-    border-radius: 11px !important;
-    background: rgba(7, 11, 20, 0.70) !important;
-    color: #FFFFFF !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] {
-    display: flex !important;
-
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p {
-    color: #FFFFFF !important;
-    font-size: 0.96rem !important;
-    font-weight: 800 !important;
-}
-
 @media (max-width: 760px) {
     .block-container {
         padding: 1.5rem 1rem 3rem;
+    }
+
+    .tm-trip-hero-cover {
+        min-height: 290px;
+        padding: 1.45rem;
+        border-radius: 21px;
+        background-position: 62% center;
+    }
+
+    .tm-trip-hero-content {
+        max-width: 100%;
     }
 
     .tm-hero-title {
@@ -1017,6 +936,30 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p {
 
     .tm-budget-amount {
         text-align: left;
+    }
+}
+
+@media (max-width: 640px) {
+    [data-testid="stNumberInput"] [data-baseweb="input"],
+    .stNumberInput [data-baseweb="input"] {
+        gap: 0.3rem !important;
+    }
+
+    [data-testid="stNumberInput"] button,
+    .stNumberInput button {
+        flex-basis: 42px !important;
+        width: 42px !important;
+        min-width: 42px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        border-radius: 10px !important;
+    }
+
+    [data-testid="stNumberInput"] input,
+    .stNumberInput input {
+        min-height: 42px !important;
+        height: 42px !important;
+        border-radius: 10px !important;
     }
 }
 </style>
@@ -1152,12 +1095,8 @@ people = trip["people"] or 1
 overview = text_value(data.get("overview"))
 mood_reason = text_value(data.get("mood_reason"))
 
-# Новый маршруты получают профиль от AI:
-# moscow, caucasus_winter, saint_peter и т. д.
-# Старые маршруты используют fallback-логику cover_selector.
 cover_profile = text_value(data.get("cover_profile")).strip().lower()
 
-# Тип поездки может храниться в разных местах AI-ответа.
 travel_type = text_value(
     data.get("travel_type")
     or data.get("trip_type")
@@ -1172,7 +1111,6 @@ hero_cover_url = cover_selector.get_cover_data_url(
     cover_profile=cover_profile,
 )
 
-# Если картинка недоступна, остаётся фирменный градиент TravelMind.
 if hero_cover_url:
     safe_hero_cover_url = escape(hero_cover_url, quote=True)
 
@@ -1447,10 +1385,6 @@ with tab_route:
         unsafe_allow_html=True,
     )
 
-    # Вместо st.expander используем собственные карточки.
-    # Это устраняет белый фон и проблему с нечитаемым заголовком.
-        # Нативный expander раскрывается без полного перезапуска приложения.
-    # Это быстрее, чем st.button + st.rerun().
     for day in data.get("days", []):
         day_number = day.get("day", "")
         day_date = format_date_ru(day.get("date"))
@@ -1508,7 +1442,6 @@ with tab_route:
                     unsafe_allow_html=True,
                 )
 
-                # Ссылка на карту для конкретной активности.
                 if location:
                     activity_map_query = f"{location}, {destination}"
 
@@ -1904,6 +1837,7 @@ with tab_tips:
                 ),
                 unsafe_allow_html=True,
             )
+
 # ==========================================================
 # ВКЛАДКА: ИЗМЕНИТЬ С AI
 # ==========================================================
@@ -2086,8 +2020,6 @@ with tab_edit:
                             }
                         )
 
-                        # Храним только 10 последних AI-команд,
-                        # чтобы JSON маршрута не разрастался бесконечно.
                         updated_data["_ai_edit_history"] = edit_history[-10:]
 
                         db.update_trip_from_ai(
@@ -2112,6 +2044,7 @@ with tab_edit:
                         "Не удалось обновить маршрут через AI: "
                         f"{error}"
                     )
+
 # ==========================================================
 # ВКЛАДКА: AI-ДАННЫЕ И ЭКСПОРТ
 # ==========================================================
