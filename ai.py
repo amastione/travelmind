@@ -247,7 +247,6 @@ USER_TEMPLATE = """Версия пресета: v3.1
 Интересы: {interests}
 Пожелания: {notes}"""
 
-
 def build_prompt(
     dest,
     start,
@@ -277,60 +276,76 @@ def build_prompt(
     )
 
 
-    def _parse_json(text: str) -> dict:
-        """
-        Извлекает JSON из ответа модели.
-    
-        Поддерживает чистый JSON, JSON в ```json-блоке и ответы,
-        где модель добавила короткий текст до или после объекта.
-        """
-        if not text:
-            raise json.JSONDecodeError(
-                "Модель вернула пустой ответ.",
-                "",
-                0,
-            )
-    
-        clean_text = str(text).strip().lstrip("\ufeff")
-    
-        # Удаляем Markdown-обёртку, если она есть.
-        clean_text = re.sub(
-            r"^```(?:json)?\s*",
+def _parse_json(text: str) -> dict:
+    """
+    Надёжно извлекает JSON из ответа модели.
+
+    Поддерживает:
+    - чистый JSON;
+    - JSON в блоке ```json;
+    - короткий текст до или после JSON.
+    """
+    if not text:
+        raise json.JSONDecodeError(
+            "Модель вернула пустой ответ.",
             "",
-            clean_text,
-            flags=re.IGNORECASE,
+            0,
         )
-        clean_text = re.sub(
-            r"\s*```$",
-            "",
-            clean_text,
-        ).strip()
-    
-        # Сначала пробуем разобрать ответ как чистый JSON.
-        try:
-            return json.loads(clean_text)
-        except json.JSONDecodeError:
-            pass
-    
-        # Если модель добавила текст, извлекаем JSON-объект от первой
-        # открывающей до последней закрывающей фигурной скобки.
-        json_start = clean_text.find("{")
-        json_end = clean_text.rfind("}")
-    
-        if json_start == -1 or json_end == -1 or json_end <= json_start:
-            preview = clean_text[:300]
+
+    clean_text = str(text).strip().lstrip("\ufeff")
+
+    clean_text = re.sub(
+        r"^```(?:json)?\s*",
+        "",
+        clean_text,
+        flags=re.IGNORECASE,
+    )
+
+    clean_text = re.sub(
+        r"\s*```$",
+        "",
+        clean_text,
+    ).strip()
+
+    try:
+        result = json.loads(clean_text)
+
+        if not isinstance(result, dict):
             raise json.JSONDecodeError(
-                f"В ответе AI не найден JSON-объект: {preview}",
+                "Ответ AI не является JSON-объектом.",
                 clean_text,
                 0,
             )
-    
-        json_text = clean_text[json_start : json_end + 1]
-    
-        return json.loads(json_text)
 
+        return result
 
-@st.cache_data(ttl=24 * 3600, show_spinner=False)
+    except json.JSONDecodeError:
+        pass
+
+    json_start = clean_text.find("{")
+    json_end = clean_text.rfind("}")
+
+    if json_start == -1 or json_end == -1 or json_end <= json_start:
+        preview = clean_text[:300]
+
+        raise json.JSONDecodeError(
+            f"В ответе AI не найден JSON-объект: {preview}",
+            clean_text,
+            0,
+        )
+
+    json_text = clean_text[json_start : json_end + 1]
+    result = json.loads(json_text)
+
+    if not isinstance(result, dict):
+        raise json.JSONDecodeError(
+            "Извлечённый ответ AI не является JSON-объектом.",
+            json_text,
+            0,
+        )
+
+    return result
+
 def generate(user_prompt: str) -> dict:
     """Запрос к модели. Одинаковые запросы кэшируются на 24 часа."""
     client = _create_llm_client()
