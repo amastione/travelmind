@@ -90,37 +90,26 @@ europe_city, europe_winter,
 tropical_island, desert_city.
 
 ПРАВИЛА ВЫБОРА cover_profile:
-- Москва, а также локации Москвы и ближайшей московской агломерации
-  (например, Переделкино, Зеленоград, Химки, Мытищи, Одинцово)
-  → moscow.
-- Санкт-Петербург и связанные с ним локации
-  (Петергоф, Пушкин, Павловск, Кронштадт, Стрельна)
-  → saint_peter.
-- Сочи, Адлер, Красная Поляна, Роза Хутор и близкие курорты
-  → sochi.
+- Москва и ближайшая московская агломерация → moscow.
+- Санкт-Петербург, Петергоф, Пушкин, Павловск, Кронштадт → saint_peter.
+- Сочи, Адлер, Красная Поляна, Роза Хутор → sochi.
 - Домбай, Архыз, Эльбрус, Приэльбрусье, Северный Кавказ:
-  в зимние месяцы или при зимнем отдыхе → caucasus_winter;
-  в остальные сезоны → caucasus_summer.
+  зимой → caucasus_winter; в остальные сезоны → caucasus_summer.
 - Другие горные направления:
-  зимой или при горнолыжном отдыхе → mountains_winter;
-  в остальные сезоны → mountains_summer.
-- Северные города и холодные регионы:
-  зимой → northern_city_winter;
-  в другие сезоны → northern_city_autumn.
+  зимой → mountains_winter; в остальные сезоны → mountains_summer.
+- Северные города:
+  зимой → northern_city_winter; в другие сезоны → northern_city_autumn.
 - Морские и пляжные курорты:
-  весной и летом → sea_summer;
-  осенью и зимой → sea_sunset.
+  весной и летом → sea_summer; осенью и зимой → sea_sunset.
 - Европейские исторические города:
-  зимой → europe_winter;
-  в остальные сезоны → europe_city.
-- Тропические острова и тропические курорты → tropical_island.
+  зимой → europe_winter; в остальные сезоны → europe_city.
+- Тропические острова → tropical_island.
 - Дубай, ОАЭ, пустынные и восточные города → desert_city.
 - Если направление нельзя уверенно отнести к категории:
   зимой → city_winter;
   осенью → city_autumn;
   весной или летом → city_summer.
 - Не придумывай новые значения cover_profile.
-- Не добавляй объяснение выбора cover_profile.
 
 ОТЕЛИ:
 - Верни ровно 3 объекта в hotels в порядке:
@@ -129,23 +118,19 @@ tropical_island, desert_city.
   что они существуют в указанном городе.
 - Если не уверен в конкретном отеле, укажи честное обобщённое название:
   «Бюджетный отель в районе ...», «Бутик-отель в центре ...»,
-  «Премиальный отель в районе ...». Не выдумывай бренды и рейтинги.
+  «Премиальный отель в районе ...».
 - rating: число от 0 до 10; ставь 0, если рейтинг неизвестен.
-- Цены rooms — ориентировочные цены ЗА ОДИН НОМЕР ЗА ОДНУ НОЧЬ,
-  не за всю группу и не за весь период.
+- Цены rooms — ориентировочные цены ЗА ОДИН НОМЕР ЗА ОДНУ НОЧЬ.
 - rooms.economy, rooms.standard, rooms.luxury — положительные числа.
-  Для каждого следующего уровня цена должна быть выше предыдущего.
-- Наличие номеров и цены не гарантируются: это учебный планировщик.
-- В photo_queries укажи короткие английские запросы для изображений:
-  exterior — фасад отеля, lobby — холл, room — интерьер номера.
-  Не включай название отеля, логотипы, бренды и текст на фото.
+- Для каждого следующего уровня цена должна быть выше предыдущего.
+- В photo_queries укажи короткие английские запросы для изображений.
 
 СХЕМА JSON:
 {
   "title": str,
   "overview": str,
   "cover_theme": "city|mountains|beach|culture|food|nature|adventure|mixed",
-  "cover_profile": "city_summer|city_autumn|city_winter|moscow|saint_peter|sochi|northern_city_autumn|northern_city_winter|caucasus_summer|caucasus_winter|mountains_summer|mountains_winter|sea_summer|sea_sunset|europe_city|europe_winter|tropical_island|desert_city",
+  "cover_profile": str,
   "total_cost": num,
   "mood_score": int,
   "mood_reason": str,
@@ -262,11 +247,7 @@ def build_prompt(
 
 
 def _parse_json(text: str) -> dict:
-    """
-    Надёжно извлекает JSON-объект из ответа модели.
-
-    Поддерживает чистый JSON, блок ```json и текст до/после JSON.
-    """
+    """Извлекает JSON-объект даже из ответа с Markdown-обёрткой."""
     if not text:
         raise json.JSONDecodeError(
             "Модель вернула пустой ответ.",
@@ -282,7 +263,6 @@ def _parse_json(text: str) -> dict:
         clean_text,
         flags=re.IGNORECASE,
     )
-
     clean_text = re.sub(
         r"\s*```$",
         "",
@@ -292,14 +272,8 @@ def _parse_json(text: str) -> dict:
     try:
         result = json.loads(clean_text)
 
-        if not isinstance(result, dict):
-            raise json.JSONDecodeError(
-                "Ответ AI не является JSON-объектом.",
-                clean_text,
-                0,
-            )
-
-        return result
+        if isinstance(result, dict):
+            return result
 
     except json.JSONDecodeError:
         pass
@@ -308,21 +282,18 @@ def _parse_json(text: str) -> dict:
     json_end = clean_text.rfind("}")
 
     if json_start == -1 or json_end == -1 or json_end <= json_start:
-        preview = clean_text[:300]
-
         raise json.JSONDecodeError(
-            f"В ответе AI не найден JSON-объект: {preview}",
+            "В ответе AI не найден полный JSON-объект.",
             clean_text,
             0,
         )
 
-    json_text = clean_text[json_start : json_end + 1]
-    result = json.loads(json_text)
+    result = json.loads(clean_text[json_start : json_end + 1])
 
     if not isinstance(result, dict):
         raise json.JSONDecodeError(
-            "Извлечённый ответ AI не является JSON-объектом.",
-            json_text,
+            "Ответ AI не является JSON-объектом.",
+            clean_text,
             0,
         )
 
@@ -342,7 +313,7 @@ def _create_llm_client() -> OpenAI:
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def generate(user_prompt: str) -> dict:
-    """Генерирует маршрут. Идентичные запросы кэшируются на 24 часа."""
+    """Генерирует маршрут. Идентичные запросы кэшируются 24 часа."""
     client = _create_llm_client()
 
     response = client.chat.completions.create(
@@ -389,29 +360,13 @@ EDIT_SYSTEM_PROMPT = """Ты — AI-редактор маршрутов TravelMi
   список вещей и другие рекомендации, если этого требует пользователь.
 - Используй только реально существующие города, районы
   и достопримечательности.
-- Не выдумывай малоизвестные рестораны, кафе и отели:
-  если не уверен, указывай тип заведения и район.
 - Для каждой активности обязательно сохрани lat и lon.
 - Соседние активности одного дня должны быть логично расположены
   и реалистично укладываться по времени.
 - Каждый день должен содержать хотя бы одну активность.
-- Пересчитай activity.cost, day_cost, total_cost и budget_breakdown
-  после внесения изменений.
+- Пересчитай activity.cost, day_cost, total_cost и budget_breakdown.
 - budget_breakdown не должен превышать общий бюджет пользователя,
   если пользователь не попросил увеличить бюджет.
-- Если пользователь просит сделать маршрут дешевле,
-  сократи total_cost и бюджетные категории, но сохрани ключевые
-  впечатления маршрута.
-- Если пользователь просит сделать маршрут спокойнее,
-  оставь 2–3 основные активности в день и добавь время на отдых.
-- Если пользователь просит больше культуры,
-  добавь музеи, исторические районы, архитектуру или экскурсии.
-- Если пользователь просит больше гастрономии,
-  добавь локальную кухню, рынки, кафе или гастрономические районы.
-- Если маршрут адаптируется для семьи,
-  уменьши темп, добавь удобную логистику и подходящие активности.
-- Не меняй cover_profile на значение вне списка, который уже есть
-  в исходном маршруте и правилах TravelMind.
 """
 
 
@@ -420,7 +375,7 @@ def edit_trip_with_ai(
     trip_context: dict,
     user_request: str,
 ) -> dict:
-    """Изменяет существующий маршрут согласно команде пользователя."""
+    """Изменяет сохранённый маршрут согласно команде пользователя."""
     destination = str(trip_context.get("destination") or "")
     start_date = str(trip_context.get("start_date") or "")
     end_date = str(trip_context.get("end_date") or "")
@@ -475,125 +430,15 @@ def edit_trip_with_ai(
 # AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
 # ==========================================================
 
-BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый AI-помощник TravelMind.
-
-Твоя задача — кратко проанализировать бюджет путешествия на основе
-агрегированных данных о плановых, фактических и внеплановых расходах.
-
-СТРОГИЕ ПРАВИЛА:
-- Верни только один валидный JSON-объект.
-- Не используй Markdown, блоки ```json, комментарии или текст вне JSON.
-- Все текстовые значения должны быть на русском языке.
-- Используй только данные из переданного контекста.
-- Не выдумывай конкретные цены, скидки, рестораны, билеты, маршруты,
-  акции или фактические траты.
-- Верни от 2 до 4 коротких, понятных и практичных рекомендаций.
-- Не повторяй одинаковые рекомендации.
-- Если фактических расходов нет, укажи, что анализ основан в основном
-  на плановых значениях, и посоветуй начать вносить фактические траты.
-- potential_saving_min и potential_saving_max должны быть числами.
-- Если экономию невозможно обосновать по данным, верни 0.
-
-ФОРМАТ ОТВЕТА:
-{
-  "status": "safe|attention|over_budget|no_data",
-  "summary": "краткий вывод по бюджету",
-  "recommendations": [
-    {
-      "priority": "low|medium|high",
-      "title": "краткое название рекомендации",
-      "text": "конкретный практический совет"
-    }
-  ],
-  "potential_saving_min": 0,
-  "potential_saving_max": 0
-}"""
-
-
-def analyze_budget_with_ai(budget_context: dict) -> dict:
-    """
-    Выполняет AI-анализ бюджета.
-
-    В модель передаются только агрегированные данные:
-    бюджет, план, факт, остаток, категории и внеплановые расходы.
-    """
-    compact_context = json.dumps(
-        budget_context,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-    user_prompt = f"""Проанализируй бюджет поездки.
-
-Данные поездки:
-{compact_context}
-
-Верни только JSON-объект строго в таком формате:
-
-{{
-  "status": "safe",
-  "summary": "Краткий вывод по бюджету.",
-  "recommendations": [
-    {{
-      "priority": "medium",
-      "title": "Название рекомендации",
-      "text": "Короткий практический совет."
-    }}
-  ],
-  "potential_saving_min": 0,
-  "potential_saving_max": 0
-}}
-
-Допустимые status: safe, attention, over_budget, no_data.
-Допустимые priority: low, medium, high.
-Не используй Markdown, ```json, комментарии и текст до или после JSON."""
-
-    client = _create_llm_client()
-
-    response = client.chat.completions.create(
-        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
-        messages=[
-            {
-                "role": "system",
-                "content": BUDGET_ANALYSIS_SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": user_prompt,
-            },
-        ],
-        temperature=0.1,
-        max_tokens=1200,
-        response_format={"type": "json_object"},
-    )
-
-    usage = response.usage
-    message = response.choices[0].message
-    content = message.content
-
-    # Некоторые OpenAI-совместимые провайдеры могут вернуть content
-    # не строкой, а списком текстовых блоков.
-    if isinstance(content, list):
-        parts = []
-
-        for item in content:
-            if isinstance(item, dict):
-                parts.append(
-                    str(
-
-# ==========================================================
-# AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
-# ==========================================================
-
 BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый помощник TravelMind.
 
 Верни только один короткий валидный JSON-объект.
-Никакого Markdown, текста до JSON или после JSON.
+Не используй Markdown, комментарии или текст вне JSON.
 
 Используй только цифры из контекста. Не выдумывай цены, скидки,
 заведения, акции или фактические траты.
 
-Нужно вернуть строго этот формат:
+Строгий формат:
 {
   "status": "safe|attention|over_budget|no_data",
   "summary": "Одно короткое предложение.",
@@ -612,7 +457,6 @@ BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый помощни�
 - Рекомендаций: от 2 до 3.
 - Каждая рекомендация: не более 15 слов.
 - summary: не более 20 слов.
-- Числа potential_saving_min и potential_saving_max — числа без валюты.
 - Если фактических трат нет, status должен быть no_data.
 """
 
@@ -627,19 +471,18 @@ def _number(value, default=0.0) -> float:
 
 def _build_budget_analysis_fallback(budget_context: dict) -> dict:
     """
-    Создаёт базовые рекомендации без LLM.
+    Формирует рекомендации без LLM.
 
-    Используется, если провайдер AI вернул пустой или оборванный JSON.
-    Благодаря этому пользователю всегда показывается результат.
+    Используется, если модель вернула оборванный или неверный JSON.
     """
     total_budget = _number(budget_context.get("total_budget"))
     planned_total = _number(budget_context.get("planned_total"))
     actual_total = _number(budget_context.get("actual_total"))
     remaining_budget = _number(budget_context.get("remaining_budget"))
     used_percent = _number(budget_context.get("budget_used_percent"))
-    manual_count = int(_number(
-        budget_context.get("unplanned_expenses_count")
-    ))
+    manual_count = int(
+        _number(budget_context.get("unplanned_expenses_count"))
+    )
     manual_total = _number(
         budget_context.get("unplanned_actual_total")
     )
@@ -661,14 +504,14 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
     elif used_percent >= 75:
         status = "attention"
         summary = (
-            f"Уже использовано {used_percent:.0f}% бюджета: "
-            "стоит контролировать оставшиеся траты."
+            f"Использовано {used_percent:.0f}% бюджета: "
+            "контролируйте оставшиеся траты."
         )
     else:
         status = "safe"
         summary = (
             f"Использовано {used_percent:.0f}% бюджета. "
-            "Текущие расходы находятся под контролем."
+            "Расходы находятся под контролем."
         )
 
     recommendations = []
@@ -680,7 +523,7 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                 "title": "Вносите фактические траты",
                 "text": (
                     "Указывайте реальные суммы после оплаты, "
-                    "чтобы прогноз был точнее."
+                    "чтобы анализ был точнее."
                 ),
             }
         )
@@ -691,7 +534,7 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                     "priority": "high",
                     "title": "Сократите плановые расходы",
                     "text": (
-                        "План уже превышает установленный лимит. "
+                        "План превышает лимит. "
                         "Пересмотрите необязательные активности."
                     ),
                 }
@@ -702,8 +545,8 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                     "priority": "low",
                     "title": "Оставьте резерв",
                     "text": (
-                        "Не распределяйте весь бюджет заранее: "
-                        "сохраните часть суммы на непредвиденные расходы."
+                        "Сохраните часть бюджета на непредвиденные "
+                        "расходы и изменения планов."
                     ),
                 }
             )
@@ -714,8 +557,8 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                 "priority": "high",
                 "title": "Остановите необязательные траты",
                 "text": (
-                    "Откажитесь от спонтанных покупок и "
-                    "выберите более бюджетные варианты досуга."
+                    "Откажитесь от спонтанных покупок и выберите "
+                    "более бюджетные варианты досуга."
                 ),
             }
         )
@@ -725,7 +568,7 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                 "title": "Проверьте транспорт",
                 "text": (
                     "Сравните расходы на такси с общественным "
-                    "транспортом или пешими маршрутами."
+                    "транспортом и пешими маршрутами."
                 ),
             }
         )
@@ -747,7 +590,7 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
                 "title": "Контролируйте дополнительные покупки",
                 "text": (
                     "Сначала оплачивайте обязательные расходы, "
-                    "а сувениры и развлечения планируйте из остатка."
+                    "а покупки планируйте из остатка."
                 ),
             }
         )
@@ -776,16 +619,13 @@ def _build_budget_analysis_fallback(budget_context: dict) -> dict:
             }
         )
 
-    # Убираем дубли и ограничиваем количество рекомендаций.
     unique_recommendations = []
     seen_titles = set()
 
     for item in recommendations:
-        title = item["title"]
-
-        if title not in seen_titles:
+        if item["title"] not in seen_titles:
             unique_recommendations.append(item)
-            seen_titles.add(title)
+            seen_titles.add(item["title"])
 
     if len(unique_recommendations) < 2:
         unique_recommendations.append(
@@ -820,7 +660,7 @@ def _normalize_budget_analysis(
     result: dict,
     budget_context: dict,
 ) -> dict:
-    """Проверяет и нормализует ответ AI перед отображением."""
+    """Проверяет и приводит ответ AI к ожидаемой структуре."""
     fallback = _build_budget_analysis_fallback(budget_context)
 
     if not isinstance(result, dict):
@@ -843,15 +683,15 @@ def _normalize_budget_analysis(
     if not summary:
         summary = fallback["summary"]
 
-    raw_recommendations = result.get("recommendations")
     recommendations = []
+    raw_recommendations = result.get("recommendations")
 
     if isinstance(raw_recommendations, list):
         for item in raw_recommendations[:3]:
             if not isinstance(item, dict):
                 continue
 
-            priority = str(item.get("priority") or "low").strip().lower()
+            priority = str(item.get("priority") or "low").lower()
 
             if priority not in {"low", "medium", "high"}:
                 priority = "low"
@@ -898,8 +738,8 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     """
     Анализирует бюджет через AI.
 
-    Если провайдер вернул оборванный JSON, функция повторяет запрос.
-    Если обе попытки неудачны, возвращается локальный анализ без ошибки.
+    При обрыве JSON выполняет повторную попытку.
+    Если ответ AI снова некорректен, возвращает локальный анализ.
     """
     compact_context = json.dumps(
         budget_context,
@@ -915,9 +755,7 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     client = _create_llm_client()
     last_error = None
 
-    # Две короткие попытки. Небольшой max_tokens снижает риск,
-    # что Gemini начнёт формировать слишком длинный ответ.
-    for attempt in range(2):
+    for _ in range(2):
         try:
             response = client.chat.completions.create(
                 model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
@@ -959,7 +797,6 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
         except Exception as error:
             last_error = error
 
-    # Приложение продолжает работать, даже если LLM вернула оборванный JSON.
     fallback_result = _build_budget_analysis_fallback(budget_context)
 
     return {
@@ -971,6 +808,7 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
             f"Использован локальный анализ: {str(last_error)[:200]}"
         ),
     }
+
 
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
