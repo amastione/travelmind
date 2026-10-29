@@ -2072,7 +2072,7 @@ with tab_budget:
         "✨ Прочее": "W",
     }
 
-        manual_form_state_key = f"manual_expense_form_open_{trip_id}"
+    manual_form_state_key = f"manual_expense_form_open_{trip_id}"
 
     if manual_form_state_key not in st.session_state:
         st.session_state[manual_form_state_key] = False
@@ -2248,7 +2248,7 @@ with tab_budget:
                 ),
                 unsafe_allow_html=True,
             )               
-        st.markdown(
+    st.markdown(
         '<div class="tm-section-title">◫ Все расходы маршрута</div>',
         unsafe_allow_html=True,
     )
