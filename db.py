@@ -426,6 +426,72 @@ def update_expense_actual(expense_id: int, actual: float):
             (actual, expense_id),
         )
 
+def add_manual_expense(
+    trip_id: int,
+    user_id: int,
+    day: int,
+    category: str,
+    title: str,
+    cost_plan: float,
+    cost_actual: float,
+):
+    """
+    Добавляет расход, который пользователь внёс вручную.
 
+    Проверяет, что поездка принадлежит пользователю, и назначает
+    новой записи следующий порядковый activity_idx.
+    """
+    clean_title = str(title).strip()
+
+    if not clean_title:
+        raise ValueError("Укажите название расхода.")
+
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        last_index = connection.execute(
+            """
+            SELECT COALESCE(MAX(activity_idx), -1)
+            FROM expenses
+            WHERE trip_id = ? AND day = ?
+            """,
+            (trip_id, day),
+        ).fetchone()[0]
+
+        cursor = connection.execute(
+            """
+            INSERT INTO expenses(
+                trip_id,
+                day,
+                activity_idx,
+                category,
+                title,
+                cost_plan,
+                cost_actual
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                trip_id,
+                int(day),
+                int(last_index) + 1,
+                category,
+                clean_title,
+                float(cost_plan),
+                float(cost_actual),
+            ),
+        )
+
+        return cursor.lastrowid
 # Создание базы при импорте модуля.
 init()
