@@ -312,7 +312,143 @@ def generate(user_prompt: str) -> dict:
         "tokens_out": response.usage.completion_tokens,
     }
 
+# ==========================================================
+# AI-РЕДАКТИРОВАНИЕ СОХРАНЁННОГО МАРШРУТА
+# ==========================================================
 
+EDIT_SYSTEM_PROMPT = """Ты — AI-редактор маршрутов TravelMind.
+
+Твоя задача: изменить существующий туристический маршрут по просьбе
+пользователя, сохранив валидную JSON-структуру TravelMind.
+
+СТРОГИЕ ПРАВИЛА:
+- Верни ТОЛЬКО валидный JSON.
+- Не используй Markdown, комментарии, пояснения или текст вне JSON.
+- Все значения должны быть на русском языке.
+- Сохрани ВСЕ ключи и общую JSON-схему исходного маршрута.
+- Не удаляй поля: title, overview, cover_theme, cover_profile,
+  total_cost, mood_score, mood_reason, accommodation, hotels, days,
+  budget_breakdown, wow_moments, packing, phrases, tips.
+- Сохрани направление, даты поездки, количество дней, валюту
+  и количество путешественников.
+- Номера дней и даты в days не меняй.
+- Можно менять активности, отели, стоимость, советы, описание,
+  список вещей и другие рекомендации, если этого требует пользователь.
+- Используй только реально существующие города, районы
+  и достопримечательности.
+- Не выдумывай малоизвестные рестораны, кафе и отели:
+  если не уверен, указывай тип заведения и район.
+- Для каждой активности обязательно сохрани lat и lon.
+- Соседние активности одного дня должны быть логично расположены
+  и реалистично укладываться по времени.
+- Каждый день должен содержать хотя бы одну активность.
+- Пересчитай activity.cost, day_cost, total_cost и budget_breakdown
+  после внесения изменений.
+- budget_breakdown не должен превышать общий бюджет пользователя,
+  если пользователь не попросил увеличить бюджет.
+- Если пользователь просит сделать маршрут дешевле,
+  сократи total_cost и бюджетные категории, но сохрани ключевые
+  впечатления маршрута.
+- Если пользователь просит сделать маршрут спокойнее,
+  оставь 2–3 основные активности в день и добавь время на отдых.
+- Если пользователь просит больше культуры,
+  добавь музеи, исторические районы, архитектуру или экскурсии.
+- Если пользователь просит больше гастрономии,
+  добавь локальную кухню, рынки, кафе или гастрономические районы.
+- Если маршрут адаптируется для семьи,
+  уменьши темп, добавь удобную логистику и подходящие активности.
+- Не меняй cover_profile на значение вне списка, который уже есть
+  в исходном маршруте и правилах TravelMind.
+"""
+
+
+def _create_llm_client() -> OpenAI:
+    """Создаёт клиент совместимого с OpenAI API-провайдера."""
+    return OpenAI(
+        api_key=st.secrets["LLM_API_KEY"],
+        base_url=st.secrets.get(
+            "LLM_BASE_URL",
+            "https://api.deepseek.com",
+        ),
+    )
+
+
+def edit_trip_with_ai(
+    current_data: dict,
+    trip_context: dict,
+    user_request: str,
+) -> dict:
+    """
+    Изменяет сохранённый маршрут по команде пользователя.
+
+    current_data — текущий JSON маршрута.
+    trip_context — метаданные поездки из SQLite.
+    user_request — текстовая команда пользователя.
+
+    Возвращает:
+    {
+        "data": {... обновлённый маршрут ...},
+        "tokens_in": int,
+        "tokens_out": int,
+    }
+    """
+    destination = str(trip_context.get("destination") or "")
+    start_date = str(trip_context.get("start_date") or "")
+    end_date = str(trip_context.get("end_date") or "")
+    budget = trip_context.get("budget") or 0
+    currency = str(trip_context.get("currency") or "RUB")
+    people = trip_context.get("people") or 1
+
+    current_json = json.dumps(
+        current_data,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    edit_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
+Направление: {destination}
+Даты: {start_date} — {end_date}
+Исходный бюджет: {budget} {currency}
+Путешественников: {people}
+
+КОМАНДА ПОЛЬЗОВАТЕЛЯ:
+{user_request}
+
+ТЕКУЩИЙ МАРШРУТ В JSON:
+{current_json}
+
+Верни полную обновлённую версию маршрута строго в JSON."""
+
+    client = _create_llm_client()
+
+    response = client.chat.completions.create(
+        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+        messages=[
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            },
+            {
+                "role": "system",
+                "content": EDIT_SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": edit_prompt,
+            },
+        ],
+        temperature=0.45,
+        max_tokens=6500,
+        response_format={"type": "json_object"},
+    )
+
+    usage = response.usage
+
+    return {
+        "data": _parse_json(response.choices[0].message.content),
+        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
+        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+    }
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
     errors = []
