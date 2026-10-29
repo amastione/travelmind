@@ -294,6 +294,7 @@ def update_trip_from_ai(
             SELECT day, category, title, cost_actual
             FROM expenses
             WHERE trip_id = ?
+              AND is_manual = 0
             """,
             (trip_id,),
         ).fetchall()
@@ -311,7 +312,11 @@ def update_trip_from_ai(
 
         # Удаляем старый план расходов.
         connection.execute(
-            "DELETE FROM expenses WHERE trip_id = ?",
+            """
+            DELETE FROM expenses
+            WHERE trip_id = ?
+              AND is_manual = 0
+            """,
             (trip_id,),
         )
 
@@ -443,7 +448,92 @@ def get_manual_expenses(trip_id: int):
             """,
             (trip_id,),
         ).fetchall()
-        
+def update_manual_expense(
+    expense_id: int,
+    trip_id: int,
+    user_id: int,
+    day: int,
+    category: str,
+    title: str,
+    cost_plan: float,
+    cost_actual: float,
+):
+    """Обновляет ручной расход, если он принадлежит пользователю."""
+    clean_title = str(title).strip()
+
+    if not clean_title:
+        raise ValueError("Укажите название расхода.")
+
+    with _conn() as connection:
+        expense = connection.execute(
+            """
+            SELECT expenses.id
+            FROM expenses
+            INNER JOIN trips ON trips.id = expenses.trip_id
+            WHERE expenses.id = ?
+              AND expenses.trip_id = ?
+              AND trips.user_id = ?
+              AND expenses.is_manual = 1
+            """,
+            (expense_id, trip_id, user_id),
+        ).fetchone()
+
+        if not expense:
+            raise ValueError(
+                "Ручной расход не найден или недоступен для изменения."
+            )
+
+        connection.execute(
+            """
+            UPDATE expenses
+            SET
+                day = ?,
+                category = ?,
+                title = ?,
+                cost_plan = ?,
+                cost_actual = ?
+            WHERE id = ?
+            """,
+            (
+                int(day),
+                category,
+                clean_title,
+                float(cost_plan),
+                float(cost_actual),
+                expense_id,
+            ),
+        )
+
+
+def delete_manual_expense(
+    expense_id: int,
+    trip_id: int,
+    user_id: int,
+):
+    """Удаляет ручной расход, если он принадлежит пользователю."""
+    with _conn() as connection:
+        expense = connection.execute(
+            """
+            SELECT expenses.id
+            FROM expenses
+            INNER JOIN trips ON trips.id = expenses.trip_id
+            WHERE expenses.id = ?
+              AND expenses.trip_id = ?
+              AND trips.user_id = ?
+              AND expenses.is_manual = 1
+            """,
+            (expense_id, trip_id, user_id),
+        ).fetchone()
+
+        if not expense:
+            raise ValueError(
+                "Ручной расход не найден или недоступен для удаления."
+            )
+
+        connection.execute(
+            "DELETE FROM expenses WHERE id = ?",
+            (expense_id,),
+        )        
 def update_expense_actual(expense_id: int, actual: float):
     """Обновляет фактическую сумму расхода."""
     with _conn() as connection:
