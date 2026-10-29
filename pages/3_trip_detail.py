@@ -2072,13 +2072,35 @@ with tab_budget:
         "✨ Прочее": "W",
     }
 
-    with st.expander("＋ Добавить расход вручную", expanded=False):
+        manual_form_state_key = f"manual_expense_form_open_{trip_id}"
+
+    if manual_form_state_key not in st.session_state:
+        st.session_state[manual_form_state_key] = False
+
+    if not st.session_state[manual_form_state_key]:
+        if st.button(
+            "＋ Добавить расход вручную",
+            key=f"open_manual_expense_form_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[manual_form_state_key] = True
+            st.rerun()
+
+    else:
+        st.markdown(
+            '<div class="tm-section-title">＋ Новый ручной расход</div>',
+            unsafe_allow_html=True,
+        )
+
         st.caption(
-            "Добавьте траты, которых не было в первоначальном AI-маршруте: "
+            "Добавьте трату, которой не было в первоначальном AI-маршруте: "
             "такси, кофе, сувениры, билеты или покупки."
         )
 
-        with st.form(f"manual_expense_form_{trip_id}", clear_on_submit=True):
+        with st.form(
+            f"manual_expense_form_{trip_id}",
+            clear_on_submit=True,
+        ):
             manual_title = st.text_input(
                 "Название расхода",
                 placeholder="Например: Такси из аэропорта",
@@ -2121,10 +2143,23 @@ with tab_budget:
                     key=f"manual_expense_actual_{trip_id}",
                 )
 
-            manual_submitted = st.form_submit_button(
-                "＋ Добавить расход",
-                use_container_width=True,
-            )
+            submit_col, cancel_col = st.columns(2)
+
+            with submit_col:
+                manual_submitted = st.form_submit_button(
+                    "✓ Добавить расход",
+                    use_container_width=True,
+                )
+
+            with cancel_col:
+                manual_cancelled = st.form_submit_button(
+                    "Отмена",
+                    use_container_width=True,
+                )
+
+        if manual_cancelled:
+            st.session_state[manual_form_state_key] = False
+            st.rerun()
 
         if manual_submitted:
             if not manual_title.strip():
@@ -2143,11 +2178,16 @@ with tab_budget:
                         cost_actual=float(manual_actual),
                     )
 
-                    st.toast("Расход добавлен в бюджет поездки.")
+                    st.session_state[manual_form_state_key] = False
+
+                    st.toast(
+                        "Расход добавлен. Он доступен в истории ручных расходов."
+                    )
                     st.rerun()
 
                 except ValueError as error:
                     st.error(str(error))
+
     manual_expenses = db.get_manual_expenses(trip_id)
 
     if manual_expenses:
