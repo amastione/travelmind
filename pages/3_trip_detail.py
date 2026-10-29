@@ -1939,57 +1939,46 @@ with tab_budget:
         )
 
     st.markdown(
-        f"""
-        <div class="tm-budget-summary">
-            <div class="tm-budget-summary-label">Бюджет поездки</div>
-
-            <div class="tm-budget-summary-total">
-                {format_money(total_cost, curr)}
-            </div>
-
-            <div class="tm-budget-summary-caption">
-                Контролируйте плановые и фактические расходы в одном месте.
-            </div>
-
-            <div class="tm-budget-summary-grid">
-                <div class="tm-budget-summary-item">
-                    <div class="tm-budget-summary-item-label">План</div>
-                    <div class="tm-budget-summary-item-value">
-                        {format_money(plan_sum, curr)}
-                    </div>
-                </div>
-
-                <div class="tm-budget-summary-item">
-                    <div class="tm-budget-summary-item-label">По факту</div>
-                    <div class="tm-budget-summary-item-value">
-                        {format_money(actual_sum, curr)}
-                    </div>
-                </div>
-
-                <div class="tm-budget-summary-item">
-                    <div class="tm-budget-summary-item-label">Остаток</div>
-                    <div class="tm-budget-summary-item-value {remaining_class}">
-                        {remaining_text}
-                    </div>
-                </div>
-            </div>
-
-            <div class="tm-budget-progress-track">
-                <div
-                    class="tm-budget-progress-value"
-                    style="
-                        width: {progress_width:.1f}%;
-                        background: {progress_color};
-                        color: {progress_color};
-                    "
-                ></div>
-            </div>
-
-            <div class="tm-budget-progress-text">
-                {progress_text}
-            </div>
-        </div>
-        """,
+        (
+            '<div class="tm-budget-summary">'
+            '<div class="tm-budget-summary-label">Бюджет поездки</div>'
+            '<div class="tm-budget-summary-total">'
+            f'{format_money(total_cost, curr)}'
+            '</div>'
+            '<div class="tm-budget-summary-caption">'
+            'Контролируйте плановые и фактические расходы в одном месте.'
+            '</div>'
+            '<div class="tm-budget-summary-grid">'
+            '<div class="tm-budget-summary-item">'
+            '<div class="tm-budget-summary-item-label">План</div>'
+            '<div class="tm-budget-summary-item-value">'
+            f'{format_money(plan_sum, curr)}'
+            '</div>'
+            '</div>'
+            '<div class="tm-budget-summary-item">'
+            '<div class="tm-budget-summary-item-label">По факту</div>'
+            '<div class="tm-budget-summary-item-value">'
+            f'{format_money(actual_sum, curr)}'
+            '</div>'
+            '</div>'
+            '<div class="tm-budget-summary-item">'
+            '<div class="tm-budget-summary-item-label">Остаток</div>'
+            f'<div class="tm-budget-summary-item-value {remaining_class}">'
+            f'{remaining_text}'
+            '</div>'
+            '</div>'
+            '</div>'
+            '<div class="tm-budget-progress-track">'
+            '<div class="tm-budget-progress-value" '
+            f'style="width:{progress_width:.1f}%;'
+            f'background:{progress_color};'
+            f'color:{progress_color};"></div>'
+            '</div>'
+            '<div class="tm-budget-progress-text">'
+            f'{progress_text}'
+            '</div>'
+            '</div>'
+        ),
         unsafe_allow_html=True,
     )
 
