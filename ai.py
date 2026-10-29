@@ -580,49 +580,252 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
             if isinstance(item, dict):
                 parts.append(
                     str(
-                        item.get("text")
-                        or item.get("content")
-                        or ""
-                    )
-                )
-            else:
-                parts.append(str(item))
 
-        content = "".join(parts)
+# ==========================================================
+# AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
+# ==========================================================
 
-    content = str(content or "").strip()
+BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый помощник TravelMind.
 
-    if not content:
-        finish_reason = getattr(
-            response.choices[0],
-            "finish_reason",
-            "неизвестно",
-        )
+Верни только один короткий валидный JSON-объект.
+Никакого Markdown, текста до JSON или после JSON.
 
-        raise ValueError(
-            "AI вернул пустой ответ. "
-            f"Причина завершения: {finish_reason}."
-        )
+Используй только цифры из контекста. Не выдумывай цены, скидки,
+заведения, акции или фактические траты.
 
+Нужно вернуть строго этот формат:
+{
+  "status": "safe|attention|over_budget|no_data",
+  "summary": "Одно короткое предложение.",
+  "recommendations": [
+    {
+      "priority": "low|medium|high",
+      "title": "Короткий заголовок",
+      "text": "Короткий практический совет."
+    }
+  ],
+  "potential_saving_min": 0,
+  "potential_saving_max": 0
+}
+
+Требования:
+- Рекомендаций: от 2 до 3.
+- Каждая рекомендация: не более 15 слов.
+- summary: не более 20 слов.
+- Числа potential_saving_min и potential_saving_max — числа без валюты.
+- Если фактических трат нет, status должен быть no_data.
+"""
+
+
+def _number(value, default=0.0) -> float:
+    """Безопасно приводит значение к числу."""
     try:
-        result = _parse_json(content)
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return float(default)
 
-    except Exception as error:
-        # Важно: это намеренно ValueError, а не JSONDecodeError.
-        # Так сообщение не будет скрыто общим текстом в интерфейсе.
-        preview = content[:1000].replace("\n", " ")
 
-        raise ValueError(
-            "Не удалось разобрать ответ AI как JSON. "
-            f"Ответ модели: {preview}"
-        ) from error
+def _build_budget_analysis_fallback(budget_context: dict) -> dict:
+    """
+    Создаёт базовые рекомендации без LLM.
+
+    Используется, если провайдер AI вернул пустой или оборванный JSON.
+    Благодаря этому пользователю всегда показывается результат.
+    """
+    total_budget = _number(budget_context.get("total_budget"))
+    planned_total = _number(budget_context.get("planned_total"))
+    actual_total = _number(budget_context.get("actual_total"))
+    remaining_budget = _number(budget_context.get("remaining_budget"))
+    used_percent = _number(budget_context.get("budget_used_percent"))
+    manual_count = int(_number(
+        budget_context.get("unplanned_expenses_count")
+    ))
+    manual_total = _number(
+        budget_context.get("unplanned_actual_total")
+    )
+    currency = str(budget_context.get("currency") or "RUB")
+
+    has_actual_data = actual_total > 0
+
+    if not has_actual_data:
+        status = "no_data"
+        summary = (
+            "Фактические расходы пока не внесены: анализ основан "
+            "на запланированном бюджете."
+        )
+    elif remaining_budget < 0 or used_percent > 100:
+        status = "over_budget"
+        summary = (
+            f"Бюджет превышен на {abs(remaining_budget):,.0f} {currency}."
+        ).replace(",", " ")
+    elif used_percent >= 75:
+        status = "attention"
+        summary = (
+            f"Уже использовано {used_percent:.0f}% бюджета: "
+            "стоит контролировать оставшиеся траты."
+        )
+    else:
+        status = "safe"
+        summary = (
+            f"Использовано {used_percent:.0f}% бюджета. "
+            "Текущие расходы находятся под контролем."
+        )
+
+    recommendations = []
+
+    if not has_actual_data:
+        recommendations.append(
+            {
+                "priority": "medium",
+                "title": "Вносите фактические траты",
+                "text": (
+                    "Указывайте реальные суммы после оплаты, "
+                    "чтобы прогноз был точнее."
+                ),
+            }
+        )
+
+        if planned_total > total_budget and total_budget > 0:
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "title": "Сократите плановые расходы",
+                    "text": (
+                        "План уже превышает установленный лимит. "
+                        "Пересмотрите необязательные активности."
+                    ),
+                }
+            )
+        else:
+            recommendations.append(
+                {
+                    "priority": "low",
+                    "title": "Оставьте резерв",
+                    "text": (
+                        "Не распределяйте весь бюджет заранее: "
+                        "сохраните часть суммы на непредвиденные расходы."
+                    ),
+                }
+            )
+
+    if remaining_budget < 0:
+        recommendations.append(
+            {
+                "priority": "high",
+                "title": "Остановите необязательные траты",
+                "text": (
+                    "Откажитесь от спонтанных покупок и "
+                    "выберите более бюджетные варианты досуга."
+                ),
+            }
+        )
+        recommendations.append(
+            {
+                "priority": "high",
+                "title": "Проверьте транспорт",
+                "text": (
+                    "Сравните расходы на такси с общественным "
+                    "транспортом или пешими маршрутами."
+                ),
+            }
+        )
+
+    elif used_percent >= 75:
+        recommendations.append(
+            {
+                "priority": "medium",
+                "title": "Установите дневной лимит",
+                "text": (
+                    "Разделите оставшийся бюджет на дни поездки "
+                    "и придерживайтесь этой суммы."
+                ),
+            }
+        )
+        recommendations.append(
+            {
+                "priority": "medium",
+                "title": "Контролируйте дополнительные покупки",
+                "text": (
+                    "Сначала оплачивайте обязательные расходы, "
+                    "а сувениры и развлечения планируйте из остатка."
+                ),
+            }
+        )
+
+    elif has_actual_data:
+        recommendations.append(
+            {
+                "priority": "low",
+                "title": "Продолжайте учитывать траты",
+                "text": (
+                    "Регулярно сохраняйте фактические суммы, "
+                    "чтобы вовремя заметить рост расходов."
+                ),
+            }
+        )
+
+    if manual_count > 0:
+        recommendations.append(
+            {
+                "priority": "medium",
+                "title": "Контролируйте внеплановые расходы",
+                "text": (
+                    f"Зафиксировано внеплановых трат: "
+                    f"{manual_total:,.0f} {currency}."
+                ).replace(",", " "),
+            }
+        )
+
+    # Убираем дубли и ограничиваем количество рекомендаций.
+    unique_recommendations = []
+    seen_titles = set()
+
+    for item in recommendations:
+        title = item["title"]
+
+        if title not in seen_titles:
+            unique_recommendations.append(item)
+            seen_titles.add(title)
+
+    if len(unique_recommendations) < 2:
+        unique_recommendations.append(
+            {
+                "priority": "low",
+                "title": "Проверяйте остаток бюджета",
+                "text": (
+                    "Сверяйте запланированные и фактические суммы "
+                    "после каждого дня поездки."
+                ),
+            }
+        )
+
+    potential_saving = 0.0
+
+    if remaining_budget < 0:
+        potential_saving = abs(remaining_budget)
+    elif manual_total > 0:
+        potential_saving = manual_total * 0.2
+
+    return {
+        "status": status,
+        "summary": summary,
+        "recommendations": unique_recommendations[:3],
+        "potential_saving_min": round(potential_saving * 0.5, 2),
+        "potential_saving_max": round(potential_saving, 2),
+        "source": "local_fallback",
+    }
+
+
+def _normalize_budget_analysis(
+    result: dict,
+    budget_context: dict,
+) -> dict:
+    """Проверяет и нормализует ответ AI перед отображением."""
+    fallback = _build_budget_analysis_fallback(budget_context)
 
     if not isinstance(result, dict):
-        raise ValueError(
-            "AI вернул JSON, но его корень не является объектом."
-        )
+        return fallback
 
-    # Безопасные значения по умолчанию, если модель пропустила поля.
     allowed_statuses = {
         "safe",
         "attention",
@@ -630,60 +833,144 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
         "no_data",
     }
 
-    if result.get("status") not in allowed_statuses:
-        result["status"] = "attention"
+    status = str(result.get("status") or "").strip().lower()
 
-    if not isinstance(result.get("summary"), str):
-        result["summary"] = (
-            "AI не смог подготовить краткое текстовое резюме."
-        )
+    if status not in allowed_statuses:
+        status = fallback["status"]
 
-    if not isinstance(result.get("recommendations"), list):
-        result["recommendations"] = []
+    summary = str(result.get("summary") or "").strip()
 
-    normalized_recommendations = []
+    if not summary:
+        summary = fallback["summary"]
 
-    for item in result["recommendations"][:4]:
-        if not isinstance(item, dict):
-            continue
+    raw_recommendations = result.get("recommendations")
+    recommendations = []
 
-        priority = str(item.get("priority") or "low").lower()
+    if isinstance(raw_recommendations, list):
+        for item in raw_recommendations[:3]:
+            if not isinstance(item, dict):
+                continue
 
-        if priority not in {"low", "medium", "high"}:
-            priority = "low"
+            priority = str(item.get("priority") or "low").strip().lower()
 
-        normalized_recommendations.append(
-            {
-                "priority": priority,
-                "title": str(
-                    item.get("title") or "Рекомендация"
-                ),
-                "text": str(item.get("text") or ""),
-            }
-        )
+            if priority not in {"low", "medium", "high"}:
+                priority = "low"
 
-    result["recommendations"] = normalized_recommendations
+            title = str(item.get("title") or "Рекомендация").strip()
+            text = str(item.get("text") or "").strip()
 
-    try:
-        result["potential_saving_min"] = float(
-            result.get("potential_saving_min") or 0
-        )
-    except (TypeError, ValueError):
-        result["potential_saving_min"] = 0
+            if text:
+                recommendations.append(
+                    {
+                        "priority": priority,
+                        "title": title,
+                        "text": text,
+                    }
+                )
 
-    try:
-        result["potential_saving_max"] = float(
-            result.get("potential_saving_max") or 0
-        )
-    except (TypeError, ValueError):
-        result["potential_saving_max"] = 0
+    if len(recommendations) < 2:
+        recommendations = fallback["recommendations"]
+
+    saving_min = _number(result.get("potential_saving_min"))
+    saving_max = _number(result.get("potential_saving_max"))
+
+    if saving_min < 0:
+        saving_min = 0
+
+    if saving_max < 0:
+        saving_max = 0
+
+    if saving_min == 0 and saving_max == 0:
+        saving_min = fallback["potential_saving_min"]
+        saving_max = fallback["potential_saving_max"]
 
     return {
-        "data": result,
-        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
-        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+        "status": status,
+        "summary": summary,
+        "recommendations": recommendations[:3],
+        "potential_saving_min": round(saving_min, 2),
+        "potential_saving_max": round(saving_max, 2),
+        "source": "ai",
     }
 
+
+def analyze_budget_with_ai(budget_context: dict) -> dict:
+    """
+    Анализирует бюджет через AI.
+
+    Если провайдер вернул оборванный JSON, функция повторяет запрос.
+    Если обе попытки неудачны, возвращается локальный анализ без ошибки.
+    """
+    compact_context = json.dumps(
+        budget_context,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    user_prompt = f"""Данные бюджета:
+{compact_context}
+
+Верни только короткий JSON строго по схеме из системной инструкции."""
+
+    client = _create_llm_client()
+    last_error = None
+
+    # Две короткие попытки. Небольшой max_tokens снижает риск,
+    # что Gemini начнёт формировать слишком длинный ответ.
+    for attempt in range(2):
+        try:
+            response = client.chat.completions.create(
+                model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": BUDGET_ANALYSIS_SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt,
+                    },
+                ],
+                temperature=0.0,
+                max_tokens=500,
+                response_format={"type": "json_object"},
+            )
+
+            content = response.choices[0].message.content
+            content = str(content or "").strip()
+
+            if not content:
+                raise ValueError("Провайдер вернул пустой ответ.")
+
+            parsed_result = _parse_json(content)
+            normalized_result = _normalize_budget_analysis(
+                parsed_result,
+                budget_context,
+            )
+
+            usage = response.usage
+
+            return {
+                "data": normalized_result,
+                "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
+                "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+            }
+
+        except Exception as error:
+            last_error = error
+
+    # Приложение продолжает работать, даже если LLM вернула оборванный JSON.
+    fallback_result = _build_budget_analysis_fallback(budget_context)
+
+    return {
+        "data": fallback_result,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "warning": (
+            "AI временно вернул неполный ответ. "
+            f"Использован локальный анализ: {str(last_error)[:200]}"
+        ),
+    }
 
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
