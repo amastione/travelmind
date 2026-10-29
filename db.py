@@ -71,10 +71,26 @@ def _conn():
 
 
 def init():
-    """Создаёт таблицы и индексы, если их ещё нет."""
+    """Создаёт таблицы, индексы и обновляет схему при необходимости."""
     with _conn() as connection:
         connection.executescript(SCHEMA)
 
+        expense_columns = connection.execute(
+            "PRAGMA table_info(expenses)"
+        ).fetchall()
+
+        column_names = {
+            column["name"]
+            for column in expense_columns
+        }
+
+        if "is_manual" not in column_names:
+            connection.execute(
+                """
+                ALTER TABLE expenses
+                ADD COLUMN is_manual INTEGER NOT NULL DEFAULT 0
+                """
+            )
 
 # ==========================================================
 # ПОЛЬЗОВАТЕЛИ
