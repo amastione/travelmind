@@ -2268,24 +2268,7 @@ with tab_budget:
                     st.session_state[edit_form_state_key] = True
                     st.rerun()
 
-            with action_col_2:
-                if st.button(
-                    "🗑️ Удалить расход",
-                    key=f"delete_manual_expense_{manual_expense_id}",
-                    use_container_width=True,
-                ):
-                    try:
-                        db.delete_manual_expense(
-                            expense_id=manual_expense_id,
-                            trip_id=trip_id,
-                            user_id=user_id,
-                        )
-
-                        st.toast("Ручной расход удалён.")
-                        st.rerun()
-
-                    except ValueError as error:
-                        st.error(str(error))
+            
 
             if st.session_state[edit_form_state_key]:
                 st.markdown(
