@@ -2148,6 +2148,66 @@ with tab_budget:
 
                 except ValueError as error:
                     st.error(str(error))
+    manual_expenses = db.get_manual_expenses(trip_id)
+
+    if manual_expenses:
+        st.markdown(
+            '<div class="tm-section-title">✦ История ручных расходов</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            (
+                '<div class="tm-section-text">'
+                'Здесь отображаются траты, которые вы добавили вручную '
+                'во время планирования или поездки.'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
+        )
+
+        for manual_expense in manual_expenses:
+            manual_category = text_value(manual_expense["category"])
+            manual_title_text = text_value(
+                manual_expense["title"],
+                "Расход без названия",
+            )
+            manual_day_number = manual_expense["day"]
+            manual_plan_cost = as_float(manual_expense["cost_plan"])
+            manual_actual_cost = as_float(manual_expense["cost_actual"])
+
+            plan_text = ""
+
+            if manual_plan_cost > 0:
+                plan_text = (
+                    '<div class="tm-manual-expense-plan">'
+                    f'План: {format_money(manual_plan_cost, curr)}'
+                    '</div>'
+                )
+
+            st.markdown(
+                (
+                    '<div class="tm-manual-expense-card">'
+                    '<div class="tm-manual-expense-main">'
+                    '<div class="tm-manual-expense-title">'
+                    f'{ICONS.get(manual_category, "✨")} '
+                    f'{escape(manual_title_text)}'
+                    '</div>'
+                    '<div class="tm-manual-expense-meta">'
+                    f'Добавлено вручную · День {escape(str(manual_day_number))}'
+                    '</div>'
+                    f'{plan_text}'
+                    '</div>'
+                    '<div class="tm-manual-expense-amount">'
+                    f'{format_money(manual_actual_cost, curr)}'
+                    '<div class="tm-manual-expense-plan">'
+                    'Фактический расход'
+                    '</div>'
+                    '</div>'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )               
     if not expenses:
         st.info("Для этой поездки пока нет запланированных расходов.")
 
