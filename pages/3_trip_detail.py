@@ -1198,6 +1198,69 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         grid-template-columns: 1fr;
     }
 }
+/* ---------- История ручных расходов ---------- */
+
+.tm-manual-expense-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.65rem 0;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(167, 139, 250, 0.30);
+    border-radius: 16px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(66, 42, 112, 0.30),
+            rgba(12, 29, 53, 0.72)
+        );
+}
+
+.tm-manual-expense-main {
+    min-width: 0;
+}
+
+.tm-manual-expense-title {
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.tm-manual-expense-meta {
+    margin-top: 0.3rem;
+    color: #B9C9DF;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.tm-manual-expense-amount {
+    flex: 0 0 auto;
+    color: #A8F1FC;
+    font-size: 1.08rem;
+    font-weight: 850;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tm-manual-expense-plan {
+    margin-top: 0.25rem;
+    color: #AABDD3;
+    font-size: 0.76rem;
+    font-weight: 650;
+}
+
+@media (max-width: 760px) {
+    .tm-manual-expense-card {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .tm-manual-expense-amount {
+        text-align: left;
+    }
+}
 /* ---------- Кнопки ---------- */
 
 .stButton > button,
