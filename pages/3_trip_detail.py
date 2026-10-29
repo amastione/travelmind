@@ -3711,11 +3711,33 @@ with tab_edit:
                         "Маршрут не был изменён — попробуйте ещё раз."
                     )
 
-                except Exception as error:
-                    st.error(
-                        "Не удалось обновить маршрут через AI: "
-                        f"{error}"
-                    )
+                                except Exception as error:
+                    error_text = str(error).lower()
+
+                    if "429" in error_text or "rate limit" in error_text:
+                        st.warning(
+                            "⏳ AI временно недоступен из-за лимита запросов. "
+                            "Подождите 1–2 минуты и попробуйте снова. "
+                            "Маршрут не был изменён."
+                        )
+                    elif "401" in error_text or "api key" in error_text:
+                        st.error(
+                            "Не удалось подтвердить API-ключ AI. "
+                            "Проверьте настройки Secrets в Streamlit."
+                        )
+                    elif "403" in error_text:
+                        st.error(
+                            "Доступ к AI-модели ограничен. Проверьте квоту, "
+                            "настройки API-ключа и доступ к модели."
+                        )
+                    else:
+                        st.error(
+                            "Не удалось обновить маршрут через AI. "
+                            "Маршрут не был изменён."
+                        )
+                        st.caption(
+                            f"Техническая информация: {str(error)[:500]}"
+                        )
 
 # ==========================================================
 # ВКЛАДКА: AI-ДАННЫЕ И ЭКСПОРТ
