@@ -1033,12 +1033,13 @@ with metric_4:
 # ВКЛАДКИ
 # ==========================================================
 
-tab_route, tab_map, tab_budget, tab_tips, tab_ai = st.tabs(
+tab_route, tab_map, tab_budget, tab_tips, tab_edit, tab_ai = st.tabs(
     [
         "▦  Маршрут по дням",
         "⌖  Карта поездки",
         "◫  Бюджет и расходы",
         "✦  Советы",
+        "💬  Изменить с AI",
         "⌘  Данные AI",
     ]
 )
