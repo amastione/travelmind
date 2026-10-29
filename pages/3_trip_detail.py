@@ -1068,7 +1068,136 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         font-size: 1rem;
     }
 }
+/* ---------- Сводка бюджета поездки ---------- */
 
+.tm-budget-summary {
+    margin: 0.4rem 0 1.35rem;
+    padding: 1.4rem;
+    border: 1px solid rgba(103, 232, 249, 0.30);
+    border-radius: 22px;
+    background:
+        radial-gradient(
+            circle at 8% 0%,
+            rgba(34, 211, 238, 0.16),
+            transparent 36%
+        ),
+        radial-gradient(
+            circle at 100% 100%,
+            rgba(139, 92, 246, 0.16),
+            transparent 38%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(16, 42, 65, 0.88),
+            rgba(25, 22, 62, 0.88)
+        );
+    box-shadow:
+        0 15px 34px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.tm-budget-summary-label {
+    color: #A8F1FC;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08rem;
+    text-transform: uppercase;
+}
+
+.tm-budget-summary-total {
+    margin-top: 0.32rem;
+    color: #FFFFFF;
+    font-size: 2rem;
+    font-weight: 850;
+    letter-spacing: -0.06rem;
+}
+
+.tm-budget-summary-caption {
+    margin-top: 0.28rem;
+    color: #C4D4E8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.tm-budget-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+}
+
+.tm-budget-summary-item {
+    padding: 0.8rem 0.9rem;
+    border: 1px solid rgba(190, 218, 242, 0.14);
+    border-radius: 15px;
+    background: rgba(4, 13, 29, 0.32);
+}
+
+.tm-budget-summary-item-label {
+    color: #AFC0D6;
+    font-size: 0.76rem;
+    font-weight: 750;
+    letter-spacing: 0.03rem;
+    text-transform: uppercase;
+}
+
+.tm-budget-summary-item-value {
+    margin-top: 0.28rem;
+    color: #FFFFFF;
+    font-size: 1.08rem;
+    font-weight: 800;
+}
+
+.tm-budget-summary-item-value.is-positive {
+    color: #86EFAC;
+}
+
+.tm-budget-summary-item-value.is-warning {
+    color: #FDE68A;
+}
+
+.tm-budget-summary-item-value.is-danger {
+    color: #FDA4AF;
+}
+
+.tm-budget-progress-track {
+    width: 100%;
+    height: 12px;
+    overflow: hidden;
+    margin-top: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    background: rgba(4, 12, 26, 0.58);
+}
+
+.tm-budget-progress-value {
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 16px currentColor;
+}
+
+.tm-budget-progress-text {
+    margin-top: 0.55rem;
+    color: #C8D8EB;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+@media (max-width: 760px) {
+    .tm-budget-summary {
+        padding: 1.15rem;
+        border-radius: 18px;
+    }
+
+    .tm-budget-summary-total {
+        font-size: 1.7rem;
+    }
+
+    .tm-budget-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
 /* ---------- Кнопки ---------- */
 
 .stButton > button,
@@ -1768,6 +1897,99 @@ with tab_budget:
             'отображается сравнение с первоначальным планом.'
             '</div>'
         ),
+        unsafe_allow_html=True,
+    )
+        remaining_budget = total_cost - actual_sum
+
+    if total_cost > 0:
+        budget_percent = (actual_sum / total_cost) * 100
+    else:
+        budget_percent = 0
+
+    progress_width = min(max(budget_percent, 0), 100)
+
+    if actual_sum <= 0:
+        progress_color = "#8B5CF6"
+        progress_text = "Фактические расходы пока не внесены"
+        remaining_class = ""
+    elif budget_percent < 75:
+        progress_color = "#22D3EE"
+        progress_text = f"Использовано {budget_percent:.0f}% бюджета"
+        remaining_class = "is-positive"
+    elif budget_percent <= 100:
+        progress_color = "#FBBF24"
+        progress_text = (
+            f"Использовано {budget_percent:.0f}% бюджета — "
+            "контролируйте оставшиеся расходы"
+        )
+        remaining_class = "is-warning"
+    else:
+        progress_color = "#FB7185"
+        progress_text = (
+            f"Бюджет превышен на "
+            f"{format_money(abs(remaining_budget), curr)}"
+        )
+        remaining_class = "is-danger"
+
+    if remaining_budget >= 0:
+        remaining_text = format_money(remaining_budget, curr)
+    else:
+        remaining_text = (
+            f"−{format_money(abs(remaining_budget), curr)}"
+        )
+
+    st.markdown(
+        f"""
+        <div class="tm-budget-summary">
+            <div class="tm-budget-summary-label">Бюджет поездки</div>
+
+            <div class="tm-budget-summary-total">
+                {format_money(total_cost, curr)}
+            </div>
+
+            <div class="tm-budget-summary-caption">
+                Контролируйте плановые и фактические расходы в одном месте.
+            </div>
+
+            <div class="tm-budget-summary-grid">
+                <div class="tm-budget-summary-item">
+                    <div class="tm-budget-summary-item-label">План</div>
+                    <div class="tm-budget-summary-item-value">
+                        {format_money(plan_sum, curr)}
+                    </div>
+                </div>
+
+                <div class="tm-budget-summary-item">
+                    <div class="tm-budget-summary-item-label">По факту</div>
+                    <div class="tm-budget-summary-item-value">
+                        {format_money(actual_sum, curr)}
+                    </div>
+                </div>
+
+                <div class="tm-budget-summary-item">
+                    <div class="tm-budget-summary-item-label">Остаток</div>
+                    <div class="tm-budget-summary-item-value {remaining_class}">
+                        {remaining_text}
+                    </div>
+                </div>
+            </div>
+
+            <div class="tm-budget-progress-track">
+                <div
+                    class="tm-budget-progress-value"
+                    style="
+                        width: {progress_width:.1f}%;
+                        background: {progress_color};
+                        color: {progress_color};
+                    "
+                ></div>
+            </div>
+
+            <div class="tm-budget-progress-text">
+                {progress_text}
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
