@@ -588,7 +588,53 @@ div[data-testid="stExpander"] details > summary:hover {
     font-size: 0.96rem;
     line-height: 1.62;
 }
+/* ---------- Диалог с AI ---------- */
 
+.tm-ai-edit-card {
+    margin-top: 0.5rem;
+    padding: 1.45rem;
+    border: 1px solid rgba(103, 232, 249, 0.30);
+    border-radius: 22px;
+    background:
+        radial-gradient(
+            circle at 5% 0%,
+            rgba(34, 211, 238, 0.13),
+            transparent 38%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(13, 43, 65, 0.84),
+            rgba(30, 25, 69, 0.78)
+        );
+    box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.tm-ai-edit-title {
+    color: #FFFFFF;
+    font-size: 1.42rem;
+    font-weight: 800;
+    letter-spacing: -0.035rem;
+}
+
+.tm-ai-edit-text {
+    margin-top: 0.45rem;
+    color: #C9D9EC;
+    font-size: 0.97rem;
+    line-height: 1.62;
+}
+
+.tm-ai-edit-warning {
+    margin-top: 1rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgba(253, 230, 138, 0.23);
+    border-radius: 13px;
+    background: rgba(245, 158, 11, 0.08);
+    color: #FDE9A7;
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
 /* ---------- Бюджет ---------- */
 
 .tm-budget-card {
