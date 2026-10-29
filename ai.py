@@ -277,11 +277,57 @@ def build_prompt(
     )
 
 
-def _parse_json(text: str) -> dict:
-    """Извлекает JSON, даже если модель обернула его в блок ```json."""
-    text = text.strip()
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
-    return json.loads(text)
+    def _parse_json(text: str) -> dict:
+        """
+        Извлекает JSON из ответа модели.
+    
+        Поддерживает чистый JSON, JSON в ```json-блоке и ответы,
+        где модель добавила короткий текст до или после объекта.
+        """
+        if not text:
+            raise json.JSONDecodeError(
+                "Модель вернула пустой ответ.",
+                "",
+                0,
+            )
+    
+        clean_text = str(text).strip().lstrip("\ufeff")
+    
+        # Удаляем Markdown-обёртку, если она есть.
+        clean_text = re.sub(
+            r"^```(?:json)?\s*",
+            "",
+            clean_text,
+            flags=re.IGNORECASE,
+        )
+        clean_text = re.sub(
+            r"\s*```$",
+            "",
+            clean_text,
+        ).strip()
+    
+        # Сначала пробуем разобрать ответ как чистый JSON.
+        try:
+            return json.loads(clean_text)
+        except json.JSONDecodeError:
+            pass
+    
+        # Если модель добавила текст, извлекаем JSON-объект от первой
+        # открывающей до последней закрывающей фигурной скобки.
+        json_start = clean_text.find("{")
+        json_end = clean_text.rfind("}")
+    
+        if json_start == -1 or json_end == -1 or json_end <= json_start:
+            preview = clean_text[:300]
+            raise json.JSONDecodeError(
+                f"В ответе AI не найден JSON-объект: {preview}",
+                clean_text,
+                0,
+            )
+    
+        json_text = clean_text[json_start : json_end + 1]
+    
+        return json.loads(json_text)
 
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
