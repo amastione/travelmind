@@ -1647,7 +1647,214 @@ with tab_tips:
                 ),
                 unsafe_allow_html=True,
             )
+# ==========================================================
+# ВКЛАДКА: ИЗМЕНИТЬ С AI
+# ==========================================================
 
+with tab_edit:
+    st.markdown(
+        """
+        <div class="tm-ai-edit-card">
+            <div class="tm-ai-edit-title">💬 Изменить маршрут с AI</div>
+            <div class="tm-ai-edit-text">
+                Напишите, что нужно изменить. TravelMind проанализирует
+                текущий маршрут, обновит активности, бюджет, советы
+                и сохранит новую версию поездки.
+            </div>
+            <div class="tm-ai-edit-warning">
+                ℹ️ Плановые расходы будут пересчитаны. Внесённые фактические
+                расходы сохраняются, если активность останется в маршруте
+                с тем же названием.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div style="height: 1rem;"></div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("##### Быстрые команды")
+
+    preset_col_1, preset_col_2, preset_col_3 = st.columns(3)
+    preset_col_4, preset_col_5, preset_col_6 = st.columns(3)
+
+    edit_request_key = f"ai_edit_request_{trip_id}"
+
+    if edit_request_key not in st.session_state:
+        st.session_state[edit_request_key] = ""
+
+    with preset_col_1:
+        if st.button(
+            "💸 Сделать дешевле",
+            key=f"edit_cheaper_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Сделай маршрут дешевле примерно на 20%, "
+                "но сохрани главные впечатления поездки."
+            )
+            st.rerun()
+
+    with preset_col_2:
+        if st.button(
+            "🌿 Сделать спокойнее",
+            key=f"edit_slower_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Сделай маршрут более спокойным: не более 2–3 "
+                "основных активностей в день, добавь время на отдых."
+            )
+            st.rerun()
+
+    with preset_col_3:
+        if st.button(
+            "🏛️ Больше культуры",
+            key=f"edit_culture_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Добавь больше музеев, истории, архитектуры "
+                "и культурных впечатлений."
+            )
+            st.rerun()
+
+    with preset_col_4:
+        if st.button(
+            "🍽️ Больше гастрономии",
+            key=f"edit_food_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Добавь больше локальной кухни, интересных кафе, "
+                "рынков и гастрономических впечатлений."
+            )
+            st.rerun()
+
+    with preset_col_5:
+        if st.button(
+            "👨‍👩‍👧 Для семьи",
+            key=f"edit_family_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Адаптируй маршрут для семьи с ребёнком: "
+                "сделай темп комфортным, логистику простой, "
+                "добавь подходящие семейные активности."
+            )
+            st.rerun()
+
+    with preset_col_6:
+        if st.button(
+            "✨ Необычные места",
+            key=f"edit_unusual_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state[edit_request_key] = (
+                "Добавь необычные, атмосферные и нетипичные места, "
+                "которые подходят выбранному направлению."
+            )
+            st.rerun()
+
+    st.markdown(
+        '<div style="height: 0.65rem;"></div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.form(f"ai_edit_form_{trip_id}"):
+        edit_request = st.text_area(
+            "Что изменить в маршруте?",
+            key=edit_request_key,
+            placeholder=(
+                "Например: убери длительные прогулки, добавь день "
+                "для шопинга и замени дорогие рестораны на локальные кафе."
+            ),
+            height=130,
+        )
+
+        edit_submitted = st.form_submit_button(
+            "✦ Обновить маршрут с AI",
+            use_container_width=True,
+        )
+
+    if edit_submitted:
+        clean_request = edit_request.strip()
+
+        if not clean_request:
+            st.warning("Напишите, что нужно изменить в маршруте.")
+        else:
+            with st.spinner(
+                "✦ AI обновляет маршрут, бюджет и рекомендации… "
+                "обычно это занимает 20–60 секунд."
+            ):
+                try:
+                    edit_result = ai.edit_trip_with_ai(
+                        current_data=data,
+                        trip_context=dict(trip),
+                        user_request=clean_request,
+                    )
+
+                    updated_data = edit_result["data"]
+                    validation_errors = ai.validate(updated_data)
+
+                    if validation_errors:
+                        st.error(
+                            "AI вернул маршрут с неполной структурой. "
+                            "Изменения не были сохранены."
+                        )
+
+                        for validation_error in validation_errors:
+                            st.warning(validation_error)
+
+                    else:
+                        edit_history = data.get("_ai_edit_history") or []
+
+                        edit_history.append(
+                            {
+                                "request": clean_request,
+                                "edited_at": datetime.now().strftime(
+                                    "%d/%m/%Y %H:%M"
+                                ),
+                                "tokens_in": edit_result.get(
+                                    "tokens_in",
+                                    0,
+                                ),
+                                "tokens_out": edit_result.get(
+                                    "tokens_out",
+                                    0,
+                                ),
+                            }
+                        )
+
+                        # Храним только 10 последних AI-команд,
+                        # чтобы JSON маршрута не разрастался бесконечно.
+                        updated_data["_ai_edit_history"] = edit_history[-10:]
+
+                        db.update_trip_from_ai(
+                            trip_id=trip_id,
+                            user_id=user_id,
+                            updated_data=updated_data,
+                        )
+
+                        st.session_state.pop(edit_request_key, None)
+
+                        st.toast("Маршрут успешно обновлён с помощью AI.")
+                        st.rerun()
+
+                except json.JSONDecodeError:
+                    st.error(
+                        "AI вернул некорректный JSON. "
+                        "Маршрут не был изменён — попробуйте ещё раз."
+                    )
+
+                except Exception as error:
+                    st.error(
+                        "Не удалось обновить маршрут через AI: "
+                        f"{error}"
+                    )
 # ==========================================================
 # ВКЛАДКА: AI-ДАННЫЕ И ЭКСПОРТ
 # ==========================================================
