@@ -1899,7 +1899,7 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
-        remaining_budget = total_cost - actual_sum
+    remaining_budget = total_cost - actual_sum
 
     if total_cost > 0:
         budget_percent = (actual_sum / total_cost) * 100
