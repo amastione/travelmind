@@ -744,7 +744,7 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
 }
 
 /* ==========================================================
-   ФАКТИЧЕСКИЕ РАСХОДЫ: ОТДЕЛЬНЫЕ КНОПКИ «− / +»
+   ФАКТИЧЕСКИЕ РАСХОДЫ: КОМПАКТНЫЕ КНОПКИ «− / +»
    ========================================================== */
 
 [data-testid="stNumberInput"],
@@ -753,14 +753,10 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
 }
 
 /*
- Убираем единый контейнер Streamlit/BaseWeb.
- Поле суммы и каждая кнопка будут самостоятельными элементами.
+ Главный контейнер не должен обрезать отдельные скруглённые кнопки.
 */
 [data-testid="stNumberInput"] [data-baseweb="input"],
 .stNumberInput [data-baseweb="input"] {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.42rem !important;
     overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -768,18 +764,21 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
     box-shadow: none !important;
 }
 
-/* Поле с фактической суммой */
+/*
+ Поле суммы. Высота соответствует кнопкам, чтобы контрол
+ выглядел единым по сетке, но не «слитым».
+*/
 [data-testid="stNumberInput"] input,
 .stNumberInput input {
     min-width: 0 !important;
-    min-height: 46px !important;
-    height: 46px !important;
+    height: 40px !important;
+    min-height: 40px !important;
     padding: 0 0.5rem !important;
-    border: 1px solid rgba(183, 214, 237, 0.82) !important;
-    border-radius: 12px !important;
+    border: 1px solid rgba(183, 214, 237, 0.80) !important;
+    border-radius: 11px !important;
     background: rgba(10, 22, 39, 0.92) !important;
     color: #FFFFFF !important;
-    font-size: 0.96rem !important;
+    font-size: 0.92rem !important;
     font-weight: 750 !important;
     text-align: center !important;
     box-shadow:
@@ -791,35 +790,48 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
     border-color: #22D3EE !important;
     outline: none !important;
     box-shadow:
-        0 0 0 3px rgba(34, 211, 238, 0.15),
+        0 0 0 3px rgba(34, 211, 238, 0.14),
         inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 /*
- В разных версиях Streamlit элементы могут быть либо самими
- кнопками, либо контейнерами с кнопками внутри. Поэтому
- стилизуем оба варианта.
+ Внутренний контейнер Streamlit с двумя кнопками.
+ Именно этот блок разделяет «−» и «+», не позволяя им сливаться
+ и не обрезая нижние скругления.
 */
-[data-testid="stNumberInputStepDown"],
-[data-testid="stNumberInputStepUp"],
-[data-testid="stNumberInputStepDown"] button,
-[data-testid="stNumberInputStepUp"] button,
+[data-testid="stNumberInput"] [data-baseweb="input-spinner"],
+.stNumberInput [data-baseweb="input-spinner"] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-left: 7px !important;
+    overflow: visible !important;
+}
+
+/*
+ Компактные отдельные кнопки.
+ Все 4 угла скруглены; размер уменьшен, чтобы элементы
+ гарантированно помещались в строку расходов.
+*/
+[data-testid="stNumberInput"] [data-baseweb="input-spinner"] button,
 [data-testid="stNumberInput"] button,
+.stNumberInput [data-baseweb="input-spinner"] button,
 .stNumberInput button {
     display: inline-flex !important;
+    flex: 0 0 40px !important;
     align-items: center !important;
     justify-content: center !important;
     box-sizing: border-box !important;
-    width: 46px !important;
-    min-width: 46px !important;
-    max-width: 46px !important;
-    height: 46px !important;
-    min-height: 46px !important;
-    max-height: 46px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
     margin: 0 !important;
     padding: 0 !important;
-    border: 1px solid rgba(125, 235, 250, 0.48) !important;
-    border-radius: 12px !important;
+    border: 1px solid rgba(125, 235, 250, 0.46) !important;
+    border-radius: 11px !important;
     background:
         linear-gradient(
             145deg,
@@ -828,65 +840,60 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         ) !important;
     color: #B4F5FF !important;
     box-shadow:
-        0 6px 15px rgba(0, 0, 0, 0.20),
-        inset 0 1px 0 rgba(255, 255, 255, 0.13) !important;
-    overflow: hidden !important;
+        0 5px 12px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    overflow: visible !important;
     transition:
         transform 160ms ease,
         filter 160ms ease,
         background 160ms ease,
-        box-shadow 160ms ease,
-        border-color 160ms ease !important;
+        border-color 160ms ease,
+        box-shadow 160ms ease !important;
 }
 
 /*
- Отступ между полем и первой кнопкой.
- Без этого Streamlit визуально объединяет контролы.
+ Убираем старые стили, которые в некоторых версиях Streamlit
+ делают левую или правую кнопку частью общей «капсулы».
 */
-[data-testid="stNumberInputStepDown"],
-[data-testid="stNumberInput"] button:not(:first-child),
-.stNumberInput button:not(:first-child) {
-    margin-left: 0.42rem !important;
+[data-testid="stNumberInput"] button:first-child,
+[data-testid="stNumberInput"] button:last-child,
+.stNumberInput button:first-child,
+.stNumberInput button:last-child {
+    border-radius: 11px !important;
+    border-left: 1px solid rgba(125, 235, 250, 0.46) !important;
+    border-right: 1px solid rgba(125, 235, 250, 0.46) !important;
 }
 
 /*
- Если в конкретной версии Streamlit кнопки идут внутри
- собственных контейнеров, внутренней кнопке не нужен второй
- отступ — иначе он станет слишком большим.
+ Символы меньше и строго по центру.
+ Значение line-height равно размеру контейнера и исключает
+ смещение вверх/вниз у Material Icons.
 */
-[data-testid="stNumberInputStepDown"] button,
-[data-testid="stNumberInputStepUp"] button {
-    margin-left: 0 !important;
-}
-
-/* Центрируем символы + и − строго по вертикали и горизонтали */
-[data-testid="stNumberInputStepDown"] svg,
-[data-testid="stNumberInputStepUp"] svg,
-[data-testid="stNumberInputStepDown"] [data-testid="stIconMaterial"],
-[data-testid="stNumberInputStepUp"] [data-testid="stIconMaterial"],
 [data-testid="stNumberInput"] button svg,
 [data-testid="stNumberInput"] button [data-testid="stIconMaterial"],
+[data-testid="stNumberInput"] button .material-symbols-rounded,
+[data-testid="stNumberInput"] button .material-icons,
 .stNumberInput button svg,
-.stNumberInput button [data-testid="stIconMaterial"] {
-    display: block !important;
-    width: 22px !important;
-    min-width: 22px !important;
-    height: 22px !important;
-    min-height: 22px !important;
+.stNumberInput button [data-testid="stIconMaterial"],
+.stNumberInput button .material-symbols-rounded,
+.stNumberInput button .material-icons {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 16px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
     margin: 0 !important;
     padding: 0 !important;
     color: #B4F5FF !important;
     fill: currentColor !important;
-    font-size: 1.35rem !important;
-    line-height: 22px !important;
+    font-size: 1rem !important;
+    line-height: 16px !important;
     text-align: center !important;
 }
 
-/* Hover-эффект */
-[data-testid="stNumberInputStepDown"]:hover,
-[data-testid="stNumberInputStepUp"]:hover,
-[data-testid="stNumberInputStepDown"] button:hover,
-[data-testid="stNumberInputStepUp"] button:hover,
+/* Hover */
 [data-testid="stNumberInput"] button:hover,
 .stNumberInput button:hover {
     border-color: rgba(237, 254, 255, 0.90) !important;
@@ -899,31 +906,29 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         ) !important;
     color: #FFFFFF !important;
     box-shadow:
-        0 10px 21px rgba(34, 211, 238, 0.22),
+        0 8px 17px rgba(34, 211, 238, 0.21),
         inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
     transform: translateY(-1px) !important;
 }
 
-[data-testid="stNumberInputStepDown"]:hover svg,
-[data-testid="stNumberInputStepUp"]:hover svg,
-[data-testid="stNumberInputStepDown"]:hover [data-testid="stIconMaterial"],
-[data-testid="stNumberInputStepUp"]:hover [data-testid="stIconMaterial"],
 [data-testid="stNumberInput"] button:hover svg,
 [data-testid="stNumberInput"] button:hover [data-testid="stIconMaterial"],
+[data-testid="stNumberInput"] button:hover .material-symbols-rounded,
+[data-testid="stNumberInput"] button:hover .material-icons,
 .stNumberInput button:hover svg,
-.stNumberInput button:hover [data-testid="stIconMaterial"] {
+.stNumberInput button:hover [data-testid="stIconMaterial"],
+.stNumberInput button:hover .material-symbols-rounded,
+.stNumberInput button:hover .material-icons {
     color: #FFFFFF !important;
 }
 
 /* Нажатие */
-[data-testid="stNumberInputStepDown"]:active,
-[data-testid="stNumberInputStepUp"]:active,
 [data-testid="stNumberInput"] button:active,
 .stNumberInput button:active {
-    transform: translateY(0) scale(0.96) !important;
+    transform: translateY(0) scale(0.95) !important;
 }
 
-/* Убираем браузерные стрелки внутри поля числа */
+/* Убираем системные стрелки внутри поля */
 [data-testid="stNumberInput"] input::-webkit-outer-spin-button,
 [data-testid="stNumberInput"] input::-webkit-inner-spin-button {
     margin: 0 !important;
@@ -935,27 +940,31 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
     -moz-appearance: textfield !important;
 }
 
+/* На мобильных устройствах контрол ещё компактнее */
 @media (max-width: 640px) {
-    [data-testid="stNumberInputStepDown"],
-    [data-testid="stNumberInputStepUp"],
-    [data-testid="stNumberInputStepDown"] button,
-    [data-testid="stNumberInputStepUp"] button,
-    [data-testid="stNumberInput"] button,
-    .stNumberInput button {
-        width: 42px !important;
-        min-width: 42px !important;
-        max-width: 42px !important;
-        height: 42px !important;
-        min-height: 42px !important;
-        max-height: 42px !important;
-        border-radius: 11px !important;
-    }
-
     [data-testid="stNumberInput"] input,
     .stNumberInput input {
-        min-height: 42px !important;
-        height: 42px !important;
-        border-radius: 11px !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        font-size: 0.88rem !important;
+    }
+
+    [data-testid="stNumberInput"] [data-baseweb="input-spinner"],
+    .stNumberInput [data-baseweb="input-spinner"] {
+        gap: 5px !important;
+        margin-left: 5px !important;
+    }
+
+    [data-testid="stNumberInput"] button,
+    .stNumberInput button {
+        flex-basis: 38px !important;
+        width: 38px !important;
+        min-width: 38px !important;
+        max-width: 38px !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        border-radius: 10px !important;
     }
 }
 
