@@ -1857,6 +1857,10 @@ with tab_route:
 # ВКЛАДКА: КАРТА
 # ==========================================================
 
+# ==========================================================
+# ВКЛАДКА: КАРТА
+# ==========================================================
+
 with tab_map:
     st.markdown(
         '<div class="tm-section-title">⌖ Карта маршрута</div>',
@@ -1866,79 +1870,307 @@ with tab_map:
     st.markdown(
         (
             '<div class="tm-section-text">'
-            'Метки показывают рекомендованные места, а линии соединяют '
-            'точки одного дня в порядке следования маршрута.'
+            'Карта показывает последовательность активностей и помогает '
+            'оценить логистику каждого дня. Выберите день, чтобы оставить '
+            'на карте только нужные точки.'
             '</div>'
         ),
         unsafe_allow_html=True,
     )
 
-    points = []
+    map_type_labels = {
+        "A": "🏛️ Достопримечательность",
+        "F": "🍽️ Еда",
+        "T": "🚌 Транспорт",
+        "S": "🏨 Проживание",
+        "L": "🌿 Отдых и прогулка",
+        "H": "🛍️ Покупки",
+        "W": "✨ Яркое впечатление",
+    }
+
+    map_type_colors = {
+        "A": "#818CF8",
+        "F": "#FB923C",
+        "T": "#94A3B8",
+        "S": "#A78BFA",
+        "L": "#2DD4BF",
+        "H": "#F472B6",
+        "W": "#FACC15",
+    }
+
+    all_map_points = []
 
     for day in data.get("days", []):
-        for activity in day.get("activities", []):
-            lat = activity.get("lat")
-            lon = activity.get("lon")
+        day_number = day.get("day")
+        day_date = format_date_ru(day.get("date"))
+        activities = day.get("activities") or []
 
-            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                points.append((lat, lon, activity, day.get("day")))
+        for activity_index, activity in enumerate(activities, start=1):
+            raw_lat = activity.get("lat")
+            raw_lon = activity.get("lon")
 
-    if not points:
-        st.info("Для этой поездки AI не вернул координаты для карты.")
+            try:
+                lat = float(raw_lat)
+                lon = float(raw_lon)
+            except (TypeError, ValueError):
+                continue
+
+            # Исключаем очевидно некорректные координаты.
+            if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                continue
+
+            all_map_points.append(
+                {
+                    "day": day_number,
+                    "date": day_date,
+                    "order": activity_index,
+                    "lat": lat,
+                    "lon": lon,
+                    "title": text_value(
+                        activity.get("title"),
+                        "Активность",
+                    ),
+                    "type": text_value(activity.get("type"), "A"),
+                    "time": text_value(activity.get("time"), "—"),
+                    "location": text_value(activity.get("location"), "—"),
+                    "description": text_value(
+                        activity.get("description"),
+                    ),
+                    "cost": as_float(activity.get("cost"), 0),
+                    "duration": text_value(
+                        activity.get("duration_min"),
+                        "—",
+                    ),
+                }
+            )
+
+    if not all_map_points:
+        st.info(
+            "Для этой поездки AI не вернул координаты мест. "
+            "Откройте места по отдельным ссылкам на карте во вкладке "
+            "«Маршрут по дням»."
+        )
     else:
-        center = [
-            sum(point[0] for point in points) / len(points),
-            sum(point[1] for point in points) / len(points),
-        ]
+        available_map_days = sorted(
+            {
+                point["day"]
+                for point in all_map_points
+                if point["day"] is not None
+            }
+        )
+
+        map_filter_col, map_info_col = st.columns([1.2, 2.8])
+
+        with map_filter_col:
+            selected_map_day = st.selectbox(
+                "Показать на карте",
+                options=["Все дни"] + available_map_days,
+                key=f"map_day_filter_{trip_id}",
+                format_func=lambda value: (
+                    value
+                    if value == "Все дни"
+                    else f"День {value}"
+                ),
+            )
+
+        if selected_map_day == "Все дни":
+            visible_map_points = all_map_points
+            map_filter_caption = (
+                f"На карте показано мест: {len(visible_map_points)}"
+            )
+        else:
+            visible_map_points = [
+                point
+                for point in all_map_points
+                if point["day"] == selected_map_day
+            ]
+
+            map_filter_caption = (
+                f"День {selected_map_day}: "
+                f"показано мест — {len(visible_map_points)}"
+            )
+
+        with map_info_col:
+            st.markdown(
+                (
+                    '<div style="padding-top: 2rem; color: #AFC0D7; '
+                    'font-size: 0.9rem; font-weight: 650;">'
+                    f'{escape(map_filter_caption)}'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
+
+        center_lat = sum(
+            point["lat"]
+            for point in visible_map_points
+        ) / len(visible_map_points)
+
+        center_lon = sum(
+            point["lon"]
+            for point in visible_map_points
+        ) / len(visible_map_points)
 
         fmap = folium.Map(
-            location=center,
+            location=[center_lat, center_lon],
             zoom_start=12,
-            tiles="OpenStreetMap",
-            attr="© OpenStreetMap contributors",
-            attribution_control=False,
+            tiles="CartoDB dark_matter",
+            attr="© OpenStreetMap contributors © CARTO",
+            control_scale=True,
         )
 
         points_by_day = defaultdict(list)
 
-        for lat, lon, activity, day_number in points:
-            activity_type = text_value(activity.get("type"))
-            points_by_day[day_number].append([lat, lon])
+        for point in visible_map_points:
+            points_by_day[point["day"]].append(point)
+
+        # Соединяем активности линиями в хронологическом порядке.
+        for day_number, day_points in points_by_day.items():
+            sorted_day_points = sorted(
+                day_points,
+                key=lambda item: item["order"],
+            )
+
+            if len(sorted_day_points) > 1:
+                folium.PolyLine(
+                    locations=[
+                        [point["lat"], point["lon"]]
+                        for point in sorted_day_points
+                    ],
+                    color="#22D3EE",
+                    weight=4,
+                    opacity=0.8,
+                    tooltip=f"Маршрут: день {day_number}",
+                ).add_to(fmap)
+
+        for point in visible_map_points:
+            activity_type = point["type"]
+            marker_color = map_type_colors.get(
+                activity_type,
+                "#22D3EE",
+            )
 
             popup_html = (
-                f"День {escape(str(day_number))}<br>"
-                f"<b>{escape(text_value(activity.get('title')))}</b><br>"
-                f"{escape(text_value(activity.get('location')))}"
+                '<div style="min-width:220px; font-family:Arial,sans-serif;'
+                'color:#172033; line-height:1.45;">'
+                '<div style="font-size:12px; color:#64748B; '
+                'font-weight:700; margin-bottom:4px;">'
+                f'ДЕНЬ {escape(str(point["day"]))} · '
+                f'{escape(point["time"])}'
+                '</div>'
+                '<div style="font-size:16px; font-weight:800; '
+                'margin-bottom:6px;">'
+                f'{escape(point["title"])}'
+                '</div>'
+                '<div style="font-size:13px; margin-bottom:5px;">'
+                f'📍 {escape(point["location"])}'
+                '</div>'
+                '<div style="font-size:13px; margin-bottom:5px;">'
+                f'⏱️ {escape(point["duration"])} мин · '
+                f'💳 ~{escape(format_money(point["cost"], curr))}'
+                '</div>'
+                '<div style="font-size:13px; color:#475569;">'
+                f'{escape(point["description"])}'
+                '</div>'
+                '</div>'
+            )
+
+            marker_html = (
+                '<div style="'
+                'width:32px; height:32px; '
+                'display:flex; align-items:center; justify-content:center; '
+                'border:2px solid rgba(255,255,255,0.95); '
+                'border-radius:50%; '
+                f'background:{marker_color}; '
+                'color:#FFFFFF; '
+                'font-family:Arial,sans-serif; '
+                'font-size:14px; font-weight:800; '
+                'box-shadow:0 3px 12px rgba(0,0,0,0.35);'
+                '">'
+                f'{point["order"]}'
+                '</div>'
             )
 
             folium.Marker(
-                location=[lat, lon],
-                popup=popup_html,
-                tooltip=text_value(activity.get("title")),
-                icon=folium.Icon(
-                    color=COLORS.get(activity_type, "blue"),
-                    icon="info-sign",
+                location=[point["lat"], point["lon"]],
+                tooltip=(
+                    f'День {point["day"]} · '
+                    f'{point["time"]} · {point["title"]}'
+                ),
+                popup=folium.Popup(
+                    popup_html,
+                    max_width=290,
+                ),
+                icon=folium.DivIcon(
+                    html=marker_html,
+                    icon_size=(32, 32),
+                    icon_anchor=(16, 16),
                 ),
             ).add_to(fmap)
 
-        for route_points in points_by_day.values():
-            if len(route_points) > 1:
-                folium.PolyLine(
-                    route_points,
-                    weight=3,
-                    opacity=0.75,
-                    color="#22D3EE",
-                ).add_to(fmap)
+        # Автоматически показывает все точки в выбранном диапазоне.
+        if len(visible_map_points) > 1:
+            fmap.fit_bounds(
+                [
+                    [point["lat"], point["lon"]]
+                    for point in visible_map_points
+                ],
+                padding=(35, 35),
+            )
+
+        legend_html = """
+        <div style="
+            position: fixed;
+            bottom: 26px;
+            left: 18px;
+            z-index: 9999;
+            width: 190px;
+            padding: 12px 14px;
+            border: 1px solid rgba(148,163,184,0.42);
+            border-radius: 12px;
+            background: rgba(15,23,42,0.92);
+            color: #F8FAFC;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.8;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.30);
+        ">
+            <div style="
+                margin-bottom:4px;
+                color:#FFFFFF;
+                font-size:13px;
+                font-weight:800;
+            ">
+                Типы активностей
+            </div>
+            <div><span style="color:#818CF8;">●</span> Достопримечательность</div>
+            <div><span style="color:#FB923C;">●</span> Еда</div>
+            <div><span style="color:#94A3B8;">●</span> Транспорт</div>
+            <div><span style="color:#A78BFA;">●</span> Проживание</div>
+            <div><span style="color:#2DD4BF;">●</span> Отдых и прогулка</div>
+            <div><span style="color:#F472B6;">●</span> Покупки</div>
+            <div><span style="color:#FACC15;">●</span> Яркое впечатление</div>
+        </div>
+        """
+
+        fmap.get_root().html.add_child(
+            folium.Element(legend_html)
+        )
 
         with st.container(border=True):
             st_folium(
                 fmap,
                 use_container_width=True,
-                height=520,
+                height=560,
                 returned_objects=[],
+                key=f"travel_route_map_{trip_id}_{selected_map_day}",
             )
 
-        st.caption("Картографические данные: © OpenStreetMap contributors")
+        st.caption(
+            "Цифра на точке — порядок активности в рамках выбранного дня. "
+            "Линии соединяют места в последовательности маршрута. "
+            "Картографические данные: © OpenStreetMap contributors, © CARTO."
+        )
 
 # ==========================================================
 # ВКЛАДКА: БЮДЖЕТ
