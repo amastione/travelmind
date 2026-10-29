@@ -3711,7 +3711,7 @@ with tab_edit:
                         "Маршрут не был изменён — попробуйте ещё раз."
                     )
 
-                                except Exception as error:
+                except Exception as error:
                     error_text = str(error).lower()
 
                     if "429" in error_text or "rate limit" in error_text:
