@@ -287,13 +287,7 @@ def _parse_json(text: str) -> dict:
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def generate(user_prompt: str) -> dict:
     """Запрос к модели. Одинаковые запросы кэшируются на 24 часа."""
-    client = OpenAI(
-        api_key=st.secrets["LLM_API_KEY"],
-        base_url=st.secrets.get(
-            "LLM_BASE_URL",
-            "https://api.deepseek.com",
-        ),
-    )
+    client = _create_llm_client()
 
     response = client.chat.completions.create(
         model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
