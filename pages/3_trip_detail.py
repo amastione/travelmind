@@ -2178,11 +2178,16 @@ with tab_budget:
 
                 st.rerun()
 
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as error:
                 st.error(
                     "AI вернул ответ в неверном формате. "
                     "Попробуйте запросить анализ ещё раз."
                 )
+                st.caption(f"Техническая информация: {str(error)[:1000]}")
+
+            except Exception as error:
+                st.error("Не удалось выполнить AI-анализ бюджета.")
+                st.caption(f"Техническая информация: {str(error)[:1000]}")
 
             except Exception as error:
                 st.error(
