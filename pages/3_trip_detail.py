@@ -2014,8 +2014,9 @@ with tab_map:
         fmap = folium.Map(
             location=[center_lat, center_lon],
             zoom_start=12,
-            tiles="CartoDB dark_matter",
-            attr="© OpenStreetMap contributors © CARTO",
+            tiles="OpenStreetMap",
+            attr="© OpenStreetMap contributors",
+            attribution_control=False,
             control_scale=True,
         )
 
@@ -2117,7 +2118,19 @@ with tab_map:
                 ],
                 padding=(35, 35),
             )
-
+        # Убираем служебную атрибуцию Leaflet внутри iframe карты:
+        # источник карт указан отдельной подписью под картой.
+        fmap.get_root().html.add_child(
+            folium.Element(
+                """
+                <style>
+                    .leaflet-control-attribution {
+                        display: none !important;
+                    }
+                </style>
+                """
+            )
+        )
         legend_html = """
         <div style="
             position: fixed;
