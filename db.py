@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     title TEXT,
     cost_plan REAL,
     cost_actual REAL,
+    is_manual INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(trip_id) REFERENCES trips(id)
 );
 """
