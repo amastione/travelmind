@@ -1768,10 +1768,10 @@ with tab_budget:
         unsafe_allow_html=True,
     )
 
-    if not expenses:
+        if not expenses:
         st.info("Для этой поездки пока нет запланированных расходов.")
 
-        for expense in expenses:
+    for expense in expenses:
         day_number = expense["day"]
         category = expense["category"]
         title = text_value(expense["title"])
@@ -1814,7 +1814,6 @@ with tab_budget:
 
             plan_column, fact_column, save_column = st.columns(
                 [1.25, 2.2, 0.95],
-                vertical_alignment="bottom",
             )
 
             with plan_column:
@@ -1822,6 +1821,7 @@ with tab_budget:
                     '<div class="tm-expense-label">План</div>',
                     unsafe_allow_html=True,
                 )
+
                 st.markdown(
                     (
                         '<div class="tm-expense-plan-value">'
@@ -1830,6 +1830,7 @@ with tab_budget:
                     ),
                     unsafe_allow_html=True,
                 )
+
                 st.markdown(
                     (
                         f'<div class="tm-expense-status {status_class}">'
@@ -1841,9 +1842,11 @@ with tab_budget:
 
             with fact_column:
                 st.markdown(
-                    '<div class="tm-expense-fact-label">'
-                    'Фактический расход'
-                    '</div>',
+                    (
+                        '<div class="tm-expense-fact-label">'
+                        'Фактический расход'
+                        '</div>'
+                    ),
                     unsafe_allow_html=True,
                 )
 
@@ -1884,8 +1887,6 @@ with tab_budget:
                     ),
                     unsafe_allow_html=True,
                 )
-
-    budget_breakdown = data.get("budget_breakdown") or {}
 
     if budget_breakdown:
         budget_rows = []
