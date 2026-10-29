@@ -1962,6 +1962,7 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
+
     remaining_budget = total_cost - actual_sum
 
     if total_cost > 0:
@@ -1989,7 +1990,7 @@ with tab_budget:
     else:
         progress_color = "#FB7185"
         progress_text = (
-            f"Бюджет превышен на "
+            "Бюджет превышен на "
             f"{format_money(abs(remaining_budget), curr)}"
         )
         remaining_class = "is-danger"
@@ -1997,9 +1998,7 @@ with tab_budget:
     if remaining_budget >= 0:
         remaining_text = format_money(remaining_budget, curr)
     else:
-        remaining_text = (
-            f"−{format_money(abs(remaining_budget), curr)}"
-        )
+        remaining_text = f"−{format_money(abs(remaining_budget), curr)}"
 
     st.markdown(
         (
@@ -2044,11 +2043,6 @@ with tab_budget:
         ),
         unsafe_allow_html=True,
     )
-    
-    st.markdown(
-        '<div style="height: 0.25rem;"></div>',
-        unsafe_allow_html=True,
-    )
 
     max_trip_day = max(
         len(data.get("days", [])),
@@ -2072,354 +2066,6 @@ with tab_budget:
         "✨ Прочее": "W",
     }
 
-    manual_form_state_key = f"manual_expense_form_open_{trip_id}"
-
-    if manual_form_state_key not in st.session_state:
-        st.session_state[manual_form_state_key] = False
-
-    if not st.session_state[manual_form_state_key]:
-        if st.button(
-            "＋ Добавить расход вручную",
-            key=f"open_manual_expense_form_{trip_id}",
-            use_container_width=True,
-        ):
-            st.session_state[manual_form_state_key] = True
-            st.rerun()
-
-    else:
-        st.markdown(
-            '<div class="tm-section-title">＋ Новый ручной расход</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.caption(
-            "Добавьте трату, которой не было в первоначальном AI-маршруте: "
-            "такси, кофе, сувениры, билеты или покупки."
-        )
-
-        with st.form(
-            f"manual_expense_form_{trip_id}",
-            clear_on_submit=True,
-        ):
-            manual_title = st.text_input(
-                "Название расхода",
-                placeholder="Например: Такси из аэропорта",
-                key=f"manual_expense_title_{trip_id}",
-            )
-
-            manual_col_1, manual_col_2 = st.columns(2)
-
-            with manual_col_1:
-                manual_category_label = st.selectbox(
-                    "Категория",
-                    options=list(category_options.keys()),
-                    key=f"manual_expense_category_{trip_id}",
-                )
-
-                manual_day = st.selectbox(
-                    "День поездки",
-                    options=list(range(1, max_trip_day + 1)),
-                    key=f"manual_expense_day_{trip_id}",
-                )
-
-            with manual_col_2:
-                manual_plan = st.number_input(
-                    "Плановая сумма",
-                    min_value=0.0,
-                    max_value=10000000.0,
-                    value=0.0,
-                    step=100.0,
-                    format="%.2f",
-                    key=f"manual_expense_plan_{trip_id}",
-                )
-
-                manual_actual = st.number_input(
-                    "Фактическая сумма",
-                    min_value=0.0,
-                    max_value=10000000.0,
-                    value=0.0,
-                    step=100.0,
-                    format="%.2f",
-                    key=f"manual_expense_actual_{trip_id}",
-                )
-
-            submit_col, cancel_col = st.columns(2)
-
-            with submit_col:
-                manual_submitted = st.form_submit_button(
-                    "✓ Добавить расход",
-                    use_container_width=True,
-                )
-
-            with cancel_col:
-                manual_cancelled = st.form_submit_button(
-                    "Отмена",
-                    use_container_width=True,
-                )
-
-        if manual_cancelled:
-            st.session_state[manual_form_state_key] = False
-            st.rerun()
-
-        if manual_submitted:
-            if not manual_title.strip():
-                st.warning("Введите название расхода.")
-            elif manual_actual <= 0:
-                st.warning("Укажите фактическую сумму расхода.")
-            else:
-                try:
-                    db.add_manual_expense(
-                        trip_id=trip_id,
-                        user_id=user_id,
-                        day=int(manual_day),
-                        category=category_options[manual_category_label],
-                        title=manual_title,
-                        cost_plan=float(manual_plan),
-                        cost_actual=float(manual_actual),
-                    )
-
-                    st.session_state[manual_form_state_key] = False
-
-                    st.toast(
-                        "Расход добавлен. Он доступен в истории ручных расходов."
-                    )
-                    st.rerun()
-
-                except ValueError as error:
-                    st.error(str(error))
-
-    manual_expenses = db.get_manual_expenses(trip_id)
-
-    if manual_expenses:
-        st.markdown(
-            '<div class="tm-section-title">✦ История ручных расходов</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            (
-                '<div class="tm-section-text">'
-                'Здесь отображаются траты, которые вы добавили вручную '
-                'во время планирования или поездки. Их можно изменить '
-                'или удалить.'
-                '</div>'
-            ),
-            unsafe_allow_html=True,
-        )
-
-        for manual_expense in manual_expenses:
-            manual_expense_id = manual_expense["id"]
-            manual_category = text_value(manual_expense["category"])
-            manual_title_text = text_value(
-                manual_expense["title"],
-                "Расход без названия",
-            )
-            manual_day_number = int(manual_expense["day"] or 1)
-            manual_plan_cost = as_float(manual_expense["cost_plan"])
-            manual_actual_cost = as_float(manual_expense["cost_actual"])
-
-            plan_text = ""
-
-            if manual_plan_cost > 0:
-                plan_text = (
-                    '<div class="tm-manual-expense-plan">'
-                    f'План: {format_money(manual_plan_cost, curr)}'
-                    '</div>'
-                )
-
-            st.markdown(
-                (
-                    '<div class="tm-manual-expense-card">'
-                    '<div class="tm-manual-expense-main">'
-                    '<div class="tm-manual-expense-title">'
-                    f'{ICONS.get(manual_category, "✨")} '
-                    f'{escape(manual_title_text)}'
-                    '</div>'
-                    '<div class="tm-manual-expense-meta">'
-                    f'Добавлено вручную · День {manual_day_number}'
-                    '</div>'
-                    f'{plan_text}'
-                    '</div>'
-                    '<div class="tm-manual-expense-amount">'
-                    f'{format_money(manual_actual_cost, curr)}'
-                    '<div class="tm-manual-expense-plan">'
-                    'Фактический расход'
-                    '</div>'
-                    '</div>'
-                    '</div>'
-                ),
-                unsafe_allow_html=True,
-            )
-            edit_form_state_key = (
-                f"edit_manual_expense_open_{manual_expense_id}"
-            )
-
-            if edit_form_state_key not in st.session_state:
-                st.session_state[edit_form_state_key] = False
-
-            action_col_1, action_col_2 = st.columns(2)
-
-            with action_col_1:
-                if st.button(
-                    "✏️ Изменить расход",
-                    key=f"open_edit_manual_expense_{manual_expense_id}",
-                    use_container_width=True,
-                ):
-                    st.session_state[edit_form_state_key] = True
-                    st.rerun()
-
-            
-
-            if st.session_state[edit_form_state_key]:
-                st.markdown(
-                    '<div style="height: 0.35rem;"></div>',
-                    unsafe_allow_html=True,
-                )
-
-                with st.form(
-                    f"edit_manual_expense_form_{manual_expense_id}",
-                ):
-                    st.markdown("##### Редактирование ручного расхода")
-
-                    edit_title = st.text_input(
-                        "Название расхода",
-                        value=manual_title_text,
-                        key=f"edit_manual_title_{manual_expense_id}",
-                    )
-
-                    edit_col_1, edit_col_2 = st.columns(2)
-
-                    category_labels = list(category_options.keys())
-                    category_values = list(category_options.values())
-
-                    try:
-                        current_category_index = category_values.index(
-                            manual_category
-                        )
-                    except ValueError:
-                        current_category_index = 0
-
-                    with edit_col_1:
-                        edit_category_label = st.selectbox(
-                            "Категория",
-                            options=category_labels,
-                            index=current_category_index,
-                            key=(
-                                f"edit_manual_category_"
-                                f"{manual_expense_id}"
-                            ),
-                        )
-
-                        edit_day = st.selectbox(
-                            "День поездки",
-                            options=list(range(1, max_trip_day + 1)),
-                            index=min(
-                                max(manual_day_number - 1, 0),
-                                max_trip_day - 1,
-                            ),
-                            key=f"edit_manual_day_{manual_expense_id}",
-                        )
-
-                    with edit_col_2:
-                        edit_plan = st.number_input(
-                            "Плановая сумма",
-                            min_value=0.0,
-                            max_value=10000000.0,
-                            value=float(manual_plan_cost),
-                            step=100.0,
-                            format="%.2f",
-                            key=f"edit_manual_plan_{manual_expense_id}",
-                        )
-
-                        edit_actual = st.number_input(
-                            "Фактическая сумма",
-                            min_value=0.0,
-                            max_value=10000000.0,
-                            value=float(manual_actual_cost),
-                            step=100.0,
-                            format="%.2f",
-                            key=f"edit_manual_actual_{manual_expense_id}",
-                        )
-
-                    save_col, cancel_col = st.columns(2)
-
-                    with save_col:
-                        edit_submitted = st.form_submit_button(
-                            "✓ Сохранить изменения",
-                            use_container_width=True,
-                        )
-
-                    with cancel_col:
-                        edit_cancelled = st.form_submit_button(
-                            "Отмена",
-                            use_container_width=True,
-                        )
-
-                if edit_cancelled:
-                    st.session_state[edit_form_state_key] = False
-                    st.rerun()
-
-                if edit_submitted:
-                    if not edit_title.strip():
-                        st.warning("Введите название расхода.")
-                    elif edit_actual <= 0:
-                        st.warning("Укажите фактическую сумму расхода.")
-                    else:
-                        try:
-                            db.update_manual_expense(
-                                expense_id=manual_expense_id,
-                                trip_id=trip_id,
-                                user_id=user_id,
-                                day=int(edit_day),
-                                category=category_options[
-                                    edit_category_label
-                                ],
-                                title=edit_title,
-                                cost_plan=float(edit_plan),
-                                cost_actual=float(edit_actual),
-                            )
-
-                            st.session_state[edit_form_state_key] = False
-                            st.toast("Ручной расход обновлён.")
-                            st.rerun()
-
-                        except ValueError as error:
-                            st.error(str(error))
-
-            with action_col_2:
-                if st.button(
-                    "🗑️ Удалить расход",
-                    key=f"delete_manual_expense_{manual_expense_id}",
-                    use_container_width=True,
-                ):
-                    try:
-                        db.delete_manual_expense(
-                            expense_id=manual_expense_id,
-                            trip_id=trip_id,
-                            user_id=user_id,
-                        )
-
-                        st.toast("Ручной расход удалён.")
-                        st.rerun()
-
-                    except ValueError as error:
-                        st.error(str(error))
-    
-    st.markdown(
-        '<div class="tm-section-title">◫ Все расходы маршрута</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        (
-            '<div class="tm-section-text">'
-            'Используйте фильтры, чтобы быстро найти нужную трату '
-            'или позиции без внесённой фактической суммы.'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
-
     expense_category_labels = {
         "A": "🏛️ Активности",
         "F": "🍽️ Еда",
@@ -2430,300 +2076,8 @@ with tab_budget:
         "W": "✨ Прочее",
     }
 
-    available_days = sorted(
-        {
-            int(item["day"])
-            for item in expenses
-            if item["day"] is not None
-        }
-    )
-
-    available_categories = sorted(
-        {
-            text_value(item["category"])
-            for item in expenses
-            if item["category"]
-        }
-    )
-
-    filter_col_1, filter_col_2, filter_col_3 = st.columns(
-        [1.1, 1.45, 1.45],
-    )
-
-    with filter_col_1:
-        selected_day = st.selectbox(
-            "День",
-            options=["Все дни"] + available_days,
-            key=f"expense_filter_day_{trip_id}",
-        )
-
-    with filter_col_2:
-        selected_category = st.selectbox(
-            "Категория",
-            options=["Все категории"] + available_categories,
-            format_func=lambda value: (
-                value
-                if value == "Все категории"
-                else expense_category_labels.get(value, value)
-            ),
-            key=f"expense_filter_category_{trip_id}",
-        )
-
-    with filter_col_3:
-        only_without_actual = st.checkbox(
-            "Только без факта",
-            value=False,
-            key=f"expense_filter_without_actual_{trip_id}",
-            help=(
-                "Показывает расходы, для которых фактическая "
-                "сумма ещё не внесена."
-            ),
-        )
-
-    filtered_expenses = []
-
-    for item in expenses:
-        item_day = item["day"]
-        item_category = text_value(item["category"])
-        item_actual = item["cost_actual"]
-
-        if selected_day != "Все дни" and item_day != selected_day:
-            continue
-
-        if (
-            selected_category != "Все категории"
-            and item_category != selected_category
-        ):
-            continue
-
-        if only_without_actual and (
-            item_actual is not None and as_float(item_actual) > 0
-        ):
-            continue
-
-        filtered_expenses.append(item)
-
-    if not filtered_expenses:
-        st.info(
-            "По выбранным фильтрам расходов не найдено. "
-            "Измените условия фильтрации."
-        )
-
-    for expense in filtered_expenses:
-        day_number = expense["day"]
-        category = expense["category"]
-        title = text_value(expense["title"])
-        plan_cost = as_float(expense["cost_plan"])
-        actual_cost = as_float(expense["cost_actual"])
-
-        difference = actual_cost - plan_cost
-
-        if actual_cost == 0:
-            status_text = "○ Факт пока не внесён"
-            status_class = ""
-        elif abs(difference) < 0.01:
-            status_text = "✓ Совпадает с планом"
-            status_class = ""
-        elif difference < 0:
-            status_text = (
-                f"↓ Экономия: {format_money(abs(difference), curr)}"
-            )
-            status_class = "is-saving"
-        else:
-            status_text = (
-                f"↑ Превышение: {format_money(difference, curr)}"
-            )
-            status_class = "is-over"
-
-        with st.container(border=True):
-            st.markdown(
-                f"""
-                <div class="tm-expense-heading">
-                    <div class="tm-expense-title">
-                        {ICONS.get(category, "📍")} {escape(title)}
-                    </div>
-                    <div class="tm-expense-day">
-                        День {escape(str(day_number))}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            plan_column, fact_column, save_column = st.columns(
-                [1.25, 2.2, 0.95],
-            )
-
-            with plan_column:
-                st.markdown(
-                    '<div class="tm-expense-label">План</div>',
-                    unsafe_allow_html=True,
-                )
-
-                st.markdown(
-                    (
-                        '<div class="tm-expense-plan-value">'
-                        f'{format_money(plan_cost, curr)}'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
-
-                st.markdown(
-                    (
-                        f'<div class="tm-expense-status {status_class}">'
-                        f'{status_text}'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
-
-            with fact_column:
-                st.markdown(
-                    (
-                        '<div class="tm-expense-fact-label">'
-                        'Фактический расход'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
-
-                actual_value = st.number_input(
-                    "Фактический расход",
-                    min_value=0.0,
-                    max_value=10000000.0,
-                    value=float(actual_cost),
-                    step=10.0,
-                    format="%.2f",
-                    key=f"actual_{expense['id']}",
-                    label_visibility="collapsed",
-                )
-
-            with save_column:
-                st.markdown(
-                    '<div class="tm-expense-label">Действие</div>',
-                    unsafe_allow_html=True,
-                )
-
-                if st.button(
-                    "💾 Сохранить",
-                    key=f"save_{expense['id']}",
-                    use_container_width=True,
-                ):
-                    db.update_expense_actual(
-                        expense["id"],
-                        float(actual_value),
-                    )
-                    st.toast("Расход сохранён")
-                    st.rerun()
-
-                st.markdown(
-                    (
-                        '<div class="tm-expense-save-note">'
-                        'Сумма сохранится в фактических расходах.'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
-
-    budget_breakdown = data.get("budget_breakdown") or {}
-
-    if budget_breakdown:
-        budget_rows = []
-
-        for key, value in budget_breakdown.items():
-            amount = as_float(value)
-
-            if amount > 0:
-                budget_rows.append(
-                    {
-                        "Категория": BUDGET_RU.get(key, key),
-                        "План": amount,
-                        "Сумма": format_money(amount, curr),
-                    }
-                )
-
-        if budget_rows:
-            st.markdown(
-                '<div class="tm-section-title">◫ Структура бюджета</div>',
-                unsafe_allow_html=True,
-            )
-
-            chart_data = pd.DataFrame(budget_rows)
-            total_breakdown = chart_data["План"].sum()
-
-            chart_data["Доля"] = (
-                chart_data["План"] / total_breakdown * 100
-            ).round(1)
-
-            final_chart = (
-                alt.Chart(chart_data)
-                .mark_bar(
-                    cornerRadiusTopLeft=12,
-                    cornerRadiusTopRight=12,
-                    size=72,
-                )
-                .encode(
-                    x=alt.X(
-                        "Категория:N",
-                        sort="-y",
-                        axis=alt.Axis(
-                            title=None,
-                            labelColor="#D8E5F5",
-                            labelFontSize=14,
-                            labelAngle=0,
-                            domain=False,
-                            ticks=False,
-                        ),
-                    ),
-                    y=alt.Y(
-                        "План:Q",
-                        axis=alt.Axis(
-                            title=None,
-                            labelColor="#B9C9DC",
-                            domain=False,
-                            ticks=False,
-                            grid=True,
-                            gridColor="#314158",
-                        ),
-                    ),
-                    color=alt.Color(
-                        "Категория:N",
-                        scale=alt.Scale(range=BUDGET_COLORS),
-                        legend=None,
-                    ),
-                    tooltip=[
-                        alt.Tooltip("Категория:N", title="Категория"),
-                        alt.Tooltip("Сумма:N", title="План"),
-                        alt.Tooltip(
-                            "Доля:Q",
-                            title="Доля бюджета, %",
-                            format=".1f",
-                        ),
-                    ],
-                )
-                .properties(height=330)
-                .configure_view(strokeOpacity=0, fill="transparent")
-                .configure(background="transparent")
-            )
-
-            with st.container(border=True):
-                st.altair_chart(
-                    final_chart,
-                    use_container_width=True,
-                    theme=None,
-                )
-
-                st.caption(
-                    "Общий плановый бюджет: "
-                    f"**{format_money(total_breakdown, curr)}**"
-                )
-    # ------------------------------------------------------
-    # ВНУТРЕННИЕ ВКЛАДКИ РАСХОДОВ
-    # ------------------------------------------------------
-
     st.markdown(
-        '<div style="height: 0.4rem;"></div>',
+        '<div style="height: 0.45rem;"></div>',
         unsafe_allow_html=True,
     )
 
@@ -2735,30 +2089,20 @@ with tab_budget:
     )
 
     # ======================================================
-    # ВКЛАДКА: ВСЕ РАСХОДЫ МАРШРУТА
+    # ВНУТРЕННЯЯ ВКЛАДКА: ВСЕ РАСХОДЫ
     # ======================================================
 
     with tab_all_expenses:
         st.markdown(
             (
                 '<div class="tm-section-text">'
-                'Здесь отображаются плановые расходы AI-маршрута и траты, '
-                'добавленные вручную. Используйте фильтры, чтобы быстро '
-                'найти нужную позицию.'
+                'Здесь отображаются плановые позиции AI-маршрута и '
+                'добавленные вручную расходы. Используйте фильтры, '
+                'чтобы быстро найти нужную трату.'
                 '</div>'
             ),
             unsafe_allow_html=True,
         )
-
-        expense_category_labels = {
-            "A": "🏛️ Активности",
-            "F": "🍽️ Еда",
-            "T": "🚌 Транспорт",
-            "S": "🏨 Проживание",
-            "L": "🌿 Отдых и прогулки",
-            "H": "🛍️ Покупки",
-            "W": "✨ Прочее",
-        }
 
         available_days = sorted(
             {
@@ -2826,9 +2170,7 @@ with tab_budget:
             ):
                 continue
 
-            if only_without_actual and (
-                item_actual is not None and as_float(item_actual) > 0
-            ):
+            if only_without_actual and as_float(item_actual) > 0:
                 continue
 
             filtered_expenses.append(item)
@@ -2840,8 +2182,9 @@ with tab_budget:
             )
 
         for expense in filtered_expenses:
+            expense_id = expense["id"]
             day_number = expense["day"]
-            category = expense["category"]
+            category = text_value(expense["category"])
             title = text_value(expense["title"])
             plan_cost = as_float(expense["cost_plan"])
             actual_cost = as_float(expense["cost_actual"])
@@ -2867,16 +2210,16 @@ with tab_budget:
 
             with st.container(border=True):
                 st.markdown(
-                    f"""
-                    <div class="tm-expense-heading">
-                        <div class="tm-expense-title">
-                            {ICONS.get(category, "📍")} {escape(title)}
-                        </div>
-                        <div class="tm-expense-day">
-                            День {escape(str(day_number))}
-                        </div>
-                    </div>
-                    """,
+                    (
+                        '<div class="tm-expense-heading">'
+                        '<div class="tm-expense-title">'
+                        f'{ICONS.get(category, "📍")} {escape(title)}'
+                        '</div>'
+                        '<div class="tm-expense-day">'
+                        f'День {escape(str(day_number))}'
+                        '</div>'
+                        '</div>'
+                    ),
                     unsafe_allow_html=True,
                 )
 
@@ -2925,7 +2268,7 @@ with tab_budget:
                         value=float(actual_cost),
                         step=10.0,
                         format="%.2f",
-                        key=f"actual_{expense['id']}",
+                        key=f"actual_{expense_id}",
                         label_visibility="collapsed",
                     )
 
@@ -2937,11 +2280,11 @@ with tab_budget:
 
                     if st.button(
                         "💾 Сохранить",
-                        key=f"save_{expense['id']}",
+                        key=f"save_{expense_id}",
                         use_container_width=True,
                     ):
                         db.update_expense_actual(
-                            expense["id"],
+                            expense_id,
                             float(actual_value),
                         )
                         st.toast("Расход сохранён.")
@@ -2955,10 +2298,6 @@ with tab_budget:
                         ),
                         unsafe_allow_html=True,
                     )
-
-        # --------------------------------------------------
-        # СТРУКТУРА БЮДЖЕТА
-        # --------------------------------------------------
 
         budget_breakdown = data.get("budget_breakdown") or {}
 
@@ -3056,49 +2395,8 @@ with tab_budget:
                         f"**{format_money(total_breakdown, curr)}**"
                     )
 
-                st.markdown(
-                    '<div class="tm-section-title">'
-                    'Детализация бюджета'
-                    '</div>',
-                    unsafe_allow_html=True,
-                )
-
-                for index, row in enumerate(chart_data.to_dict("records")):
-                    category_name = escape(text_value(row["Категория"]))
-                    amount_text = escape(text_value(row["Сумма"]))
-                    percent = as_float(row["Доля"])
-                    color = BUDGET_COLORS[index % len(BUDGET_COLORS)]
-
-                    st.markdown(
-                        (
-                            '<div class="tm-budget-card">'
-                            '<div class="tm-budget-category">'
-                            '<span class="tm-budget-dot" '
-                            f'style="background:{color};'
-                            f'color:{color};"></span>'
-                            f'<span>{category_name}</span>'
-                            '</div>'
-                            '<div>'
-                            '<div class="tm-budget-progress">'
-                            '<div class="tm-budget-progress-value" '
-                            f'style="width:{percent:.1f}%;'
-                            f'background:linear-gradient(90deg,{color},'
-                            f'rgba(255,255,255,0.9));"></div>'
-                            '</div>'
-                            '<div class="tm-budget-percent">'
-                            f'{percent:.1f}% от бюджета'
-                            '</div>'
-                            '</div>'
-                            '<div class="tm-budget-amount">'
-                            f'{amount_text}'
-                            '</div>'
-                            '</div>'
-                        ),
-                        unsafe_allow_html=True,
-                    )
-
     # ======================================================
-    # ВКЛАДКА: ИСТОРИЯ РУЧНЫХ РАСХОДОВ
+    # ВНУТРЕННЯЯ ВКЛАДКА: РУЧНЫЕ РАСХОДЫ
     # ======================================================
 
     with tab_manual_expenses:
@@ -3106,7 +2404,7 @@ with tab_budget:
             (
                 '<div class="tm-section-text">'
                 'Добавляйте незапланированные траты: такси, кофе, '
-                'сувениры, билеты, покупки или другие расходы. '
+                'сувениры, билеты, покупки и другие расходы. '
                 'Каждый расход можно изменить или удалить.'
                 '</div>'
             ),
@@ -3179,9 +2477,9 @@ with tab_budget:
                         key=f"manual_expense_actual_{trip_id}",
                     )
 
-                submit_col, cancel_col = st.columns(2)
+                save_col, cancel_col = st.columns(2)
 
-                with submit_col:
+                with save_col:
                     manual_submitted = st.form_submit_button(
                         "✓ Добавить расход",
                         use_container_width=True,
@@ -3231,238 +2529,195 @@ with tab_budget:
                 "с помощью кнопки выше."
             )
 
-        else:
+        for manual_expense in manual_expenses:
+            manual_expense_id = manual_expense["id"]
+            manual_category = text_value(manual_expense["category"])
+            manual_title_text = text_value(
+                manual_expense["title"],
+                "Расход без названия",
+            )
+            manual_day_number = int(manual_expense["day"] or 1)
+            manual_plan_cost = as_float(manual_expense["cost_plan"])
+            manual_actual_cost = as_float(
+                manual_expense["cost_actual"]
+            )
+
+            plan_text = ""
+
+            if manual_plan_cost > 0:
+                plan_text = (
+                    '<div class="tm-manual-expense-plan">'
+                    f'План: {format_money(manual_plan_cost, curr)}'
+                    '</div>'
+                )
+
             st.markdown(
-                '<div class="tm-section-title">'
-                '✦ Добавленные вручную расходы'
-                '</div>',
+                (
+                    '<div class="tm-manual-expense-card">'
+                    '<div class="tm-manual-expense-main">'
+                    '<div class="tm-manual-expense-title">'
+                    f'{ICONS.get(manual_category, "✨")} '
+                    f'{escape(manual_title_text)}'
+                    '</div>'
+                    '<div class="tm-manual-expense-meta">'
+                    f'Добавлено вручную · День {manual_day_number}'
+                    '</div>'
+                    f'{plan_text}'
+                    '</div>'
+                    '<div class="tm-manual-expense-amount">'
+                    f'{format_money(manual_actual_cost, curr)}'
+                    '<div class="tm-manual-expense-plan">'
+                    'Фактический расход'
+                    '</div>'
+                    '</div>'
+                    '</div>'
+                ),
                 unsafe_allow_html=True,
             )
 
-            for manual_expense in manual_expenses:
-                manual_expense_id = manual_expense["id"]
-                manual_category = text_value(manual_expense["category"])
-                manual_title_text = text_value(
-                    manual_expense["title"],
-                    "Расход без названия",
-                )
-                manual_day_number = int(manual_expense["day"] or 1)
-                manual_plan_cost = as_float(manual_expense["cost_plan"])
-                manual_actual_cost = as_float(
-                    manual_expense["cost_actual"]
-                )
+            edit_form_state_key = (
+                f"edit_manual_expense_open_{manual_expense_id}"
+            )
 
-                plan_text = ""
+            if edit_form_state_key not in st.session_state:
+                st.session_state[edit_form_state_key] = False
 
-                if manual_plan_cost > 0:
-                    plan_text = (
-                        '<div class="tm-manual-expense-plan">'
-                        f'План: {format_money(manual_plan_cost, curr)}'
-                        '</div>'
-                    )
+            action_col_1, action_col_2 = st.columns(2)
 
-                st.markdown(
-                    (
-                        '<div class="tm-manual-expense-card">'
-                        '<div class="tm-manual-expense-main">'
-                        '<div class="tm-manual-expense-title">'
-                        f'{ICONS.get(manual_category, "✨")} '
-                        f'{escape(manual_title_text)}'
-                        '</div>'
-                        '<div class="tm-manual-expense-meta">'
-                        f'Добавлено вручную · День {manual_day_number}'
-                        '</div>'
-                        f'{plan_text}'
-                        '</div>'
-                        '<div class="tm-manual-expense-amount">'
-                        f'{format_money(manual_actual_cost, curr)}'
-                        '<div class="tm-manual-expense-plan">'
-                        'Фактический расход'
-                        '</div>'
-                        '</div>'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
+            with action_col_1:
+                if st.button(
+                    "✏️ Изменить расход",
+                    key=f"open_edit_manual_expense_{manual_expense_id}",
+                    use_container_width=True,
+                ):
+                    st.session_state[edit_form_state_key] = True
+                    st.rerun()
 
-                edit_form_state_key = (
-                    f"edit_manual_expense_open_{manual_expense_id}"
-                )
-
-                if edit_form_state_key not in st.session_state:
-                    st.session_state[edit_form_state_key] = False
-
-                action_col_1, action_col_2 = st.columns(2)
-
-                with action_col_1:
-                    if st.button(
-                        "✏️ Изменить расход",
-                        key=(
-                            f"open_edit_manual_expense_"
-                            f"{manual_expense_id}"
-                        ),
-                        use_container_width=True,
-                    ):
-                        st.session_state[edit_form_state_key] = True
+            with action_col_2:
+                if st.button(
+                    "🗑️ Удалить расход",
+                    key=f"delete_manual_expense_{manual_expense_id}",
+                    use_container_width=True,
+                ):
+                    try:
+                        db.delete_manual_expense(
+                            expense_id=manual_expense_id,
+                            trip_id=trip_id,
+                            user_id=user_id,
+                        )
+                        st.toast("Ручной расход удалён.")
                         st.rerun()
 
-                with action_col_2:
-                    if st.button(
-                        "🗑️ Удалить расход",
-                        key=f"delete_manual_expense_{manual_expense_id}",
-                        use_container_width=True,
-                    ):
+                    except ValueError as error:
+                        st.error(str(error))
+
+            if st.session_state[edit_form_state_key]:
+                with st.form(
+                    f"edit_manual_expense_form_{manual_expense_id}",
+                ):
+                    st.markdown("##### Редактирование ручного расхода")
+
+                    edit_title = st.text_input(
+                        "Название расхода",
+                        value=manual_title_text,
+                        key=f"edit_manual_title_{manual_expense_id}",
+                    )
+
+                    edit_col_1, edit_col_2 = st.columns(2)
+
+                    category_labels = list(category_options.keys())
+                    category_values = list(category_options.values())
+
+                    try:
+                        category_index = category_values.index(
+                            manual_category
+                        )
+                    except ValueError:
+                        category_index = 0
+
+                    with edit_col_1:
+                        edit_category_label = st.selectbox(
+                            "Категория",
+                            options=category_labels,
+                            index=category_index,
+                            key=f"edit_manual_category_{manual_expense_id}",
+                        )
+
+                        edit_day = st.selectbox(
+                            "День поездки",
+                            options=list(range(1, max_trip_day + 1)),
+                            index=min(
+                                max(manual_day_number - 1, 0),
+                                max_trip_day - 1,
+                            ),
+                            key=f"edit_manual_day_{manual_expense_id}",
+                        )
+
+                    with edit_col_2:
+                        edit_plan = st.number_input(
+                            "Плановая сумма",
+                            min_value=0.0,
+                            max_value=10000000.0,
+                            value=float(manual_plan_cost),
+                            step=100.0,
+                            format="%.2f",
+                            key=f"edit_manual_plan_{manual_expense_id}",
+                        )
+
+                        edit_actual = st.number_input(
+                            "Фактическая сумма",
+                            min_value=0.0,
+                            max_value=10000000.0,
+                            value=float(manual_actual_cost),
+                            step=100.0,
+                            format="%.2f",
+                            key=f"edit_manual_actual_{manual_expense_id}",
+                        )
+
+                    form_save_col, form_cancel_col = st.columns(2)
+
+                    with form_save_col:
+                        edit_submitted = st.form_submit_button(
+                            "✓ Сохранить изменения",
+                            use_container_width=True,
+                        )
+
+                    with form_cancel_col:
+                        edit_cancelled = st.form_submit_button(
+                            "Отмена",
+                            use_container_width=True,
+                        )
+
+                if edit_cancelled:
+                    st.session_state[edit_form_state_key] = False
+                    st.rerun()
+
+                if edit_submitted:
+                    if not edit_title.strip():
+                        st.warning("Введите название расхода.")
+                    elif edit_actual <= 0:
+                        st.warning("Укажите фактическую сумму расхода.")
+                    else:
                         try:
-                            db.delete_manual_expense(
+                            db.update_manual_expense(
                                 expense_id=manual_expense_id,
                                 trip_id=trip_id,
                                 user_id=user_id,
+                                day=int(edit_day),
+                                category=category_options[
+                                    edit_category_label
+                                ],
+                                title=edit_title,
+                                cost_plan=float(edit_plan),
+                                cost_actual=float(edit_actual),
                             )
 
-                            st.toast("Ручной расход удалён.")
+                            st.session_state[edit_form_state_key] = False
+                            st.toast("Ручной расход обновлён.")
                             st.rerun()
 
                         except ValueError as error:
                             st.error(str(error))
-
-                if st.session_state[edit_form_state_key]:
-                    st.markdown(
-                        '<div style="height: 0.35rem;"></div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    with st.form(
-                        f"edit_manual_expense_form_{manual_expense_id}",
-                    ):
-                        st.markdown(
-                            "##### Редактирование ручного расхода"
-                        )
-
-                        edit_title = st.text_input(
-                            "Название расхода",
-                            value=manual_title_text,
-                            key=(
-                                f"edit_manual_title_"
-                                f"{manual_expense_id}"
-                            ),
-                        )
-
-                        edit_col_1, edit_col_2 = st.columns(2)
-
-                        category_labels = list(category_options.keys())
-                        category_values = list(category_options.values())
-
-                        try:
-                            current_category_index = category_values.index(
-                                manual_category
-                            )
-                        except ValueError:
-                            current_category_index = 0
-
-                        with edit_col_1:
-                            edit_category_label = st.selectbox(
-                                "Категория",
-                                options=category_labels,
-                                index=current_category_index,
-                                key=(
-                                    f"edit_manual_category_"
-                                    f"{manual_expense_id}"
-                                ),
-                            )
-
-                            edit_day = st.selectbox(
-                                "День поездки",
-                                options=list(
-                                    range(1, max_trip_day + 1)
-                                ),
-                                index=min(
-                                    max(manual_day_number - 1, 0),
-                                    max_trip_day - 1,
-                                ),
-                                key=(
-                                    f"edit_manual_day_"
-                                    f"{manual_expense_id}"
-                                ),
-                            )
-
-                        with edit_col_2:
-                            edit_plan = st.number_input(
-                                "Плановая сумма",
-                                min_value=0.0,
-                                max_value=10000000.0,
-                                value=float(manual_plan_cost),
-                                step=100.0,
-                                format="%.2f",
-                                key=(
-                                    f"edit_manual_plan_"
-                                    f"{manual_expense_id}"
-                                ),
-                            )
-
-                            edit_actual = st.number_input(
-                                "Фактическая сумма",
-                                min_value=0.0,
-                                max_value=10000000.0,
-                                value=float(manual_actual_cost),
-                                step=100.0,
-                                format="%.2f",
-                                key=(
-                                    f"edit_manual_actual_"
-                                    f"{manual_expense_id}"
-                                ),
-                            )
-
-                        save_col, cancel_col = st.columns(2)
-
-                        with save_col:
-                            edit_submitted = st.form_submit_button(
-                                "✓ Сохранить изменения",
-                                use_container_width=True,
-                            )
-
-                        with cancel_col:
-                            edit_cancelled = st.form_submit_button(
-                                "Отмена",
-                                use_container_width=True,
-                            )
-
-                    if edit_cancelled:
-                        st.session_state[edit_form_state_key] = False
-                        st.rerun()
-
-                    if edit_submitted:
-                        if not edit_title.strip():
-                            st.warning("Введите название расхода.")
-
-                        elif edit_actual <= 0:
-                            st.warning(
-                                "Укажите фактическую сумму расхода."
-                            )
-
-                        else:
-                            try:
-                                db.update_manual_expense(
-                                    expense_id=manual_expense_id,
-                                    trip_id=trip_id,
-                                    user_id=user_id,
-                                    day=int(edit_day),
-                                    category=category_options[
-                                        edit_category_label
-                                    ],
-                                    title=edit_title,
-                                    cost_plan=float(edit_plan),
-                                    cost_actual=float(edit_actual),
-                                )
-
-                                st.session_state[
-                                    edit_form_state_key
-                                ] = False
-
-                                st.toast("Ручной расход обновлён.")
-                                st.rerun()
-
-                            except ValueError as error:
-                                st.error(str(error))
 # ==========================================================
 # ВКЛАДКА: СОВЕТЫ
 # ==========================================================
