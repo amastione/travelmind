@@ -494,9 +494,10 @@ def add_manual_expense(
                 category,
                 title,
                 cost_plan,
-                cost_actual
+                cost_actual,
+                is_manual
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
             """,
             (
                 trip_id,
