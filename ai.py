@@ -553,6 +553,98 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
         "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
         "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
+# ==========================================================
+# AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
+# ==========================================================
+
+BUDGET_ANALYSIS_SYSTEM_PROMPT = """Ты — финансовый AI-помощник TravelMind.
+
+Твоя задача — кратко проанализировать бюджет путешествия на основе
+переданных агрегированных данных о плановых, фактических и внеплановых
+расходах.
+
+СТРОГИЕ ПРАВИЛА:
+- Верни ТОЛЬКО валидный JSON без Markdown и текста вне JSON.
+- Все значения и тексты — на русском языке.
+- Используй только цифры и факты из переданного контекста.
+- Не выдумывай конкретные цены, скидки, рестораны, билеты, маршруты
+  или несуществующие акции.
+- Можно давать общие практические советы: контролировать такси,
+  выбрать общественный транспорт, ограничить необязательные покупки,
+  распределить лимит на оставшиеся дни.
+- Не пиши категоричных финансовых гарантий.
+- Рекомендации должны быть короткими, практичными и понятными.
+- Не повторяй одинаковые советы.
+- Верни от 2 до 4 рекомендаций.
+- potential_saving_min и potential_saving_max указывай только если
+  можешь обосновать оценку данными. Иначе верни 0.
+- Если фактических расходов пока нет, объясни, что анализ основан
+  преимущественно на плане, и предложи начать вносить реальные траты.
+
+СХЕМА JSON:
+{
+  "status": "safe|attention|over_budget|no_data",
+  "summary": str,
+  "recommendations": [
+    {
+      "priority": "low|medium|high",
+      "title": str,
+      "text": str
+    }
+  ],
+  "potential_saving_min": num,
+  "potential_saving_max": num
+}"""
+
+
+def analyze_budget_with_ai(budget_context: dict) -> dict:
+    """Запрашивает у LLM краткий структурированный анализ бюджета."""
+    compact_context = json.dumps(
+        budget_context,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    user_prompt = (
+        "Проанализируй бюджет поездки по данным ниже.\n"
+        "Контекст JSON:\n"
+        f"{compact_context}\n\n"
+        "Верни результат строго по заданной JSON-схеме."
+    )
+
+    client = _create_llm_client()
+
+    response = client.chat.completions.create(
+        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+        messages=[
+            {
+                "role": "system",
+                "content": BUDGET_ANALYSIS_SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        temperature=0.25,
+        max_tokens=900,
+        response_format={"type": "json_object"},
+    )
+
+    usage = response.usage
+    result = _parse_json(response.choices[0].message.content)
+
+    if not isinstance(result, dict):
+        raise ValueError("AI вернул некорректный формат анализа бюджета.")
+
+    if not isinstance(result.get("recommendations"), list):
+        result["recommendations"] = []
+
+    return {
+        "data": result,
+        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
+        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+    }
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
     errors = []
