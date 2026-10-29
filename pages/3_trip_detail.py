@@ -699,7 +699,126 @@ div[data-testid="stExpander"] details > summary:hover {
     text-align: right;
     white-space: nowrap;
 }
+/* ---------- Форма диалога с AI ---------- */
 
+[data-testid="stForm"] {
+    padding: 1.25rem !important;
+    border: 1px solid rgba(103, 232, 249, 0.24) !important;
+    border-radius: 20px !important;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(14, 33, 57, 0.92),
+            rgba(20, 20, 52, 0.90)
+        ) !important;
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Подпись «Что изменить в маршруте?» */
+[data-testid="stForm"] [data-testid="stWidgetLabel"] p,
+[data-testid="stForm"] label {
+    color: #DCEBFA !important;
+    font-size: 0.98rem !important;
+    font-weight: 750 !important;
+}
+
+/* Контейнер поля ввода */
+[data-testid="stForm"] [data-testid="stTextArea"] {
+    border-radius: 14px !important;
+}
+
+/* Само текстовое поле */
+[data-testid="stForm"] textarea,
+[data-testid="stTextArea"] textarea {
+    min-height: 130px !important;
+    border: 1px solid rgba(148, 163, 184, 0.38) !important;
+    border-radius: 14px !important;
+    background: rgba(5, 12, 26, 0.82) !important;
+    color: #F8FAFC !important;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif !important;
+    font-size: 0.98rem !important;
+    line-height: 1.55 !important;
+}
+
+/* Текст-подсказка внутри поля */
+[data-testid="stForm"] textarea::placeholder,
+[data-testid="stTextArea"] textarea::placeholder {
+    color: #7D91AE !important;
+    opacity: 1 !important;
+}
+
+/* Активное поле */
+[data-testid="stForm"] textarea:focus,
+[data-testid="stTextArea"] textarea:focus {
+    border-color: #22D3EE !important;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15) !important;
+    outline: none !important;
+}
+
+/* Кнопка «Обновить маршрут с AI» */
+[data-testid="stFormSubmitButton"] > button,
+.stFormSubmitButton > button,
+[data-testid="stForm"] button[kind="primary"],
+[data-testid="stForm"] button {
+    width: 100% !important;
+    min-height: 52px !important;
+    border: 1px solid rgba(235, 254, 255, 0.56) !important;
+    border-radius: 14px !important;
+    background:
+        radial-gradient(
+            circle at 20% 0%,
+            rgba(255, 255, 255, 0.25),
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            #06AFCB 0%,
+            #22D3EE 46%,
+            #538CF0 73%,
+            #8558E9 100%
+        ) !important;
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    box-shadow:
+        0 12px 25px rgba(34, 211, 238, 0.23),
+        0 8px 20px rgba(139, 92, 246, 0.17),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease !important;
+}
+
+/* Текст внутри submit-кнопки */
+[data-testid="stFormSubmitButton"] > button p,
+.stFormSubmitButton > button p,
+[data-testid="stForm"] button[kind="primary"] p,
+[data-testid="stForm"] button p {
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+}
+
+/* Наведение на кнопку генерации */
+[data-testid="stFormSubmitButton"] > button:hover,
+.stFormSubmitButton > button:hover,
+[data-testid="stForm"] button[kind="primary"]:hover,
+[data-testid="stForm"] button:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.09) saturate(1.05) !important;
+    box-shadow:
+        0 17px 32px rgba(34, 211, 238, 0.30),
+        0 12px 27px rgba(139, 92, 246, 0.23),
+        inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+}
 /* ---------- Кнопки ---------- */
 
 .stButton > button,
