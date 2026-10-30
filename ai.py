@@ -247,7 +247,18 @@ def build_prompt(
 
 
 def _parse_json(text: str) -> dict:
-    """Извлекает JSON-объект даже из ответа с Markdown-обёрткой."""
+    """
+    Надёжно извлекает первый полноценный JSON-объект из ответа модели.
+
+    Поддерживает:
+    - чистый JSON;
+    - JSON в блоке ```json;
+    - текст до/после JSON;
+    - несколько фрагментов текста вокруг объекта.
+
+    Если модель оборвала ответ до закрывающей скобки, функция честно
+    возвращает ошибку: такой JSON нельзя безопасно восстановить.
+    """
     if not text:
         raise json.JSONDecodeError(
             "Модель вернула пустой ответ.",
@@ -269,35 +280,39 @@ def _parse_json(text: str) -> dict:
         clean_text,
     ).strip()
 
-    try:
-        result = json.loads(clean_text)
-
-        if isinstance(result, dict):
-            return result
-
-    except json.JSONDecodeError:
-        pass
-
+    decoder = json.JSONDecoder()
     json_start = clean_text.find("{")
-    json_end = clean_text.rfind("}")
+    last_error = None
 
-    if json_start == -1 or json_end == -1 or json_end <= json_start:
-        raise json.JSONDecodeError(
-            "В ответе AI не найден полный JSON-объект.",
-            clean_text,
-            0,
+    while json_start != -1:
+        try:
+            result, _ = decoder.raw_decode(
+                clean_text[json_start:]
+            )
+
+            if isinstance(result, dict):
+                return result
+
+        except json.JSONDecodeError as error:
+            last_error = error
+
+        json_start = clean_text.find("{", json_start + 1)
+
+    error_message = (
+        "В ответе AI не найден полный валидный JSON-объект."
+    )
+
+    if last_error:
+        error_message += (
+            f" Причина: {last_error.msg} "
+            f"(позиция {last_error.pos})."
         )
 
-    result = json.loads(clean_text[json_start : json_end + 1])
-
-    if not isinstance(result, dict):
-        raise json.JSONDecodeError(
-            "Ответ AI не является JSON-объектом.",
-            clean_text,
-            0,
-        )
-
-    return result
+    raise json.JSONDecodeError(
+        error_message,
+        clean_text,
+        0,
+    )
 
 
 def _create_llm_client() -> OpenAI:
@@ -375,7 +390,15 @@ def edit_trip_with_ai(
     trip_context: dict,
     user_request: str,
 ) -> dict:
-    """Изменяет сохранённый маршрут согласно команде пользователя."""
+    """
+    Изменяет сохранённый маршрут согласно команде пользователя.
+
+    Важно:
+    - не отправляет служебную историю AI-команд обратно модели;
+    - просит компактный JSON;
+    - даёт модели больше места для полного ответа;
+    - не сохраняет ответ до успешного разбора и проверки в странице.
+    """
     destination = str(trip_context.get("destination") or "")
     start_date = str(trip_context.get("start_date") or "")
     end_date = str(trip_context.get("end_date") or "")
@@ -383,8 +406,13 @@ def edit_trip_with_ai(
     currency = str(trip_context.get("currency") or "RUB")
     people = trip_context.get("people") or 1
 
+    # История команд нужна интерфейсу, но не нужна модели для
+    # перестроения маршрута. Её исключение уменьшает входной контекст.
+    editable_data = dict(current_data)
+    editable_data.pop("_ai_edit_history", None)
+
     current_json = json.dumps(
-        current_data,
+        editable_data,
         ensure_ascii=False,
         separators=(",", ":"),
     )
@@ -398,32 +426,58 @@ def edit_trip_with_ai(
 КОМАНДА ПОЛЬЗОВАТЕЛЯ:
 {user_request}
 
-ТЕКУЩИЙ МАРШРУТ В JSON:
+ТЕКУЩИЙ МАРШРУТ:
 {current_json}
 
-Верни полную обновлённую версию маршрута строго в JSON."""
+Верни ПОЛНУЮ обновлённую версию маршрута.
+Критически важно:
+- верни один завершённый JSON-объект;
+- не добавляй текст до или после JSON;
+- не используй Markdown;
+- не сокращай и не обрывай JSON;
+- используй компактные короткие формулировки;
+- сохрани все обязательные поля схемы TravelMind."""
 
     client = _create_llm_client()
 
     response = client.chat.completions.create(
         model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "system", "content": EDIT_SYSTEM_PROMPT},
-            {"role": "user", "content": edit_prompt},
+            {
+                "role": "system",
+                "content": EDIT_SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": edit_prompt,
+            },
         ],
-        temperature=0.45,
-        max_tokens=6500,
+        temperature=0.25,
+        # 6500 иногда недостаточно для полной версии маршрута.
+        # 8192 снижает риск обрыва ответа при редактировании.
+        max_tokens=8192,
         response_format={"type": "json_object"},
     )
+
+    content = str(
+        response.choices[0].message.content or ""
+    ).strip()
+
+    if not content:
+        raise json.JSONDecodeError(
+            "AI вернул пустой ответ.",
+            "",
+            0,
+        )
 
     usage = response.usage
 
     return {
-        "data": _parse_json(response.choices[0].message.content),
+        "data": _parse_json(content),
         "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
         "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
+
 
 
 # ==========================================================
