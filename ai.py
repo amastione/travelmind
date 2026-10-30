@@ -391,13 +391,11 @@ def edit_trip_with_ai(
     user_request: str,
 ) -> dict:
     """
-    Изменяет сохранённый маршрут согласно команде пользователя.
+    Изменяет сохранённый маршрут по команде пользователя.
 
-    Важно:
-    - не отправляет служебную историю AI-команд обратно модели;
-    - просит компактный JSON;
-    - даёт модели больше места для полного ответа;
-    - не сохраняет ответ до успешного разбора и проверки в странице.
+    Модель обязана вернуть полный маршрут TravelMind, а не только
+    список изменений. При неполной структуре выполняется одна
+    дополнительная попытка с уточнением.
     """
     destination = str(trip_context.get("destination") or "")
     start_date = str(trip_context.get("start_date") or "")
@@ -406,8 +404,8 @@ def edit_trip_with_ai(
     currency = str(trip_context.get("currency") or "RUB")
     people = trip_context.get("people") or 1
 
-    # История команд нужна интерфейсу, но не нужна модели для
-    # перестроения маршрута. Её исключение уменьшает входной контекст.
+    # Служебную историю AI-команд не отправляем в LLM:
+    # она не относится к структуре маршрута и увеличивает контекст.
     editable_data = dict(current_data)
     editable_data.pop("_ai_edit_history", None)
 
@@ -417,7 +415,7 @@ def edit_trip_with_ai(
         separators=(",", ":"),
     )
 
-    edit_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
+    base_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
 Направление: {destination}
 Даты: {start_date} — {end_date}
 Исходный бюджет: {budget} {currency}
@@ -426,57 +424,102 @@ def edit_trip_with_ai(
 КОМАНДА ПОЛЬЗОВАТЕЛЯ:
 {user_request}
 
-ТЕКУЩИЙ МАРШРУТ:
+ТЕКУЩИЙ МАРШРУТ В JSON:
 {current_json}
 
-Верни ПОЛНУЮ обновлённую версию маршрута.
-Критически важно:
-- верни один завершённый JSON-объект;
-- не добавляй текст до или после JSON;
-- не используй Markdown;
-- не сокращай и не обрывай JSON;
-- используй компактные короткие формулировки;
-- сохрани все обязательные поля схемы TravelMind."""
+ЗАДАЧА:
+Внеси только необходимые изменения в маршрут согласно команде пользователя.
+
+КРИТИЧЕСКОЕ ТРЕБОВАНИЕ:
+Верни не список изменений и не частичный JSON, а ПОЛНУЮ новую версию
+маршрута строго по JSON-схеме из системной инструкции.
+
+Обязательно сохрани и верни все верхнеуровневые поля:
+title, overview, cover_theme, cover_profile, total_cost, mood_score,
+mood_reason, accommodation, hotels, days, budget_breakdown,
+wow_moments, packing, phrases, tips.
+
+Верни только один завершённый JSON-объект без Markdown и пояснений."""
 
     client = _create_llm_client()
+    last_error = None
 
-    response = client.chat.completions.create(
-        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
-        messages=[
-            {
-                "role": "system",
-                "content": EDIT_SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": edit_prompt,
-            },
-        ],
-        temperature=0.25,
-        # 6500 иногда недостаточно для полной версии маршрута.
-        # 8192 снижает риск обрыва ответа при редактировании.
-        max_tokens=8192,
-        response_format={"type": "json_object"},
+    # Две попытки: обычная и исправляющая, если модель вернула
+    # сокращённую/неполную структуру.
+    for attempt in range(2):
+        retry_note = ""
+
+        if attempt == 1:
+            retry_note = """
+
+ПРЕДЫДУЩИЙ ОТВЕТ БЫЛ ОТКЛОНЁН, ПОТОМУ ЧТО ОН БЫЛ НЕПОЛНЫМ.
+Не возвращай только изменённые поля.
+
+Особенно проверь наличие title, cover_profile и полного списка days.
+Верни весь маршрут целиком по полной схеме JSON."""
+
+        try:
+            response = client.chat.completions.create(
+                model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+                messages=[
+                    # SYSTEM_PROMPT содержит полную схему TravelMind.
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "system",
+                        "content": EDIT_SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": base_prompt + retry_note,
+                    },
+                ],
+                temperature=0.2,
+                max_tokens=8192,
+                response_format={"type": "json_object"},
+            )
+
+            content = str(
+                response.choices[0].message.content or ""
+            ).strip()
+
+            if not content:
+                raise ValueError("AI вернул пустой ответ.")
+
+            parsed_data = _parse_json(content)
+
+            # Проверяем структуру до возврата результата в страницу.
+            # Благодаря этому можно автоматически повторить запрос.
+            validation_errors = validate(parsed_data)
+
+            if validation_errors:
+                raise ValueError(
+                    "AI вернул неполную структуру: "
+                    + " ".join(validation_errors[:5])
+                )
+
+            usage = response.usage
+
+            return {
+                "data": parsed_data,
+                "tokens_in": (
+                    getattr(usage, "prompt_tokens", 0) or 0
+                ),
+                "tokens_out": (
+                    getattr(usage, "completion_tokens", 0) or 0
+                ),
+            }
+
+        except Exception as error:
+            last_error = error
+
+    raise ValueError(
+        "AI дважды вернул неполную или некорректную структуру маршрута. "
+        f"Последняя причина: {str(last_error)[:300]}"
     )
 
-    content = str(
-        response.choices[0].message.content or ""
-    ).strip()
-
-    if not content:
-        raise json.JSONDecodeError(
-            "AI вернул пустой ответ.",
-            "",
-            0,
-        )
-
-    usage = response.usage
-
-    return {
-        "data": _parse_json(content),
-        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
-        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
-    }
 
 
 
