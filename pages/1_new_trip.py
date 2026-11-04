@@ -408,95 +408,7 @@ if generated_trip_id:
 # ФОРМА СОЗДАНИЯ ПОЕЗДКИ
 # ==========================================================
 
-# ==========================================================
-# ПОИСК И ВЫБОР ГОРОДА
-# ==========================================================
 
-if "trip_destination" not in st.session_state:
-    st.session_state["trip_destination"] = ""
-
-if "destination_search_results" not in st.session_state:
-    st.session_state["destination_search_results"] = []
-
-st.markdown("### 📍 Выберите направление")
-
-st.caption(
-    "Начните вводить город, найдите подходящий вариант и выберите его. "
-    "Это поможет точнее построить маршрут, карту и прогноз погоды."
-)
-
-search_column, search_button_column = st.columns([4, 1])
-
-with search_column:
-    destination_search_query = st.text_input(
-        "Поиск города",
-        placeholder="Например: Санкт-Петербург, Стамбул или Казань",
-        key="destination_search_query",
-        label_visibility="collapsed",
-    ).strip()
-
-with search_button_column:
-    search_destination_clicked = st.button(
-        "🔎 Найти",
-        key="search_destination_button",
-        use_container_width=True,
-    )
-
-if search_destination_clicked:
-    if len(destination_search_query) < 3:
-        st.warning("Введите минимум 3 символа для поиска города.")
-        st.session_state["destination_search_results"] = []
-    else:
-        with st.spinner("Ищем города…"):
-            st.session_state["destination_search_results"] = (
-                weather.search_destinations(destination_search_query)
-            )
-
-search_results = st.session_state.get(
-    "destination_search_results",
-    [],
-)
-
-if search_results:
-    st.success(f"Найдено вариантов: {len(search_results)}.")
-
-    selected_destination_index = st.selectbox(
-        "Выберите город",
-        options=list(range(len(search_results))),
-        format_func=lambda index: (
-            f"📍 {search_results[index]['label']}"
-        ),
-        key="destination_search_selected_index",
-    )
-
-    selected_destination = search_results[
-        selected_destination_index
-    ]
-
-    st.caption(
-        "Будет использовано: "
-        f"**{selected_destination['label']}**"
-    )
-
-    if st.button(
-        "✓ Использовать выбранный город",
-        key="use_selected_destination",
-        use_container_width=True,
-    ):
-        st.session_state["trip_destination"] = (
-            selected_destination["label"]
-        )
-        st.session_state["destination_search_results"] = []
-        st.toast("Направление подставлено в форму поездки.")
-        st.rerun()
-
-elif search_destination_clicked and destination_search_query:
-    st.info(
-        "Города не найдены. Проверьте написание или укажите "
-        "ближайший крупный населённый пункт."
-    )
-
-st.divider()
 
 PACES = {
     "Спокойный": "slow",
@@ -552,24 +464,79 @@ if "trip_dates" not in st.session_state:
         default_start,
         default_end,
     )
-with st.form("plan_form"):
-    st.subheader("📍 Основные параметры")
 
-    column_1, column_2 = st.columns(2)
+if "trip_destination" not in st.session_state:
+    st.session_state["trip_destination"] = ""
 
-    with column_1:
-        dest = st.text_input(
-            "Куда отправляемся?",
-            placeholder="Например: Стамбул, Турция",
-            key="trip_destination",
-            help=(
-                "Можно ввести направление вручную или выбрать город "
-                "через поиск выше."
-            ),
+
+def choose_destination(destination_label):
+    """
+    Подставляет выбранный вариант в основное поле направления.
+    Callback выполняется до перерисовки страницы.
+    """
+    st.session_state["trip_destination"] = destination_label
+    st.session_state["destination_was_selected"] = True
+
+
+st.subheader("📍 Основные параметры")
+
+dest = st.text_input(
+    "Куда отправляемся?",
+    placeholder="Начните вводить город: Стамбул, Казань, Санкт-Петербург…",
+    key="trip_destination",
+    help=(
+        "После ввода минимум трёх символов появятся варианты городов. "
+        "Выберите подходящий вариант, чтобы маршрут и прогноз погоды "
+        "использовали корректное направление."
+    ),
+).strip()
+
+# После клика по подсказке один раз скрываем результаты,
+# чтобы поле выглядело чисто и пользователь видел выбранный город.
+destination_was_selected = st.session_state.pop(
+    "destination_was_selected",
+    False,
+)
+
+if len(dest) >= 3 and not destination_was_selected:
+    with st.spinner("Ищем подходящие города…"):
+        destination_suggestions = weather.search_destinations(dest)
+
+    if destination_suggestions:
+        st.caption("Выберите подходящий вариант:")
+
+        for index, suggestion in enumerate(destination_suggestions):
+            suggestion_label = suggestion["label"]
+
+            if st.button(
+                f"📍 {suggestion_label}",
+                key=f"destination_suggestion_{index}_{suggestion_label}",
+                use_container_width=True,
+                on_click=choose_destination,
+                args=(suggestion_label,),
+            ):
+                pass
+
+    else:
+        st.caption(
+            "Города не найдены. Попробуйте другое написание "
+            "или ближайший крупный населённый пункт."
         )
 
-    with column_2:
-        dates = st.date_input(
+with st.form("plan_form"):
+    st.subheader("📅 Даты поездки")
+
+    dates = st.date_input(
+        "Даты поездки",
+        min_value=today,
+        format="DD/MM/YYYY",
+        key="trip_dates",
+        help=(
+            "Нажмите первую дату — это начало поездки. "
+            "Затем нажмите вторую дату — это окончание. "
+            "Все дни между ними будут выбраны автоматически."
+        ),
+    )
             "Даты поездки",
             min_value=today,
             format="DD/MM/YYYY",
