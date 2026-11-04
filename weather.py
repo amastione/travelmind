@@ -150,6 +150,80 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
     # чтобы пользователь мог проверить место прогноза.
     return valid_places[0]
 
+@st.cache_data(ttl=24 * 3600, show_spinner=False)
+def search_destinations(query: str) -> list[dict[str, Any]]:
+    """
+    Возвращает до 5 вариантов населённых пунктов для выбора пользователем.
+
+    Используется только текст поискового запроса. Бюджет, интересы,
+    маршрут и данные пользователя во внешний сервис не передаются.
+    """
+    query = " ".join(str(query or "").split())
+
+    if len(query) < 3:
+        return []
+
+    try:
+        response = requests.get(
+            GEOCODING_URL,
+            params={
+                "name": query,
+                "count": 5,
+                "language": "ru",
+                "format": "json",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError):
+        return []
+
+    results = payload.get("results") or []
+
+    destinations = []
+
+    for place in results:
+        if not isinstance(place, dict):
+            continue
+
+        try:
+            latitude = float(place["latitude"])
+            longitude = float(place["longitude"])
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            continue
+
+        city_name = str(place.get("name") or "").strip()
+        country = str(place.get("country") or "").strip()
+        region = str(place.get("admin1") or "").strip()
+
+        if not city_name:
+            continue
+
+        label_parts = [city_name]
+
+        if region and region.lower() != city_name.lower():
+            label_parts.append(region)
+
+        if country:
+            label_parts.append(country)
+
+        destinations.append(
+            {
+                "label": ", ".join(label_parts),
+                "city": city_name,
+                "country": country,
+                "region": region,
+                "latitude": latitude,
+                "longitude": longitude,
+                "timezone": str(place.get("timezone") or "auto"),
+            }
+        )
+
+    return destinations
 
 @st.cache_data(ttl=3 * 3600, show_spinner=False)
 def get_weather_forecast(
