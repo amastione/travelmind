@@ -148,13 +148,36 @@ def search_cities(query: str) -> list[dict[str, Any]]:
             }
         )
 
-    # Города показываем выше регионов, если совпадают оба типа.
-    results.sort(
-        key=lambda item: (
-            item["type"] != "город",
+    # Точные совпадения должны быть выше частичных.
+    # Например, по запросу «Дагестан» выше будут:
+    # «Республика Дагестан, Россия»,
+    # а не «Дагестанские Огни».
+    normalized_query = query.casefold()
+
+    type_priority = {
+        "регион": 0,
+        "город": 1,
+        "населённый пункт": 2,
+    }
+
+    def sort_key(item):
+        destination_name = (
+            item["city"]
+            or item["settlement"]
+            or item["region"]
+        ).casefold()
+
+        is_exact_match = destination_name == normalized_query
+        starts_with_query = destination_name.startswith(normalized_query)
+
+        return (
+            0 if is_exact_match else 1,
+            0 if starts_with_query else 1,
+            type_priority.get(item["type"], 9),
             item["label"].casefold(),
         )
-    )
+
+    results.sort(key=sort_key)
 
     return results[:5]
 
