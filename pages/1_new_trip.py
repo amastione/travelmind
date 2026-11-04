@@ -550,13 +550,10 @@ st.caption(
     "Поиск в DaData начинается после трёх символов."
 )
 
-if "route_generation_in_progress" not in st.session_state:
-    st.session_state["route_generation_in_progress"] = False
-
-
-def start_route_generation():
-    """Блокирует повторный запуск генерации маршрута."""
-    st.session_state["route_generation_in_progress"] = True
+submitted = st.form_submit_button(
+    "✨ Создать маршрут с AI",
+    use_container_width=True,
+)
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
