@@ -330,7 +330,7 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 </style>
 """
 
-st.markdown(CSS, unsafe_allow_html=True)
+
 st.markdown(CSS, unsafe_allow_html=True)
 
 branding.apply_glass_buttons()
