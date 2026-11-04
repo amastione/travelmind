@@ -593,6 +593,119 @@ wow_moments, packing, phrases, tips.
     last_error = None
 
     # Обычная попытка + повторная, если модель вернёт неполный объект.
+def edit_trip_with_ai(
+    current_data: dict,
+    trip_context: dict,
+    user_request: str,
+    weather_context=None,
+) -> dict:
+    """
+    Изменяет сохранённый маршрут по команде пользователя.
+
+    Модель должна вернуть полный маршрут TravelMind, а не только
+    изменённые поля. При некорректной структуре выполняется повторная
+    попытка. Исходный маршрут не изменяется до успешной проверки.
+    """
+    destination = str(trip_context.get("destination") or "")
+    start_date = str(trip_context.get("start_date") or "")
+    end_date = str(trip_context.get("end_date") or "")
+    budget = trip_context.get("budget") or 0
+    currency = str(trip_context.get("currency") or "RUB")
+    people = trip_context.get("people") or 1
+
+    # ------------------------------------------------------
+    # Подготовка компактного погодного контекста для AI.
+    # Если прогноз не был добавлен пользователем, блок останется пустым.
+    # ------------------------------------------------------
+
+    weather_context_json = ""
+
+    if weather_context:
+        safe_weather_context = []
+
+        for item in weather_context[:7]:
+            if not isinstance(item, dict):
+                continue
+
+            safe_weather_context.append(
+                {
+                    "date": item.get("date"),
+                    "condition": item.get("condition"),
+                    "temp_min": item.get("temp_min"),
+                    "temp_max": item.get("temp_max"),
+                    "rain_probability": item.get("rain_probability"),
+                    "precipitation_mm": item.get("precipitation_mm"),
+                    "wind_max": item.get("wind_max"),
+                    "warnings": item.get("warnings") or [],
+                }
+            )
+
+        if safe_weather_context:
+            weather_context_json = json.dumps(
+                safe_weather_context,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+
+    weather_prompt_block = ""
+
+    if weather_context_json:
+        weather_prompt_block = f"""
+
+ПРОВЕРЕННЫЙ ПРОГНОЗ ПОГОДЫ:
+{weather_context_json}
+
+ПРАВИЛА РАБОТЫ С ПОГОДОЙ:
+- Используй погодные данные только как фактический контекст.
+- Не выдумывай температуру, осадки, ветер или предупреждения.
+- При сильном дожде, грозе, сильном ветре или жаре измени только
+  неподходящие уличные активности в затронутые дни.
+- Предлагай подходящие крытые или более комфортные альтернативы.
+- Не меняй даты, количество дней, направление и бюджет без явной просьбы.
+"""
+
+    # Служебную историю редактирования не передаём модели:
+    # она увеличивает контекст, но не нужна для обновления маршрута.
+    editable_data = dict(current_data)
+    editable_data.pop("_ai_edit_history", None)
+
+    current_json = json.dumps(
+        editable_data,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    base_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
+Направление: {destination}
+Даты: {start_date} — {end_date}
+Исходный бюджет: {budget} {currency}
+Путешественников: {people}
+
+КОМАНДА ПОЛЬЗОВАТЕЛЯ:
+{user_request}
+{weather_prompt_block}
+
+ТЕКУЩИЙ МАРШРУТ В JSON:
+{current_json}
+
+ЗАДАЧА:
+Внеси только необходимые изменения в маршрут согласно команде пользователя.
+
+КРИТИЧЕСКОЕ ТРЕБОВАНИЕ:
+Верни не список изменений и не частичный JSON, а ПОЛНУЮ новую версию
+маршрута строго по JSON-схеме из системной инструкции.
+
+Обязательно сохрани и верни все верхнеуровневые поля:
+title, overview, cover_theme, cover_profile, total_cost, mood_score,
+mood_reason, accommodation, hotels, days, budget_breakdown,
+wow_moments, packing, phrases, tips.
+
+Верни только один завершённый JSON-объект без Markdown и пояснений."""
+
+    client = _create_llm_client()
+    last_error = None
+
+    # Две попытки: обычная и повторная, если AI вернул неполный объект.
     for attempt in range(2):
         retry_note = ""
 
