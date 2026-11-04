@@ -521,10 +521,7 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
-)
-
-auth.render_main_menu_button()
-   
+)   
 
 auth.render_main_menu_button()
 
