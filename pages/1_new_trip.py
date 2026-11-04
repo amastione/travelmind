@@ -304,6 +304,27 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
         padding: 1.15rem;
     }
 }
+/* Компактные кнопки-подсказки DaData */
+[data-testid="stButton"] button[kind="secondary"] {
+    justify-content: flex-start !important;
+    min-height: 42px !important;
+    padding: 0.55rem 0.9rem !important;
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+    border-radius: 10px !important;
+    background: rgba(15, 23, 42, 0.88) !important;
+    color: #E5EDF8 !important;
+    font-size: 0.94rem !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    box-shadow: none !important;
+}
+
+[data-testid="stButton"] button[kind="secondary"]:hover {
+    transform: none !important;
+    border-color: rgba(34, 211, 238, 0.75) !important;
+    background: rgba(34, 211, 238, 0.11) !important;
+    box-shadow: none !important;
+}
 </style>
 """
 
