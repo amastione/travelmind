@@ -2421,43 +2421,79 @@ with tab_weather:
     )
 
     trip_start_iso = str(trip["start_date"])[:10]
+        trip_start_iso = str(trip["start_date"])[:10]
     trip_end_iso = str(trip["end_date"])[:10]
 
-    try:
-        with st.spinner("Получаем прогноз погоды…"):
-            location_data = weather.geocode_destination(destination)
+    # Отдельное поле для поиска погоды.
+    # Изменение этого поля не изменяет сохранённый маршрут.
+    weather_city = st.text_input(
+        "Город для прогноза погоды",
+        value=str(destination or "").strip(),
+        key=f"weather_city_{trip_id}",
+        help=(
+            "Укажите один населённый пункт, например: Сочи или Казань. "
+            "Для маршрута по нескольким городам проверяйте каждый отдельно. "
+            "После ввода нажмите Enter."
+        ),
+    ).strip()
 
-            if not location_data:
-                st.warning(
-                    "Не удалось определить координаты направления. "
-                    "Попробуйте указать город более точно при создании поездки."
+    st.caption(
+        "Если направление содержит страну, несколько городов или описание "
+        "поездки, попробуйте оставить только название нужного города. "
+        "Проверьте найденный город и страну перед использованием прогноза."
+    )
+
+    weather_days = []
+    raw_forecast = {}
+    location_data = {}
+    weather_lookup_failed = False
+
+    if not weather_city:
+        weather_lookup_failed = True
+        st.info("Введите город, чтобы получить прогноз.")
+
+    else:
+        try:
+            with st.spinner("Получаем прогноз погоды…"):
+                location_data = (
+                    weather.geocode_destination(weather_city) or {}
                 )
-                st.stop()
 
-            raw_forecast = weather.get_weather_forecast(
-                latitude=location_data["latitude"],
-                longitude=location_data["longitude"],
-                timezone=location_data.get("timezone", "auto"),
+                if not location_data:
+                    weather_lookup_failed = True
+                    st.warning(
+                        f"По запросу «{weather_city}» город не найден. "
+                        "Попробуйте другое написание или название "
+                        "ближайшего населённого пункта."
+                    )
+
+                else:
+                    raw_forecast = weather.get_weather_forecast(
+                        latitude=location_data["latitude"],
+                        longitude=location_data["longitude"],
+                        timezone=location_data.get("timezone", "auto"),
+                    )
+
+                    weather_days = weather.build_daily_weather(
+                        raw_forecast=raw_forecast,
+                        start_date=trip_start_iso,
+                        end_date=trip_end_iso,
+                    )
+
+        except Exception:
+            weather_lookup_failed = True
+            weather_days = []
+            raw_forecast = {}
+            location_data = {}
+
+            st.warning(
+                "Не удалось загрузить прогноз. "
+                "Это не влияет на сохранённый маршрут."
             )
-
-            weather_days = weather.build_daily_weather(
-                raw_forecast=raw_forecast,
-                start_date=trip_start_iso,
-                end_date=trip_end_iso,
+            st.caption(
+                "Возможна ошибка обращения к погодному сервису "
+                "или обработки его ответа. Попробуйте позже."
             )
-
-    except Exception:
-        st.warning(
-            "Прогноз погоды временно недоступен. "
-            "Это не влияет на сохранённый маршрут."
-        )
-        st.caption(
-            "Попробуйте обновить страницу позже. "
-            "Погодный сервис может быть временно недоступен."
-        )
-        weather_days = []
-        raw_forecast = {}
-        location_data = {}
 
     if weather_days:
         location_name = location_data.get("name") or destination
