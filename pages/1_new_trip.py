@@ -493,38 +493,9 @@ if "trip_dates" not in st.session_state:
 if "trip_destination" not in st.session_state:
     st.session_state["trip_destination"] = ""
 
-from streamlit_searchbox import st_searchbox
 
 
-def find_destination_labels(search_term: str) -> list[str]:
-    """
-    Возвращает компактный список подсказок для выпадающего поиска.
 
-    DaData ищет города, регионы, посёлки и сёла — в зависимости
-    от настроек функции search_cities() в dadata.py.
-    """
-    search_term = (search_term or "").strip()
-
-    if len(search_term) < 3:
-        return []
-
-    suggestions = dadata.search_cities(search_term)
-
-    return [
-        suggestion["label"]
-        for suggestion in suggestions
-        if suggestion.get("label")
-    ]
-
-
-st.subheader("📍 Основные параметры")
-
-selected_destination = st_searchbox(
-    search_function=find_destination_labels,
-    label="Куда отправляемся?",
-    placeholder="Начните вводить: Грозный, Ингушетия, Каменномостский…",
-    key="destination_searchbox",
-)
 
 # Если пользователь выбрал вариант из DaData,
 # используем нормализованное название как направление.
@@ -538,12 +509,7 @@ st.caption(
     "Введите минимум три символа и выберите подсказку. "
     "Поддерживаются города, регионы, посёлки и сёла."
 )
-manual_destination = st.text_input(
-    "Не нашли нужное место?",
-    value=st.session_state["trip_destination"],
-    placeholder="Можно указать направление вручную",
-    key="manual_destination_input",
-)
+
 
 if manual_destination.strip():
     dest = manual_destination.strip()
