@@ -496,10 +496,9 @@ st.subheader("📍 Основные параметры")
 # пока Streamlit Cloud ещё устанавливает новую библиотеку.
 from st_keyup import st_keyup
 
-
 typed_destination = st_keyup(
     "Куда отправляемся?",
-    key=f"destination_keyup_{input_version}",
+    key="trip_destination_keyup",
 )
 
 st.caption(
