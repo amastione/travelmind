@@ -310,26 +310,7 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     }
 }
 /* Компактные кнопки-подсказки DaData */
-[data-testid="stButton"] button[kind="secondary"] {
-    justify-content: flex-start !important;
-    min-height: 42px !important;
-    padding: 0.55rem 0.9rem !important;
-    border: 1px solid rgba(148, 163, 184, 0.28) !important;
-    border-radius: 10px !important;
-    background: rgba(15, 23, 42, 0.88) !important;
-    color: #E5EDF8 !important;
-    font-size: 0.94rem !important;
-    font-weight: 500 !important;
-    text-align: left !important;
-    box-shadow: none !important;
-}
 
-[data-testid="stButton"] button[kind="secondary"]:hover {
-    transform: none !important;
-    border-color: rgba(34, 211, 238, 0.75) !important;
-    background: rgba(34, 211, 238, 0.11) !important;
-    box-shadow: none !important;
-}
 </style>
 """
 
@@ -504,6 +485,59 @@ dest = st.text_input(
         "туристическое направление."
     ),
 ).strip()
+
+st.subheader("📍 Основные параметры")
+
+current_destination = st.session_state["trip_destination"].strip()
+
+# Запрос к DaData выполняется только при трёх и более символах.
+# Функция кэшируется, поэтому одинаковые запросы не тратят лимит повторно.
+if len(current_destination) >= 3:
+    destination_suggestions = dadata.search_cities(
+        current_destination
+    )
+else:
+    destination_suggestions = []
+
+selected_destination = st.session_state.get(
+    "selected_destination",
+    "",
+)
+
+event = destination_autocomplete(
+    value=current_destination,
+    suggestions=destination_suggestions,
+    hide_suggestions=(
+        bool(selected_destination)
+        and selected_destination == current_destination
+    ),
+    key="travelmind_destination_autocomplete",
+)
+
+# Компонент возвращает текст после паузы при печати
+# либо нормализованную строку после клика по подсказке.
+if isinstance(event, dict):
+    event_type = event.get("type")
+    event_value = str(event.get("value") or "").strip()
+
+    if event_type == "input":
+        # Свободный ручной ввод: ничего не заставляем выбирать.
+        st.session_state["trip_destination"] = event_value
+        st.session_state["selected_destination"] = ""
+        st.rerun()
+
+    if event_type == "select":
+        # Пользователь выбрал нормализованное направление DaData.
+        st.session_state["trip_destination"] = event_value
+        st.session_state["selected_destination"] = event_value
+        st.rerun()
+
+dest = st.session_state["trip_destination"].strip()
+
+st.caption(
+    "Начните вводить название. Можно выбрать подсказку или оставить "
+    "направление введённым вручную."
+)
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
