@@ -333,11 +333,11 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 
 st.markdown(CSS, unsafe_allow_html=True)
 
-branding.apply_glass_buttons()
-
+# Вызывается после локального CSS, чтобы заменить старые яркие
+# градиенты на стеклянный дизайн кнопок.
 branding.apply_clean_layout()
+branding.apply_glass_buttons()
 branding.show_author_mark()
-site_access.require_site_access()
 
 auth.render_main_menu_button()
 
