@@ -457,24 +457,57 @@ st.markdown(
         backdrop-filter: blur(16px) saturate(140%);
         -webkit-backdrop-filter: blur(16px) saturate(140%);
     }
+st.markdown(CSS, unsafe_allow_html=True)
 
-    /* Hover для всех типов кнопок */
-    .stButton > button:hover,
-    .stFormSubmitButton > button:hover,
-    [data-testid="stLinkButton"] > a:hover,
-    [data-testid="stLinkButton"] a:hover,
-    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
-    [data-testid="stPageLink-NavLink"]:hover {
-        transform: translateY(-1px) !important;
+st.markdown(
+    """
+    <style>
+    /* Стеклянный стиль только для кнопок этой страницы */
 
-        border-color: rgba(186, 230, 253, 0.52) !important;
-
+    .stButton > button,
+    .stFormSubmitButton > button {
+        border: 1px solid rgba(255, 255, 255, 0.26) !important;
+        border-radius: 15px !important;
         background: linear-gradient(
             135deg,
-            rgba(103, 232, 249, 0.26) 0%,
-            rgba(167, 139, 250, 0.21) 100%
+            rgba(255, 255, 255, 0.20),
+            rgba(148, 163, 184, 0.13)
         ) !important;
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(15, 23, 42, 0.22),
+            0 8px 22px rgba(0, 0, 0, 0.20) !important;
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        transition:
+            transform 180ms ease,
+            background 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease !important;
+    }
 
+    /* Основная кнопка генерации — чуть заметнее остальных */
+    .stFormSubmitButton > button {
+        min-height: 52px !important;
+        border-color: rgba(165, 243, 252, 0.38) !important;
+        background: linear-gradient(
+            135deg,
+            rgba(34, 211, 238, 0.24),
+            rgba(99, 102, 241, 0.22)
+        ) !important;
+    }
+
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover {
+        transform: translateY(-1px) !important;
+        border-color: rgba(186, 230, 253, 0.52) !important;
+        background: linear-gradient(
+            135deg,
+            rgba(103, 232, 249, 0.26),
+            rgba(167, 139, 250, 0.21)
+        ) !important;
         box-shadow:
             inset 0 1px 0 rgba(255, 255, 255, 0.34),
             0 12px 28px rgba(34, 211, 238, 0.13),
@@ -482,7 +515,15 @@ st.markdown(
     }
 
     .stButton > button:active,
-    .stFormSubmitButton > button:active,
+    .stFormSubmitButton > button:active {
+        transform: scale(0.985) !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+auth.render_main_menu_button()
    
 
 auth.render_main_menu_button()
