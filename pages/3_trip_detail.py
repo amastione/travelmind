@@ -3863,7 +3863,24 @@ with tab_edit:
 
     if edit_request_key not in st.session_state:
         st.session_state[edit_request_key] = ""
+    weather_context_key = f"ai_weather_context_{trip_id}"
+    active_weather_context = st.session_state.get(weather_context_key)
 
+    if active_weather_context:
+        st.info(
+            "☀️ К AI-команде будет добавлен актуальный прогноз погоды. "
+            "Модель должна учитывать его при обновлении маршрута."
+        )
+    
+        if st.button(
+            "Не учитывать прогноз погоды",
+            key=f"clear_weather_context_{trip_id}",
+            use_container_width=True,
+        ):
+            st.session_state.pop(weather_context_key, None)
+            st.toast("Погодный контекст удалён из следующей AI-команды.")
+            st.rerun()
+    
     with preset_col_1:
         if st.button(
             "💸 Сделать дешевле",
