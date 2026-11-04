@@ -172,6 +172,7 @@ def get_weather_forecast(
             "longitude": longitude,
             "timezone": timezone or "auto",
             "forecast_days": FORECAST_MAX_DAYS,
+            "wind_speed_unit": "ms",
             "daily": (
                 "weather_code,"
                 "temperature_2m_max,"
