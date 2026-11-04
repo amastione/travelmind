@@ -1468,6 +1468,76 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     transform: none !important;
     box-shadow: none !important;
 }
+/* Внешние действия: карта, авиабилеты, отели — стиль стеклянных кнопок */
+[data-testid="stLinkButton"] > a,
+[data-testid="stLinkButton"] a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    padding: 0.68rem 1rem !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    border-radius: 14px !important;
+
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(148, 163, 184, 0.10) 100%
+    ) !important;
+
+    color: #F8FAFC !important;
+    text-decoration: none !important;
+
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(15, 23, 42, 0.20),
+        0 8px 22px rgba(0, 0, 0, 0.16) !important;
+
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+
+    transition:
+        transform 180ms ease,
+        background 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease !important;
+}
+
+[data-testid="stLinkButton"] > a:hover,
+[data-testid="stLinkButton"] a:hover {
+    transform: translateY(-1px) !important;
+    border-color: rgba(186, 230, 253, 0.48) !important;
+
+    background: linear-gradient(
+        135deg,
+        rgba(103, 232, 249, 0.22) 0%,
+        rgba(167, 139, 250, 0.18) 100%
+    ) !important;
+
+    color: #FFFFFF !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.30),
+        0 12px 28px rgba(34, 211, 238, 0.12),
+        0 8px 20px rgba(0, 0, 0, 0.20) !important;
+}
+
+[data-testid="stLinkButton"] > a:active,
+[data-testid="stLinkButton"] a:active {
+    transform: scale(0.985) !important;
+}
+
+[data-testid="stLinkButton"] > a:focus-visible,
+[data-testid="stLinkButton"] a:focus-visible {
+    outline: 2px solid rgba(125, 211, 252, 0.88) !important;
+    outline-offset: 3px !important;
+}
 </style>
 """
 
