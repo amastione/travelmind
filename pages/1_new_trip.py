@@ -10,6 +10,7 @@ import db
 import site_access
 import branding
 import dadata
+from destination_autocomplete import destination_autocomplete
 
 st.set_page_config(
     page_title="Спланировать поездку",
