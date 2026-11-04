@@ -1342,6 +1342,60 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         border-radius: 10px !important;
     }
 }
+/* Яркая кнопка «Главное меню» в верхней части страницы */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+[data-testid="stPageLink-NavLink"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    padding: 0.65rem 1rem !important;
+    border: 1px solid rgba(234, 252, 255, 0.65) !important;
+    border-radius: 14px !important;
+    background: linear-gradient(
+        135deg,
+        #069FBE 0%,
+        #1DCDE6 46%,
+        #568DF0 72%,
+        #8057E9 100%
+    ) !important;
+    color: #FFFFFF !important;
+    text-decoration: none !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    box-shadow:
+        0 10px 22px rgba(34, 211, 238, 0.24),
+        0 7px 18px rgba(139, 92, 246, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+    transition:
+        transform 180ms ease,
+        filter 180ms ease,
+        box-shadow 180ms ease !important;
+}
+
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+[data-testid="stPageLink-NavLink"] p {
+    margin: 0 !important;
+    color: #FFFFFF !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+}
+
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+[data-testid="stPageLink-NavLink"]:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.1) saturate(1.08) !important;
+    box-shadow:
+        0 16px 30px rgba(34, 211, 238, 0.30),
+        0 12px 25px rgba(139, 92, 246, 0.23),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
+[data-testid="stPageLink-NavLink"]:focus-visible {
+    outline: 3px solid rgba(125, 235, 250, 0.88) !important;
+    outline-offset: 3px !important;
+}
 </style>
 """
 
