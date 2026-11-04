@@ -67,9 +67,78 @@ def get_weather_label(weather_code: int | None) -> dict[str, Any]:
     )
 
 
+def _destination_search_variants(destination: str) -> list[str]:
+    """
+    Создаёт варианты запроса для Open-Meteo.
+
+    DaData возвращает точную полную запись:
+    «Ставрополь, Ставропольский край, Россия».
+
+    Однако Open-Meteo обычно лучше находит именно населённый пункт:
+    «Ставрополь».
+    """
+    full_name = " ".join(str(destination or "").split())
+
+    if not full_name:
+        return []
+
+    variants = [full_name]
+
+    # Первый элемент в записи DaData — город, посёлок или регион.
+    # «Ставрополь, Ставропольский край, Россия» → «Ставрополь».
+    first_part = full_name.split(",", 1)[0].strip()
+
+    if first_part and first_part.casefold() != full_name.casefold():
+        variants.append(first_part)
+
+    # Open-Meteo иногда не находит населённые пункты вместе с типом:
+    # «пгт Каменномостский» → «Каменномостский»,
+    # «село Архыз» → «Архыз».
+    locality_prefixes = (
+        "г. ",
+        "город ",
+        "пгт ",
+        "посёлок ",
+        "поселок ",
+        "село ",
+        "деревня ",
+        "станица ",
+        "хутор ",
+    )
+
+    short_name = first_part.casefold()
+
+    for prefix in locality_prefixes:
+        if short_name.startswith(prefix):
+            without_prefix = first_part[len(prefix):].strip()
+
+            if without_prefix:
+                variants.append(without_prefix)
+
+            break
+
+    # Удаляем повторы, сохраняя исходный порядок.
+    unique_variants = []
+    seen = set()
+
+    for variant in variants:
+        normalized = variant.casefold()
+
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_variants.append(variant)
+
+    return unique_variants
+
+
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def geocode_destination(destination: str) -> dict[str, Any] | None:
-    """Ищет населённый пункт и проверяет полученные координаты."""
+    """
+    Ищет населённый пункт и проверяет полученные координаты.
+
+    Сначала пробует полное направление из DaData, затем название
+    города / населённого пункта без региона и страны.
+    """
     destination = " ".join(str(destination or "").split())
 
     if not destination:
@@ -78,77 +147,78 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
             "Нужно проверить поле направления во вкладке погоды."
         )
 
-    try:
-        response = requests.get(
-            GEOCODING_URL,
-            params={
-                "name": destination,
-                "count": 5,
-                "language": "ru",
-                "format": "json",
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
-    except requests.RequestException:
-        raise RuntimeError(
-            "Сервис поиска городов временно недоступен. "
-            "Попробуйте получить прогноз позже."
-        ) from None
+    search_variants = _destination_search_variants(destination)
 
-    try:
-        payload = response.json()
-    except ValueError:
-        raise RuntimeError(
-            "Сервис поиска городов вернул некорректный ответ."
-        ) from None
-
-    if not isinstance(payload, dict) or payload.get("error"):
-        raise RuntimeError(
-            "Сервис поиска городов не смог обработать запрос."
-        )
-
-    results = payload.get("results") or []
-
-    if not results:
-        return None
-
-    valid_places = []
-
-    for place in results:
-        if not isinstance(place, dict):
-            continue
+    for search_query in search_variants:
+        try:
+            response = requests.get(
+                GEOCODING_URL,
+                params={
+                    "name": search_query,
+                    "count": 5,
+                    "language": "ru",
+                    "format": "json",
+                },
+                timeout=10,
+            )
+            response.raise_for_status()
+        except requests.RequestException:
+            raise RuntimeError(
+                "Сервис поиска городов временно недоступен. "
+                "Попробуйте получить прогноз позже."
+            ) from None
 
         try:
-            latitude = float(place["latitude"])
-            longitude = float(place["longitude"])
-        except (KeyError, TypeError, ValueError):
+            payload = response.json()
+        except ValueError:
+            raise RuntimeError(
+                "Сервис поиска городов вернул некорректный ответ."
+            ) from None
+
+        if not isinstance(payload, dict) or payload.get("error"):
+            raise RuntimeError(
+                "Сервис поиска городов не смог обработать запрос."
+            )
+
+        results = payload.get("results") or []
+
+        if not results:
+            # Полная строка не найдена — пробуем следующий вариант,
+            # например «Ставрополь».
             continue
 
-        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-            continue
+        valid_places = []
 
-        valid_places.append(
-            {
-                "name": str(place.get("name") or destination),
-                "country": str(place.get("country") or ""),
-                "admin1": str(place.get("admin1") or ""),
-                "latitude": latitude,
-                "longitude": longitude,
-                "timezone": str(place.get("timezone") or "auto"),
-            }
-        )
+        for place in results:
+            if not isinstance(place, dict):
+                continue
 
-    if not valid_places:
-        raise RuntimeError(
-            "Сервис нашёл населённый пункт, но не вернул "
-            "корректные координаты."
-        )
+            try:
+                latitude = float(place["latitude"])
+                longitude = float(place["longitude"])
+            except (KeyError, TypeError, ValueError):
+                continue
 
-    # Сохраняем прежнее поведение: первый результат API.
-    # В интерфейсе обязательно показываем найденный город и страну,
-    # чтобы пользователь мог проверить место прогноза.
-    return valid_places[0]
+            if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+                continue
+
+            valid_places.append(
+                {
+                    "name": str(place.get("name") or search_query),
+                    "country": str(place.get("country") or ""),
+                    "admin1": str(place.get("admin1") or ""),
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "timezone": str(place.get("timezone") or "auto"),
+                }
+            )
+
+        if valid_places:
+            # Как и раньше, используем первый валидный результат Open-Meteo.
+            return valid_places[0]
+
+    # Ни полная запись, ни название населённого пункта не найдены.
+    return None
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def search_destinations(query: str) -> list[dict[str, Any]]:
