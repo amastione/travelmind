@@ -311,7 +311,12 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     }
 }
 /* Компактные кнопки-подсказки DaData */
-
+/* Скругление внешних углов поля поиска streamlit-searchbox */
+iframe[title="streamlit_searchbox.st_searchbox"] {
+    border: none !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
 </style>
 """
 
