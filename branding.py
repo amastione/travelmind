@@ -143,6 +143,96 @@ def apply_clean_layout() -> None:
 
 
 def show_author_mark() -> None:
+    def apply_glass_buttons() -> None:
+    """
+    Повторно применяет стеклянный стиль кнопок.
+
+    Вызывается после локального CSS страницы, если страница содержит
+    старые яркие градиенты, которые перекрывают общий дизайн.
+    """
+    st.markdown(
+        """
+        <style>
+        /* ======================================================
+           TRAVELMIND — ПЕРЕОПРЕДЕЛЕНИЕ КНОПОК ПОСЛЕ CSS СТРАНИЦЫ
+           ====================================================== */
+
+        .stButton > button,
+        .stFormSubmitButton > button,
+        .stLinkButton > a,
+        [data-testid="stLinkButton"] > a,
+        [data-testid="stLinkButton"] a,
+        section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+        [data-testid="stPageLink-NavLink"] {
+            border: 1px solid rgba(255, 255, 255, 0.26) !important;
+            border-radius: 15px !important;
+
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.18) 0%,
+                rgba(148, 163, 184, 0.11) 100%
+            ) !important;
+
+            color: #F8FAFC !important;
+            font-weight: 700 !important;
+
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.25),
+                inset 0 -1px 0 rgba(15, 23, 42, 0.22),
+                0 8px 22px rgba(0, 0, 0, 0.20) !important;
+
+            backdrop-filter: blur(16px) saturate(140%);
+            -webkit-backdrop-filter: blur(16px) saturate(140%);
+
+            transition:
+                transform 180ms ease,
+                background 180ms ease,
+                border-color 180ms ease,
+                box-shadow 180ms ease !important;
+        }
+
+        /* Текст в навигационных кнопках Streamlit */
+        [data-testid="stPageLink-NavLink"] p {
+            margin: 0 !important;
+            color: #F8FAFC !important;
+            font-weight: 700 !important;
+        }
+
+        /* Основная кнопка отправки формы — заметнее, но всё ещё стекло */
+        .stFormSubmitButton > button {
+            border-color: rgba(165, 243, 252, 0.38) !important;
+
+            background: linear-gradient(
+                135deg,
+                rgba(34, 211, 238, 0.24) 0%,
+                rgba(99, 102, 241, 0.20) 100%
+            ) !important;
+        }
+
+        .stButton > button:hover,
+        .stFormSubmitButton > button:hover,
+        .stLinkButton > a:hover,
+        [data-testid="stLinkButton"] > a:hover,
+        [data-testid="stLinkButton"] a:hover,
+        section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+        [data-testid="stPageLink-NavLink"]:hover {
+            transform: translateY(-1px) !important;
+            border-color: rgba(186, 230, 253, 0.52) !important;
+
+            background: linear-gradient(
+                135deg,
+                rgba(103, 232, 249, 0.25) 0%,
+                rgba(167, 139, 250, 0.20) 100%
+            ) !important;
+
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.34),
+                0 12px 28px rgba(34, 211, 238, 0.13),
+                0 8px 20px rgba(0, 0, 0, 0.23) !important;
+        }
+
+        .stButton > button:active,
+        .st
     """Показывает небольшую подпись автора внизу слева."""
     st.markdown(
         """
