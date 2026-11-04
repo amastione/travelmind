@@ -43,10 +43,9 @@ def search_cities(query: str) -> list[dict[str, Any]]:
         "query": query,
         "count": 5,
 
-        # Ищем не только города, но и субъекты / регионы.
-        # Например, «Ингушетия» является регионом, а не городом.
+        # Ищем регионы, города, посёлки, пгт и сёла.
         "from_bound": {"value": "region"},
-        "to_bound": {"value": "city"},
+        "to_bound": {"value": "settlement"},
     }
 
     try:
@@ -73,26 +72,46 @@ def search_cities(query: str) -> list[dict[str, Any]]:
         data = suggestion.get("data") or {}
 
         city = str(data.get("city") or "").strip()
+
+        # Для посёлков, пгт, сёл и станиц DaData использует settlement.
+        settlement = str(data.get("settlement") or "").strip()
+        settlement_with_type = str(
+            data.get("settlement_with_type") or ""
+        ).strip()
+        
         region = str(data.get("region_with_type") or "").strip()
         country = str(data.get("country") or "Россия").strip()
-
-        # Для города используем city.
-        # Для республики, области или края используем region.
-        destination_name = city or region
+        
+        # Приоритет:
+        # 1. город;
+        # 2. населённый пункт: посёлок / пгт / село / станица;
+        # 3. регион.
+        destination_name = city or settlement or region
 
         if not destination_name:
             continue
 
         # Тип направления нужен лишь для понятного интерфейса.
-        destination_type = "город" if city else "регион"
+        if city:
+            destination_type = "город"
+        elif settlement:
+            destination_type = "населённый пункт"
+        else:
+            destination_type = "регион"
 
-        label_parts = [destination_name]
-
-        # Для города добавляем регион.
-        # Для самого региона повторять его второй раз не нужно.
-        if city and region and region.casefold() != city.casefold():
+        # Для посёлка показываем тип: «пгт Каменномостский»,
+        # а не просто «Каменномостский».
+        display_name = (
+            settlement_with_type
+            if settlement and not city and settlement_with_type
+            else destination_name
+        )
+        
+        label_parts = [display_name]
+        
+        if region and region.casefold() != destination_name.casefold():
             label_parts.append(region)
-
+        
         if country:
             label_parts.append(country)
 
