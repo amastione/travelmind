@@ -10,6 +10,19 @@ _COMPONENT_DIR = (
     / "destination_autocomplete_frontend"
 )
 
+_INDEX_FILE = _COMPONENT_DIR / "index.html"
+
+if not _INDEX_FILE.is_file():
+    raise FileNotFoundError(
+        f"Не найден HTML-файл компонента: {_INDEX_FILE}"
+    )
+
+print(
+    "[destination_autocomplete] "
+    f"HTML найден: {_INDEX_FILE}; "
+    f"размер: {_INDEX_FILE.stat().st_size} байт",
+    flush=True,
+)
 _component = components.declare_component(
     "destination_autocomplete",
     path=str(_COMPONENT_DIR),
