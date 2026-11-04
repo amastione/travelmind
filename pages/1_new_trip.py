@@ -493,81 +493,61 @@ if "trip_dates" not in st.session_state:
 if "trip_destination" not in st.session_state:
     st.session_state["trip_destination"] = ""
 
-if "destination_input_version" not in st.session_state:
-    st.session_state["destination_input_version"] = 0
-
-if "destination_confirmed" not in st.session_state:
-    st.session_state["destination_confirmed"] = ""
+from streamlit_searchbox import st_searchbox
 
 
-def choose_destination(destination: dict) -> None:
+def find_destination_labels(search_term: str) -> list[str]:
     """
-    Срабатывает при клике по подсказке DaData.
-    Подставляет нормализованный город в основное поле.
+    Возвращает компактный список подсказок для выпадающего поиска.
+
+    DaData ищет города, регионы, посёлки и сёла — в зависимости
+    от настроек функции search_cities() в dadata.py.
     """
-    label = destination["label"]
+    search_term = (search_term or "").strip()
 
-    st.session_state["trip_destination"] = label
-    st.session_state["destination_confirmed"] = label
+    if len(search_term) < 3:
+        return []
 
-    # Создаём новый экземпляр поля, чтобы после выбора
-    # в нём гарантированно показался выбранный город.
-    st.session_state["destination_input_version"] += 1
+    suggestions = dadata.search_cities(search_term)
+
+    return [
+        suggestion["label"]
+        for suggestion in suggestions
+        if suggestion.get("label")
+    ]
 
 
 st.subheader("📍 Основные параметры")
 
-# Импорт находится здесь, чтобы страница не падала,
-# пока Streamlit Cloud ещё устанавливает новую библиотеку.
-from st_keyup import st_keyup
-
-typed_destination = st_keyup(
-    "Куда отправляемся?",
-    key="trip_destination_keyup",
+selected_destination = st_searchbox(
+    search_function=find_destination_labels,
+    label="Куда отправляемся?",
+    placeholder="Начните вводить: Грозный, Ингушетия, Каменномостский…",
+    key="destination_searchbox",
 )
 
-st.caption(
-    "Начните вводить название города. После трёх символов появятся подсказки. "
-    "Если нужного варианта нет, можно оставить направление введённым вручную."
-)
+# Если пользователь выбрал вариант из DaData,
+# используем нормализованное название как направление.
+if selected_destination:
+    st.session_state["trip_destination"] = selected_destination
 
-# Сохраняем ручной ввод пользователя.
-if typed_destination is not None:
-    typed_destination = typed_destination.strip()
-
-    if typed_destination != st.session_state["trip_destination"]:
-        st.session_state["trip_destination"] = typed_destination
-        st.session_state["destination_confirmed"] = ""
-
+# Значение для последующего создания маршрута.
 dest = st.session_state["trip_destination"].strip()
 
-# Не делаем запросов для 1–2 букв и не показываем подсказки,
-# если пользователь уже подтвердил выбранный город.
-should_show_suggestions = (
-    len(dest) >= 3
-    and dest != st.session_state["destination_confirmed"]
+st.caption(
+    "Введите минимум три символа и выберите подсказку. "
+    "Поддерживаются города, регионы, посёлки и сёла."
+)
+manual_destination = st.text_input(
+    "Не нашли нужное место?",
+    value=st.session_state["trip_destination"],
+    placeholder="Можно указать направление вручную",
+    key="manual_destination_input",
 )
 
-if should_show_suggestions:
-    suggestions = dadata.search_cities(dest)
-
-    if suggestions:
-        st.caption("Выберите подходящий город:")
-
-        for index, suggestion in enumerate(suggestions):
-            st.button(
-                f"📍 {suggestion['label']}",
-                key=f"dadata_city_{index}_{suggestion['label']}",
-                use_container_width=True,
-                on_click=choose_destination,
-                args=(suggestion,),
-            )
-
-    else:
-        st.caption(
-            "Подсказки не найдены. Вы можете продолжить "
-            "с введённым направлением вручную."
-        )
+if manual_destination.strip():
+    dest = manual_destination.strip()
+    st.session_state["trip_destination"] = dest
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
