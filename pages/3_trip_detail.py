@@ -1342,36 +1342,6 @@ div[data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
         border-radius: 10px !important;
     }
 }
-/* Яркая кнопка «Главное меню» в верхней части страницы */
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
-[data-testid="stPageLink-NavLink"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 46px !important;
-    padding: 0.65rem 1rem !important;
-    border: 1px solid rgba(234, 252, 255, 0.65) !important;
-    border-radius: 14px !important;
-    background: linear-gradient(
-        135deg,
-        #069FBE 0%,
-        #1DCDE6 46%,
-        #568DF0 72%,
-        #8057E9 100%
-    ) !important;
-    color: #FFFFFF !important;
-    text-decoration: none !important;
-    font-size: 0.95rem !important;
-    font-weight: 800 !important;
-    box-shadow:
-        0 10px 22px rgba(34, 211, 238, 0.24),
-        0 7px 18px rgba(139, 92, 246, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
-    transition:
-        transform 180ms ease,
-        filter 180ms ease,
-        box-shadow 180ms ease !important;
-}
 
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 [data-testid="stPageLink-NavLink"] p {
@@ -1395,6 +1365,108 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 [data-testid="stPageLink-NavLink"]:focus-visible {
     outline: 3px solid rgba(125, 235, 250, 0.88) !important;
     outline-offset: 3px !important;
+}
+/* ==========================================================
+   КНОПКИ В СТИЛЕ МАТОВОГО СТЕКЛА / iOS GLASS
+   ========================================================== */
+
+/* Обычные кнопки Streamlit, кнопки в формах и навигация */
+.stButton > button,
+.stFormSubmitButton > button,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+[data-testid="stPageLink-NavLink"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    padding: 0.68rem 1rem !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    border-radius: 14px !important;
+
+    /* Эффект полупрозрачного тёмного стекла */
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(148, 163, 184, 0.10) 100%
+    ) !important;
+
+    color: #F8FAFC !important;
+    text-decoration: none !important;
+
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(15, 23, 42, 0.20),
+        0 8px 22px rgba(0, 0, 0, 0.16) !important;
+
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+
+    transition:
+        transform 180ms ease,
+        background 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease !important;
+}
+
+/* Белый текст внутри навигационных кнопок */
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+[data-testid="stPageLink-NavLink"] p {
+    margin: 0 !important;
+    color: #F8FAFC !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+/* Состояние при наведении */
+.stButton > button:hover,
+.stFormSubmitButton > button:hover,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+[data-testid="stPageLink-NavLink"]:hover {
+    transform: translateY(-1px) !important;
+
+    border-color: rgba(186, 230, 253, 0.48) !important;
+
+    background: linear-gradient(
+        135deg,
+        rgba(103, 232, 249, 0.22) 0%,
+        rgba(167, 139, 250, 0.18) 100%
+    ) !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.30),
+        0 12px 28px rgba(34, 211, 238, 0.12),
+        0 8px 20px rgba(0, 0, 0, 0.20) !important;
+}
+
+/* Нажатие */
+.stButton > button:active,
+.stFormSubmitButton > button:active,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:active,
+[data-testid="stPageLink-NavLink"]:active {
+    transform: translateY(0) scale(0.985) !important;
+}
+
+/* Доступная подсветка при навигации клавиатурой */
+.stButton > button:focus-visible,
+.stFormSubmitButton > button:focus-visible,
+section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
+[data-testid="stPageLink-NavLink"]:focus-visible {
+    outline: 2px solid rgba(125, 211, 252, 0.88) !important;
+    outline-offset: 3px !important;
+}
+
+/* Неактивная кнопка */
+.stButton > button:disabled,
+.stFormSubmitButton > button:disabled {
+    opacity: 0.48 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 </style>
 """
