@@ -496,18 +496,15 @@ st.subheader("📍 Основные параметры")
 # пока Streamlit Cloud ещё устанавливает новую библиотеку.
 from st_keyup import st_keyup
 
-input_version = st.session_state["destination_input_version"]
 
 typed_destination = st_keyup(
     "Куда отправляемся?",
-    value=st.session_state["trip_destination"],
     key=f"destination_keyup_{input_version}",
-    debounce=450,
-    placeholder="Начните вводить город: Грозный, Казань, Стамбул…",
-    help=(
-        "После трёх символов появятся подсказки. "
-        "Если ничего не выбрано, можно продолжить с введённым направлением."
-    ),
+)
+
+st.caption(
+    "Начните вводить название города. После трёх символов появятся подсказки. "
+    "Если нужного варианта нет, можно оставить направление введённым вручную."
 )
 
 # Сохраняем ручной ввод пользователя.
