@@ -247,18 +247,7 @@ def build_prompt(
 
 
 def _parse_json(text: str) -> dict:
-    """
-    Надёжно извлекает первый полноценный JSON-объект из ответа модели.
-
-    Поддерживает:
-    - чистый JSON;
-    - JSON в блоке ```json;
-    - текст до/после JSON;
-    - несколько фрагментов текста вокруг объекта.
-
-    Если модель оборвала ответ до закрывающей скобки, функция честно
-    возвращает ошибку: такой JSON нельзя безопасно восстановить.
-    """
+    """Извлекает первый валидный JSON-объект из ответа модели."""
     if not text:
         raise json.JSONDecodeError(
             "Модель вернула пустой ответ.",
@@ -274,6 +263,7 @@ def _parse_json(text: str) -> dict:
         clean_text,
         flags=re.IGNORECASE,
     )
+
     clean_text = re.sub(
         r"\s*```$",
         "",
@@ -389,222 +379,13 @@ def edit_trip_with_ai(
     current_data: dict,
     trip_context: dict,
     user_request: str,
-    weather_context: list[dict] | None = None,
-) -> dict:
-    """
-    Изменяет сохранённый маршрут по команде пользователя.
-
-    Модель обязана вернуть полный маршрут TravelMind, а не только
-    список изменений. При неполной структуре выполняется одна
-    дополнительная попытка с уточнением.
-    """
-    destination = str(trip_context.get("destination") or "")
-    start_date = str(trip_context.get("start_date") or "")
-    end_date = str(trip_context.get("end_date") or "")
-    budget = trip_context.get("budget") or 0
-    currency = str(trip_context.get("currency") or "RUB")
-    people = trip_context.get("people") or 1
-
-        weather_context_json = ""
-
-    if weather_context:
-        safe_weather_context = []
-
-        for item in weather_context[:7]:
-            if not isinstance(item, dict):
-                continue
-
-            safe_weather_context.append(
-                {
-                    "date": item.get("date"),
-                    "condition": item.get("condition"),
-                    "temp_min": item.get("temp_min"),
-                    "temp_max": item.get("temp_max"),
-                    "rain_probability": item.get("rain_probability"),
-                    "precipitation_mm": item.get("precipitation_mm"),
-                    "wind_max": item.get("wind_max"),
-                    "warnings": item.get("warnings") or [],
-                }
-            )
-
-        if safe_weather_context:
-            weather_context_json = json.dumps(
-                safe_weather_context,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-
-    # Этот блок формируется ДО основного промпта.
-    # Если погодных данных нет, он останется пустой строкой.
-    weather_prompt_block = ""
-
-    if weather_context_json:
-        weather_prompt_block = f"""
-
-ПРОВЕРЕННЫЙ ПРОГНОЗ ПОГОДЫ:
-{weather_context_json}
-
-ПРАВИЛА РАБОТЫ С ПОГОДОЙ:
-- Используй погодные данные только как фактический контекст.
-- Не выдумывай температуру, осадки, ветер или предупреждения.
-- При сильном дожде, грозе, сильном ветре или жаре измени только
-  неподходящие уличные активности в затронутые дни.
-- Предлагай подходящие крытые или более комфортные альтернативы.
-- Не меняй даты, количество дней, направление и бюджет без явной просьбы.
-"""
-
-    # Служебную историю AI-команд не отправляем в LLM:
-    # она не относится к структуре маршрута и увеличивает контекст.
-    editable_data = dict(current_data)
-    editable_data.pop("_ai_edit_history", None)
-
-    current_json = json.dumps(
-        editable_data,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-    base_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
-Направление: {destination}
-Даты: {start_date} — {end_date}
-Исходный бюджет: {budget} {currency}
-Путешественников: {people}
-
-КОМАНДА ПОЛЬЗОВАТЕЛЯ:
-{user_request}
-{weather_prompt_block}
-
-ТЕКУЩИЙ МАРШРУТ В JSON:
-{current_json}
-
-ЗАДАЧА:
-Внеси только необходимые изменения в маршрут согласно команде пользователя.
-
-КРИТИЧЕСКОЕ ТРЕБОВАНИЕ:
-Верни не список изменений и не частичный JSON, а ПОЛНУЮ новую версию
-маршрута строго по JSON-схеме из системной инструкции.
-
-def edit_trip_with_ai(
-    current_data: dict,
-    trip_context: dict,
-    user_request: str,
-    weather_context: list[dict] | None = None,
-) -> dict:
-    """
-    Изменяет сохранённый маршрут по команде пользователя.
-
-    Модель обязана вернуть полный маршрут TravelMind, а не только
-    отдельные изменённые поля.
-    """
-    destination = str(trip_context.get("destination") or "")
-    start_date = str(trip_context.get("start_date") or "")
-    end_date = str(trip_context.get("end_date") or "")
-    budget = trip_context.get("budget") or 0
-    currency = str(trip_context.get("currency") or "RUB")
-    people = trip_context.get("people") or 1
-
-    # Готовим короткий проверенный контекст погоды.
-    weather_context_json = ""
-
-    if weather_context:
-        safe_weather_context = []
-
-        for item in weather_context[:7]:
-            if not isinstance(item, dict):
-                continue
-
-            safe_weather_context.append(
-                {
-                    "date": item.get("date"),
-                    "condition": item.get("condition"),
-                    "temp_min": item.get("temp_min"),
-                    "temp_max": item.get("temp_max"),
-                    "rain_probability": item.get("rain_probability"),
-                    "precipitation_mm": item.get("precipitation_mm"),
-                    "wind_max": item.get("wind_max"),
-                    "warnings": item.get("warnings") or [],
-                }
-            )
-
-        if safe_weather_context:
-            weather_context_json = json.dumps(
-                safe_weather_context,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-
-    # Если погоды нет, в промпт не добавляется ничего.
-    weather_prompt_block = ""
-
-    if weather_context_json:
-        weather_prompt_block = f"""
-
-ПРОВЕРЕННЫЙ ПРОГНОЗ ПОГОДЫ:
-{weather_context_json}
-
-ПРАВИЛА РАБОТЫ С ПОГОДОЙ:
-- Используй погодные данные только как фактический контекст.
-- Не выдумывай температуру, осадки, ветер или предупреждения.
-- При сильном дожде, грозе, сильном ветре или жаре измени только
-  неподходящие уличные активности в затронутые дни.
-- Предлагай подходящие крытые или более комфортные альтернативы.
-- Не меняй даты, количество дней, направление и бюджет без явной просьбы.
-"""
-
-    # Служебную историю команд не передаём модели:
-    # она увеличивает контекст, но не нужна для обновления маршрута.
-    editable_data = dict(current_data)
-    editable_data.pop("_ai_edit_history", None)
-
-    current_json = json.dumps(
-        editable_data,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-    base_prompt = f"""КОНТЕКСТ ПОЕЗДКИ:
-Направление: {destination}
-Даты: {start_date} — {end_date}
-Исходный бюджет: {budget} {currency}
-Путешественников: {people}
-
-КОМАНДА ПОЛЬЗОВАТЕЛЯ:
-{user_request}
-{weather_prompt_block}
-
-ТЕКУЩИЙ МАРШРУТ В JSON:
-{current_json}
-
-ЗАДАЧА:
-Внеси только необходимые изменения в маршрут согласно команде пользователя.
-
-КРИТИЧЕСКОЕ ТРЕБОВАНИЕ:
-Верни не список изменений и не частичный JSON, а ПОЛНУЮ новую версию
-маршрута строго по JSON-схеме из системной инструкции.
-
-Обязательно сохрани и верни все верхнеуровневые поля:
-title, overview, cover_theme, cover_profile, total_cost, mood_score,
-mood_reason, accommodation, hotels, days, budget_breakdown,
-wow_moments, packing, phrases, tips.
-
-Верни только один завершённый JSON-объект без Markdown и пояснений."""
-
-    client = _create_llm_client()
-    last_error = None
-
-    # Обычная попытка + повторная, если модель вернёт неполный объект.
-def edit_trip_with_ai(
-    current_data: dict,
-    trip_context: dict,
-    user_request: str,
     weather_context=None,
 ) -> dict:
     """
     Изменяет сохранённый маршрут по команде пользователя.
 
-    Модель должна вернуть полный маршрут TravelMind, а не только
-    изменённые поля. При некорректной структуре выполняется повторная
-    попытка. Исходный маршрут не изменяется до успешной проверки.
+    Возвращается полный новый маршрут. Если AI дважды вернул
+    неполную структуру, маршрут не изменяется, а функция отдаёт ошибку.
     """
     destination = str(trip_context.get("destination") or "")
     start_date = str(trip_context.get("start_date") or "")
@@ -612,11 +393,6 @@ def edit_trip_with_ai(
     budget = trip_context.get("budget") or 0
     currency = str(trip_context.get("currency") or "RUB")
     people = trip_context.get("people") or 1
-
-    # ------------------------------------------------------
-    # Подготовка компактного погодного контекста для AI.
-    # Если прогноз не был добавлен пользователем, блок останется пустым.
-    # ------------------------------------------------------
 
     weather_context_json = ""
 
@@ -664,8 +440,6 @@ def edit_trip_with_ai(
 - Не меняй даты, количество дней, направление и бюджет без явной просьбы.
 """
 
-    # Служебную историю редактирования не передаём модели:
-    # она увеличивает контекст, но не нужна для обновления маршрута.
     editable_data = dict(current_data)
     editable_data.pop("_ai_edit_history", None)
 
@@ -705,7 +479,6 @@ wow_moments, packing, phrases, tips.
     client = _create_llm_client()
     last_error = None
 
-    # Две попытки: обычная и повторная, если AI вернул неполный объект.
     for attempt in range(2):
         retry_note = ""
 
@@ -777,7 +550,6 @@ wow_moments, packing, phrases, tips.
     )
 
 
-
 # ==========================================================
 # AI-АНАЛИЗ БЮДЖЕТА ПОЕЗДКИ
 # ==========================================================
@@ -822,11 +594,7 @@ def _number(value, default=0.0) -> float:
 
 
 def _build_budget_analysis_fallback(budget_context: dict) -> dict:
-    """
-    Формирует рекомендации без LLM.
-
-    Используется, если модель вернула оборванный или неверный JSON.
-    """
+    """Формирует рекомендации без обращения к AI."""
     total_budget = _number(budget_context.get("total_budget"))
     planned_total = _number(budget_context.get("planned_total"))
     actual_total = _number(budget_context.get("actual_total"))
@@ -1090,8 +858,7 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     """
     Анализирует бюджет через AI.
 
-    При обрыве JSON выполняет повторную попытку.
-    Если ответ AI снова некорректен, возвращает локальный анализ.
+    При ошибке или неправильном JSON используется локальный fallback.
     """
     compact_context = json.dumps(
         budget_context,
@@ -1162,9 +929,16 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
     }
 
 
+# ==========================================================
+# ВАЛИДАЦИЯ МАРШРУТА
+# ==========================================================
+
 def validate(data: dict) -> list:
     """Базовая проверка структуры ответа. Возвращает список замечаний."""
     errors = []
+
+    if not isinstance(data, dict):
+        return ["Ответ AI не является JSON-объектом."]
 
     if not data.get("title"):
         errors.append("Модель не вернула название маршрута.")
@@ -1186,6 +960,10 @@ def validate(data: dict) -> list:
         return errors
 
     for day in days:
+        if not isinstance(day, dict):
+            errors.append("В списке дней найдена некорректная запись.")
+            continue
+
         if not day.get("activities"):
             errors.append(f"День {day.get('day')}: нет активностей.")
 
@@ -1200,6 +978,10 @@ def validate(data: dict) -> list:
         expected_tiers = ["Эконом", "Оптимальный", "Премиум"]
 
         for index, hotel in enumerate(hotels):
+            if not isinstance(hotel, dict):
+                errors.append("Получен некорректный объект отеля.")
+                continue
+
             if hotel.get("tier") != expected_tiers[index]:
                 errors.append(
                     "Нарушен порядок вариантов отелей: "
@@ -1217,6 +999,10 @@ def validate(data: dict) -> list:
 
     return errors
 
+
+# ==========================================================
+# ЭКСПОРТ В MARKDOWN
+# ==========================================================
 
 def to_markdown(data: dict, curr: str) -> str:
     """Экспорт маршрута в читаемый Markdown-текст."""
