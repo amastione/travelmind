@@ -206,32 +206,7 @@ label p {
 
 .stFormSubmitButton > button,
 .stButton > button {
-    width: 100%;
-    min-height: 52px;
-    border: 0 !important;
-    border-radius: 13px !important;
-    background: linear-gradient(
-        135deg,
-        #06B6D4 0%,
-        #22D3EE 48%,
-        #8B5CF6 100%
-    ) !important;
-    color: #FFFFFF !important;
-    font-size: 1rem;
-    font-weight: 750;
-    box-shadow: 0 10px 25px rgba(34, 211, 238, 0.20);
-    transition:
-        transform 180ms ease,
-        filter 180ms ease,
-        box-shadow 180ms ease;
-}
 
-.stFormSubmitButton > button:hover,
-.stButton > button:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.08);
-    box-shadow: 0 15px 30px rgba(34, 211, 238, 0.26);
-}
 
 [data-testid="stAlert"] {
     border-radius: 14px;
@@ -241,61 +216,7 @@ label p {
    ЯРКИЕ КНОПКИ НАВИГАЦИИ STREAMLIT
    ---------------------------------------------------------- */
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
-[data-testid="stPageLink-NavLink"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 48px !important;
-    padding: 0.7rem 1rem !important;
-    border: 1px solid rgba(234, 252, 255, 0.60) !important;
-    border-radius: 14px !important;
-    background:
-        linear-gradient(
-            135deg,
-            #069FBE 0%,
-            #1DCDE6 46%,
-            #568DF0 72%,
-            #8057E9 100%
-        ) !important;
-    color: #FFFFFF !important;
-    text-decoration: none !important;
-    font-size: 0.96rem !important;
-    font-weight: 800 !important;
-    letter-spacing: -0.01rem !important;
-    box-shadow:
-        0 10px 22px rgba(34, 211, 238, 0.22),
-        0 7px 18px rgba(139, 92, 246, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
-    transition:
-        transform 180ms ease,
-        filter 180ms ease,
-        box-shadow 180ms ease !important;
-}
 
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
-[data-testid="stPageLink-NavLink"] p {
-    margin: 0 !important;
-    color: #FFFFFF !important;
-    font-size: 0.96rem !important;
-    font-weight: 800 !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
-[data-testid="stPageLink-NavLink"]:hover {
-    transform: translateY(-2px) !important;
-    filter: brightness(1.09) saturate(1.06) !important;
-    box-shadow:
-        0 16px 30px rgba(34, 211, 238, 0.29),
-        0 12px 25px rgba(139, 92, 246, 0.21),
-        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
-}
-
-section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
-[data-testid="stPageLink-NavLink"]:focus-visible {
-    outline: 3px solid rgba(125, 235, 250, 0.88) !important;
-    outline-offset: 3px !important;
-}
 
 @media (max-width: 640px) {
     .block-container {
