@@ -9,7 +9,6 @@ import auth
 import db
 import site_access
 import branding
-import weather
 import dadata
 
 st.set_page_config(
@@ -469,59 +468,84 @@ if "trip_dates" not in st.session_state:
 if "trip_destination" not in st.session_state:
     st.session_state["trip_destination"] = ""
 
+if "destination_input_version" not in st.session_state:
+    st.session_state["destination_input_version"] = 0
 
-def choose_destination(destination_label):
+if "destination_confirmed" not in st.session_state:
+    st.session_state["destination_confirmed"] = ""
+
+
+def choose_destination(destination: dict) -> None:
     """
-    Подставляет выбранный вариант в основное поле направления.
-    Callback выполняется до перерисовки страницы.
+    Срабатывает при клике по подсказке DaData.
+    Подставляет нормализованный город в основное поле.
     """
-    st.session_state["trip_destination"] = destination_label
-    st.session_state["destination_was_selected"] = True
+    label = destination["label"]
+
+    st.session_state["trip_destination"] = label
+    st.session_state["destination_confirmed"] = label
+
+    # Создаём новый экземпляр поля, чтобы после выбора
+    # в нём гарантированно показался выбранный город.
+    st.session_state["destination_input_version"] += 1
 
 
 st.subheader("📍 Основные параметры")
 
-dest = st.text_input(
-    "Куда отправляемся?",
-    placeholder="Начните вводить город: Стамбул, Казань, Санкт-Петербург…",
-    key="trip_destination",
-    help=(
-        "После ввода минимум трёх символов появятся варианты городов. "
-        "Выберите подходящий вариант, чтобы маршрут и прогноз погоды "
-        "использовали корректное направление."
-    ),
-).strip()
+# Импорт находится здесь, чтобы страница не падала,
+# пока Streamlit Cloud ещё устанавливает новую библиотеку.
+from streamlit_keyup import st_keyup
 
-# После клика по подсказке один раз скрываем результаты,
-# чтобы поле выглядело чисто и пользователь видел выбранный город.
-destination_was_selected = st.session_state.pop(
-    "destination_was_selected",
-    False,
+input_version = st.session_state["destination_input_version"]
+
+typed_destination = st_keyup(
+    "Куда отправляемся?",
+    value=st.session_state["trip_destination"],
+    key=f"destination_keyup_{input_version}",
+    debounce=450,
+    placeholder="Начните вводить город: Грозный, Казань, Стамбул…",
+    help=(
+        "После трёх символов появятся подсказки. "
+        "Если ничего не выбрано, можно продолжить с введённым направлением."
+    ),
 )
 
-if len(dest) >= 3 and not destination_was_selected:
-    with st.spinner("Ищем подходящие города…"):
-        destination_suggestions = weather.search_destinations(dest)
+# Сохраняем ручной ввод пользователя.
+if typed_destination is not None:
+    typed_destination = typed_destination.strip()
 
-    if destination_suggestions:
-        st.caption("Выберите подходящий вариант:")
+    if typed_destination != st.session_state["trip_destination"]:
+        st.session_state["trip_destination"] = typed_destination
+        st.session_state["destination_confirmed"] = ""
 
-        for index, suggestion in enumerate(destination_suggestions):
-            suggestion_label = suggestion["label"]
+dest = st.session_state["trip_destination"].strip()
 
-            if st.button(
-                f"📍 {suggestion_label}",
-                key=f"destination_suggestion_{index}_{suggestion_label}",
+# Не делаем запросов для 1–2 букв и не показываем подсказки,
+# если пользователь уже подтвердил выбранный город.
+should_show_suggestions = (
+    len(dest) >= 3
+    and dest != st.session_state["destination_confirmed"]
+)
+
+if should_show_suggestions:
+    suggestions = dadata.search_cities(dest)
+
+    if suggestions:
+        st.caption("Выберите подходящий город:")
+
+        for index, suggestion in enumerate(suggestions):
+            st.button(
+                f"📍 {suggestion['label']}",
+                key=f"dadata_city_{index}_{suggestion['label']}",
                 use_container_width=True,
                 on_click=choose_destination,
-                args=(suggestion_label,),
-            ):
-                pass
+                args=(suggestion,),
+            )
 
     else:
         st.caption(
-            "Города не найдены. Попробуйте другое написание "
-            "или ближайший крупный населённый пункт."
+            "Подсказки не найдены. Вы можете продолжить "
+            "с введённым направлением вручную."
         )
 
 with st.form("plan_form"):
