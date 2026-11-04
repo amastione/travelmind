@@ -558,15 +558,15 @@ with st.form("plan_form"):
     column_1, column_2 = st.columns(2)
 
     with column_1:
-    dest = st.text_input(
-        "Куда отправляемся?",
-        placeholder="Например: Стамбул, Турция",
-        key="trip_destination",
-        help=(
-            "Можно ввести направление вручную или выбрать город "
-            "через поиск выше."
-        ),
-    )
+        dest = st.text_input(
+            "Куда отправляемся?",
+            placeholder="Например: Стамбул, Турция",
+            key="trip_destination",
+            help=(
+                "Можно ввести направление вручную или выбрать город "
+                "через поиск выше."
+            ),
+        )
 
     with column_2:
         dates = st.date_input(
