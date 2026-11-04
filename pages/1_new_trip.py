@@ -472,44 +472,60 @@ if "trip_dates" not in st.session_state:
         default_end,
     )
 
-if "trip_destination" not in st.session_state:
-    st.session_state["trip_destination"] = ""
+def find_destination_options(search_term):
+    """Подсказки DaData и возможность оставить свой текст."""
+    query = str(search_term or "").strip()
+
+    if not query:
+        return []
+
+    options = []
+    seen = set()
+
+    if len(query) >= 3:
+        suggestions = dadata.search_cities(query)
+
+        for suggestion in suggestions:
+            label = str(suggestion.get("label") or "").strip()
+
+            if label and label.casefold() not in seen:
+                seen.add(label.casefold())
+
+                # Первый элемент — подпись в списке.
+                # Второй элемент — значение, которое получит Python.
+                options.append((label, label))
+
+    # Ручное направление выбирается в том же выпадающем списке.
+    # Второе поле ввода не требуется.
+    options.append(
+        (f"Использовать мой текст: «{query}»", query)
+    )
+
+    return options
+
 
 st.subheader("📍 Основные параметры")
 
-event = destination_autocomplete(
-    value=st.session_state["trip_destination"],
-    suggestions=[],
-    hide_suggestions=True,
-    key="travelmind_destination_v2",
+selected_destination = st_searchbox(
+    search_function=find_destination_options,
+    label="Куда отправляемся?",
+    placeholder="Город, регион или посёлок",
+    key="destination_searchbox_restored",
 )
 
-if isinstance(event, dict):
-    event_id = event.get("id")
-    event_type = event.get("type")
+# Не используем старое направление, если выбор очищен.
+dest = (
+    selected_destination.strip()
+    if isinstance(selected_destination, str)
+    else ""
+)
 
-    # Компонент сохраняет последнее событие между запусками.
-    # Обрабатываем его только один раз по уникальному id.
-    if (
-        event_id
-        and event_id != st.session_state.get("destination_last_event_id")
-        and event_type == "input"
-    ):
-        st.session_state["destination_last_event_id"] = event_id
-
-        st.session_state["trip_destination"] = str(
-            event.get("value") or ""
-        ).strip()
-
-# Направление для существующей логики генерации и сохранения.
-dest = st.session_state["trip_destination"].strip()
+st.session_state["trip_destination"] = dest
 
 st.caption(
-    "Можно указать город, регион, посёлок или другое направление."
+    "Выберите подсказку или пункт «Использовать мой текст». "
+    "Поиск в DaData начинается после трёх символов."
 )
-
-# Временная проверка связи собственного поля с Python.
-st.text(f"Получено приложением: {dest or '—'}")
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
