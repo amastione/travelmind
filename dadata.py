@@ -14,11 +14,14 @@ DADATA_SUGGEST_URL = (
 @st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
 def search_cities(query: str) -> list[dict[str, Any]]:
     """
-    Ищет города через DaData.
+    Ищет туристические направления через DaData.
 
-    Показываются только результаты типа «город».
-    Если ничего не найдено, пользователь всё равно может оставить
-    направление, введённое вручную.
+    Поддерживаются:
+    - города: Грозный, Казань, Москва;
+    - регионы: Ингушетия, Карелия, Алтай, Камчатский край.
+
+    Если ничего не найдено, пользователь всё равно может использовать
+    текст, введённый вручную.
     """
     query = " ".join(str(query or "").split())
 
@@ -39,10 +42,9 @@ def search_cities(query: str) -> list[dict[str, Any]]:
     payload = {
         "query": query,
         "count": 5,
-        # Важно: запрашиваем именно города,
-        # а не деревни, улицы, дома или организации.
-        # Разрешаем регионы и города.
-    # Например: «Ингушетия» — это регион, а «Грозный» — город.
+
+        # Ищем не только города, но и субъекты / регионы.
+        # Например, «Ингушетия» является регионом, а не городом.
         "from_bound": {"value": "region"},
         "to_bound": {"value": "city"},
     }
@@ -55,13 +57,14 @@ def search_cities(query: str) -> list[dict[str, Any]]:
             timeout=8,
         )
         response.raise_for_status()
+
         raw_suggestions = response.json().get("suggestions", [])
 
     except (requests.RequestException, ValueError):
         return []
 
     results = []
-    seen_values = set()
+    seen_labels = set()
 
     for suggestion in raw_suggestions:
         if not isinstance(suggestion, dict):
@@ -69,22 +72,25 @@ def search_cities(query: str) -> list[dict[str, Any]]:
 
         data = suggestion.get("data") or {}
 
-        # DaData возвращает нормализованную строку, например:
-        # «г Грозный, Респ Чеченская»
-        full_value = str(suggestion.get("value") or "").strip()
-
         city = str(data.get("city") or "").strip()
         region = str(data.get("region_with_type") or "").strip()
         country = str(data.get("country") or "Россия").strip()
 
-        # Дополнительная защита: принимаем только результаты,
-        # где DaData действительно определила город.
-        if not city:
+        # Для города используем city.
+        # Для республики, области или края используем region.
+        destination_name = city or region
+
+        if not destination_name:
             continue
 
-        label_parts = [city]
+        # Тип направления нужен лишь для понятного интерфейса.
+        destination_type = "город" if city else "регион"
 
-        if region and region.casefold() != city.casefold():
+        label_parts = [destination_name]
+
+        # Для города добавляем регион.
+        # Для самого региона повторять его второй раз не нужно.
+        if city and region and region.casefold() != city.casefold():
             label_parts.append(region)
 
         if country:
@@ -93,10 +99,10 @@ def search_cities(query: str) -> list[dict[str, Any]]:
         label = ", ".join(label_parts)
         normalized_label = label.casefold()
 
-        if normalized_label in seen_values:
+        if normalized_label in seen_labels:
             continue
 
-        seen_values.add(normalized_label)
+        seen_labels.add(normalized_label)
 
         latitude = data.get("geo_lat")
         longitude = data.get("geo_lon")
@@ -110,16 +116,26 @@ def search_cities(query: str) -> list[dict[str, Any]]:
 
         results.append(
             {
-                # Именно эта строка подставится в поле направления.
                 "label": label,
                 "city": city,
                 "region": region,
                 "country": country,
-                "raw_value": full_value,
+                "type": destination_type,
+                "raw_value": str(suggestion.get("value") or "").strip(),
                 "latitude": latitude,
                 "longitude": longitude,
                 "fias_id": data.get("fias_id"),
             }
         )
+
+    # Города показываем выше регионов, если совпадают оба типа.
+    results.sort(
+        key=lambda item: (
+            item["type"] != "город",
+            item["label"].casefold(),
+        )
+    )
+
+    return results[:5]
 
     return results
