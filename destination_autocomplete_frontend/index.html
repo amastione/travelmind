@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+    <script src="https://unpkg.com/streamlit-component-lib@1.6.0/dist/streamlit.js"></script>
+
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        .autocomplete {
+            position: relative;
+            width: 100%;
+            padding: 1px 0 4px;
+        }
+
+        .field-label {
+            display: block;
+            margin: 0 0 0.48rem;
+            color: #f8fafc;
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .input-wrap {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 48px;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.34);
+            border-radius: 12px;
+            background: rgba(7, 11, 20, 0.70);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+            transition:
+                border-color 160ms ease,
+                box-shadow 160ms ease,
+                background 160ms ease;
+        }
+
+        .input-wrap:focus-within {
+            border-color: #22d3ee;
+            background: rgba(7, 11, 20, 0.82);
+            box-shadow:
+                0 0 0 3px rgba(34, 211, 238, 0.13),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .pin {
+            flex: 0 0 auto;
+            margin: 0 0.55rem 0 0.9rem;
+            color: #67e8f9;
+            font-size: 1.03rem;
+            line-height: 1;
+        }
+
+        input {
+            width: 100%;
+            min-width: 0;
+            height: 46px;
+            padding: 0.1rem 0.9rem 0.1rem 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: #f8fafc;
+            font: inherit;
+            font-size: 1rem;
+        }
+
+        input::placeholder {
+            color: #72819a;
+            opacity: 1;
+        }
+
+        .suggestions {
+            position: absolute;
+            z-index: 9999;
+            top: calc(100% - 4px);
+            right: 0;
+            left: 0;
+            overflow: hidden;
+            border: 1px solid rgba(34, 211, 238, 0.32);
+            border-radius: 12px;
+            background: rgba(10, 18, 34, 0.98);
+            box-shadow:
+                0 20px 42px rgba(0, 0, 0, 0.40),
+                0 0 0 1px rgba(255, 255, 255, 0.025) inset;
+            backdrop-filter: blur(16px);
+        }
+
+        .suggestion {
+            display: flex;
+            align-items: flex-start;
+            width: 100%;
+            padding: 0.76rem 0.9rem;
+            border: 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.13);
+            background: transparent;
+            color: #dce8f7;
+            cursor: pointer;
+            font: inherit;
+            text-align: left;
+            transition: background 130ms ease;
+        }
+
+        .suggestion:last-child {
+            border-bottom: 0;
+        }
+
+        .suggestion:hover,
+        .suggestion.active {
+            background: rgba(34, 211, 238, 0.12);
+        }
+
+        .suggestion-icon {
+            flex: 0 0 auto;
+            margin: 0.1rem 0.58rem 0 0;
+            color: #67e8f9;
+            font-size: 0.96rem;
+        }
+
+        .suggestion-content {
+            min-width: 0;
+        }
+
+        .suggestion-title {
+            overflow: hidden;
+            color: #f8fafc;
+            font-size: 0.94rem;
+            font-weight: 650;
+            line-height: 1.35;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .suggestion-meta {
+            margin-top: 0.16rem;
+            overflow: hidden;
+            color: #94a8c1;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            padding: 0.74rem 0.9rem;
+            color: #94a8c1;
+            font-size: 0.86rem;
+            line-height: 1.4;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="autocomplete">
+        <label class="field-label" for="destination-input">
+            Куда отправляемся?
+        </label>
+
+        <div class="input-wrap">
+            <span class="pin">📍</span>
+
+            <input
+                id="destination-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Город, регион, посёлок или страна"
+            />
+        </div>
+
+        <div
+            id="suggestions"
+            class="suggestions hidden"
+            role="listbox"
+        ></div>
+    </div>
+
+    <script>
+        const input = document.getElementById("destination-input");
+        const suggestionsBox = document.getElementById("suggestions");
+
+        let currentArgs = {};
+        let activeIndex = -1;
+        let inputTimer = null;
+        let currentSuggestions = [];
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function setFrameHeight() {
+            window.Streamlit.setFrameHeight(76);
+        }
+
+        function emit(type, value) {
+            window.Streamlit.setComponentValue({
+                type: type,
+                value: String(value || "").trim(),
+            });
+        }
+
+        function hideSuggestions() {
+            activeIndex = -1;
+            suggestionsBox.classList.add("hidden");
+            suggestionsBox.innerHTML = "";
+        }
+
+        function selectSuggestion(item) {
+            const value = item.label || "";
+
+            input.value = value;
+            hideSuggestions();
+            emit("select", value);
+        }
+
+        function renderSuggestions() {
+            const value = input.value.trim();
+            const shouldHide =
+                currentArgs.hide_suggestions ||
+                value.length < 3 ||
+                !Array.isArray(currentSuggestions) ||
+                currentSuggestions.length === 0;
+
+            if (shouldHide) {
+                hideSuggestions();
+                return;
+            }
+
+            activeIndex = -1;
+
+            suggestionsBox.innerHTML = currentSuggestions
+                .map((item, index) => {
+                    const label = escapeHtml(item.label || "");
+                    const type = escapeHtml(item.type || "направление");
+
+                    return `
+                        <button
+                            class="suggestion"
+                            type="button"
+                            role="option"
+                            data-index="${index}"
+                        >
+                            <span class="suggestion-icon">📍</span>
+                            <span class="suggestion-content">
+                                <span class="suggestion-title">${label}</span>
+                                <span class="suggestion-meta">${type}</span>
+                            </span>
+                        </button>
+                    `;
+                })
+                .join("");
+
+            suggestionsBox.classList.remove("hidden");
+
+            suggestionsBox
+                .querySelectorAll(".suggestion")
+                .forEach((button) => {
+                    button.addEventListener("mousedown", (event) => {
+                        event.preventDefault();
+
+                        const index = Number(button.dataset.index);
+                        const item = currentSuggestions[index];
+
+                        if (item) {
+                            selectSuggestion(item);
+                        }
+                    });
+                });
+        }
+
+        function updateKeyboardSelection() {
+            const buttons = suggestionsBox.querySelectorAll(".suggestion");
+
+            buttons.forEach((button, index) => {
+                button.classList.toggle("active", index === activeIndex);
+            });
+        }
+
+        input.addEventListener("input", () => {
+            hideSuggestions();
+
+            clearTimeout(inputTimer);
+
+            inputTimer = setTimeout(() => {
+                emit("input", input.value);
+            }, 400);
+        });
+
+        input.addEventListener("keydown", (event) => {
+            const hasSuggestions =
+                !suggestionsBox.classList.contains("hidden") &&
+                currentSuggestions.length > 0;
+
+            if (!hasSuggestions) {
+                return;
+            }
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+
+                activeIndex = Math.min(
+                    activeIndex + 1,
+                    currentSuggestions.length - 1
+                );
+
+                updateKeyboardSelection();
+            }
+
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+
+                activeIndex = Math.max(activeIndex - 1, 0);
+                updateKeyboardSelection();
+            }
+
+            if (event.key === "Enter" && activeIndex >= 0) {
+                event.preventDefault();
+                selectSuggestion(currentSuggestions[activeIndex]);
+            }
+
+            if (event.key === "Escape") {
+                hideSuggestions();
+            }
+        });
+
+        input.addEventListener("blur", () => {
+            setTimeout(hideSuggestions, 150);
+        });
+
+        input.addEventListener("focus", () => {
+            renderSuggestions();
+        });
+
+        function onRender(event) {
+            currentArgs = event.detail.args || {};
+            currentSuggestions = currentArgs.suggestions || [];
+
+            const backendValue = String(currentArgs.value || "");
+
+            /*
+              Не перезаписываем текст, который пользователь сейчас печатает.
+              Но после выбора подсказки или обновления значения Python-кодом
+              подставляем нормализованное направление.
+            */
+            if (document.activeElement !== input || input.value !== backendValue) {
+                input.value = backendValue;
+            }
+
+            renderSuggestions();
+            setFrameHeight();
+        }
+
+        window.Streamlit.events.addEventListener(
+            window.Streamlit.RENDER_EVENT,
+            onRender
+        );
+
+        window.Streamlit.setComponentReady();
+        setFrameHeight();
+    </script>
+</body>
+</html>
