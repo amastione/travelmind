@@ -389,6 +389,7 @@ def edit_trip_with_ai(
     current_data: dict,
     trip_context: dict,
     user_request: str,
+    weather_context: list[dict] | None = None,
 ) -> dict:
     """
     Изменяет сохранённый маршрут по команде пользователя.
@@ -403,6 +404,35 @@ def edit_trip_with_ai(
     budget = trip_context.get("budget") or 0
     currency = str(trip_context.get("currency") or "RUB")
     people = trip_context.get("people") or 1
+
+    weather_context_json = ""
+
+    if weather_context:
+        safe_weather_context = []
+
+        for item in weather_context[:7]:
+            if not isinstance(item, dict):
+                continue
+
+            safe_weather_context.append(
+                {
+                    "date": item.get("date"),
+                    "condition": item.get("condition"),
+                    "temp_min": item.get("temp_min"),
+                    "temp_max": item.get("temp_max"),
+                    "rain_probability": item.get("rain_probability"),
+                    "precipitation_mm": item.get("precipitation_mm"),
+                    "wind_max": item.get("wind_max"),
+                    "warnings": item.get("warnings") or [],
+                }
+            )
+
+        if safe_weather_context:
+            weather_context_json = json.dumps(
+                safe_weather_context,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
 
     # Служебную историю AI-команд не отправляем в LLM:
     # она не относится к структуре маршрута и увеличивает контекст.
@@ -423,6 +453,22 @@ def edit_trip_with_ai(
 
 КОМАНДА ПОЛЬЗОВАТЕЛЯ:
 {user_request}
+
+weather_prompt_block = ""
+
+if weather_context_json:
+    weather_prompt_block = f"""
+
+ПРОВЕРЕННЫЙ ПРОГНОЗ ПОГОДЫ:
+{weather_context_json}
+
+ПРАВИЛА РАБОТЫ С ПОГОДОЙ:
+- Используй погодные данные только как фактический контекст.
+- Не выдумывай температуру, осадки или предупреждения.
+- При сильном дожде, грозе, сильном ветре или жаре предложи
+  подходящие изменения только для затронутых активностей.
+- Не меняй даты, количество дней, направление и бюджет без явной просьбы.
+"""
 
 ТЕКУЩИЙ МАРШРУТ В JSON:
 {current_json}
