@@ -2645,12 +2645,6 @@ with tab_budget:
                 st.error("Не удалось выполнить AI-анализ бюджета.")
                 st.caption(f"Техническая информация: {str(error)[:1000]}")
 
-            except Exception as error:
-                st.error(
-                    "Не удалось выполнить AI-анализ бюджета: "
-                    f"{error}"
-                )
-
     saved_budget_analysis = st.session_state.get(budget_ai_state_key)
 
     if saved_budget_analysis:
