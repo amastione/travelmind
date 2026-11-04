@@ -19,9 +19,7 @@ st.set_page_config(
     layout="wide",
 )
 
-branding.apply_clean_layout()
-branding.show_author_mark()
-site_access.require_site_access()
+
 
 # Без авторизации не пускаем на страницу.
 user_id = auth.require_auth()
@@ -337,7 +335,9 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 branding.apply_glass_buttons()
 
-auth.render_main_menu_button()
+branding.apply_clean_layout()
+branding.show_or_mark()
+site_access.require_site_access()
 
 auth.render_main_menu_button()
 
