@@ -312,10 +312,21 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 }
 /* Компактные кнопки-подсказки DaData */
 /* Скругление внешних углов поля поиска streamlit-searchbox */
-iframe[title="streamlit_searchbox.st_searchbox"] {
-    border: none !important;
+/* Белая подпись над поиском */
+.tm-destination-label {
+    margin: 0 0 8px;
+    color: #FFFFFF !important;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* Скругление только компонента выбора направления */
+.st-key-tm_destination_search iframe {
+    display: block;
+    border: 0 !important;
     border-radius: 14px !important;
-    overflow: hidden !important;
+    clip-path: inset(0 round 14px);
 }
 </style>
 """
@@ -512,12 +523,18 @@ def find_destination_options(search_term):
 
 st.subheader("📍 Основные параметры")
 
-selected_destination = st_searchbox(
-    search_function=find_destination_options,
-    label="Куда отправляемся?",
-    placeholder="Город, регион или посёлок",
-    key="destination_searchbox_restored",
+st.markdown(
+    '<div class="tm-destination-label">Куда отправляемся?</div>',
+    unsafe_allow_html=True,
 )
+
+with st.container(key="tm_destination_search"):
+    selected_destination = st_searchbox(
+        search_function=find_destination_options,
+        label="",
+        placeholder="Город, регион или посёлок",
+        key="destination_searchbox_restored",
+    )
 
 # Не используем старое направление, если выбор очищен.
 dest = (
