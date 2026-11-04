@@ -69,44 +69,86 @@ def get_weather_label(weather_code: int | None) -> dict[str, Any]:
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def geocode_destination(destination: str) -> dict[str, Any] | None:
-    """
-    Ищет координаты города через Open-Meteo Geocoding API.
-
-    Важно: в API передаётся только название направления.
-    Личные данные, бюджет и информация о пользователе не отправляются.
-    """
-    destination = str(destination or "").strip()
+    """Ищет населённый пункт и проверяет полученные координаты."""
+    destination = " ".join(str(destination or "").split())
 
     if not destination:
-        return None
+        raise ValueError(
+            "В поиск погоды передано пустое направление. "
+            "Нужно проверить поле направления во вкладке погоды."
+        )
 
-    response = requests.get(
-        GEOCODING_URL,
-        params={
-            "name": destination,
-            "count": 1,
-            "language": "ru",
-            "format": "json",
-        },
-        timeout=10,
-    )
-    response.raise_for_status()
+    try:
+        response = requests.get(
+            GEOCODING_URL,
+            params={
+                "name": destination,
+                "count": 5,
+                "language": "ru",
+                "format": "json",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        raise RuntimeError(
+            "Сервис поиска городов временно недоступен. "
+            "Попробуйте получить прогноз позже."
+        ) from None
 
-    results = response.json().get("results") or []
+    try:
+        payload = response.json()
+    except ValueError:
+        raise RuntimeError(
+            "Сервис поиска городов вернул некорректный ответ."
+        ) from None
+
+    if not isinstance(payload, dict) or payload.get("error"):
+        raise RuntimeError(
+            "Сервис поиска городов не смог обработать запрос."
+        )
+
+    results = payload.get("results") or []
 
     if not results:
         return None
 
-    place = results[0]
+    valid_places = []
 
-    return {
-        "name": str(place.get("name") or destination),
-        "country": str(place.get("country") or ""),
-        "admin1": str(place.get("admin1") or ""),
-        "latitude": _as_float(place.get("latitude")),
-        "longitude": _as_float(place.get("longitude")),
-        "timezone": str(place.get("timezone") or "auto"),
-    }
+    for place in results:
+        if not isinstance(place, dict):
+            continue
+
+        try:
+            latitude = float(place["latitude"])
+            longitude = float(place["longitude"])
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            continue
+
+        valid_places.append(
+            {
+                "name": str(place.get("name") or destination),
+                "country": str(place.get("country") or ""),
+                "admin1": str(place.get("admin1") or ""),
+                "latitude": latitude,
+                "longitude": longitude,
+                "timezone": str(place.get("timezone") or "auto"),
+            }
+        )
+
+    if not valid_places:
+        raise RuntimeError(
+            "Сервис нашёл населённый пункт, но не вернул "
+            "корректные координаты."
+        )
+
+    # Сохраняем прежнее поведение: первый результат API.
+    # В интерфейсе обязательно показываем найденный город и страну,
+    # чтобы пользователь мог проверить место прогноза.
+    return valid_places[0]
 
 
 @st.cache_data(ttl=3 * 3600, show_spinner=False)
