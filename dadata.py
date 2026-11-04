@@ -41,7 +41,9 @@ def search_cities(query: str) -> list[dict[str, Any]]:
         "count": 5,
         # Важно: запрашиваем именно города,
         # а не деревни, улицы, дома или организации.
-        "from_bound": {"value": "city"},
+        # Разрешаем регионы и города.
+    # Например: «Ингушетия» — это регион, а «Грозный» — город.
+        "from_bound": {"value": "region"},
         "to_bound": {"value": "city"},
     }
 
