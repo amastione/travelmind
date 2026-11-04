@@ -494,7 +494,7 @@ st.subheader("📍 Основные параметры")
 
 # Импорт находится здесь, чтобы страница не падала,
 # пока Streamlit Cloud ещё устанавливает новую библиотеку.
-from streamlit_keyup import st_keyup
+from st_keyup import st_keyup
 
 input_version = st.session_state["destination_input_version"]
 
