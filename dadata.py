@@ -137,6 +137,7 @@ def search_cities(query: str) -> list[dict[str, Any]]:
             {
                 "label": label,
                 "city": city,
+                "settlement": settlement,
                 "region": region,
                 "country": country,
                 "type": destination_type,
