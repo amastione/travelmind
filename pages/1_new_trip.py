@@ -494,27 +494,6 @@ if "trip_destination" not in st.session_state:
     st.session_state["trip_destination"] = ""
 
 
-
-
-
-# Если пользователь выбрал вариант из DaData,
-# используем нормализованное название как направление.
-if selected_destination:
-    st.session_state["trip_destination"] = selected_destination
-
-# Значение для последующего создания маршрута.
-dest = st.session_state["trip_destination"].strip()
-
-st.caption(
-    "Введите минимум три символа и выберите подсказку. "
-    "Поддерживаются города, регионы, посёлки и сёла."
-)
-
-
-if manual_destination.strip():
-    dest = manual_destination.strip()
-    st.session_state["trip_destination"] = dest
-
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
 
