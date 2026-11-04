@@ -17,6 +17,7 @@ import branding
 import cover_selector
 import db
 import site_access
+import weather
 
 st.set_page_config(
     page_title="Маршрут поездки",
@@ -1679,10 +1680,11 @@ with metric_4:
 # ВКЛАДКИ
 # ==========================================================
 
-tab_route, tab_map, tab_budget, tab_tips, tab_edit, tab_ai = st.tabs(
+tab_route, tab_map, tab_weather, tab_budget, tab_tips, tab_edit, tab_ai = st.tabs(
     [
         "▦  Маршрут по дням",
         "⌖  Карта поездки",
+        "☀️  Погода",
         "◫  Бюджет и расходы",
         "✦  Советы",
         "💬  Изменить с AI",
@@ -2397,7 +2399,326 @@ with tab_map:
                                 "«✦ Обновить маршрут с AI»."
                             )
 
+# ==========================================================
+# ВКЛАДКА: ПОГОДА
+# ==========================================================
 
+with tab_weather:
+    st.markdown(
+        '<div class="tm-section-title">☀️ Прогноз погоды</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        (
+            '<div class="tm-section-text">'
+            'TravelMind получает актуальный прогноз через Open-Meteo. '
+            'Данные можно использовать для оценки условий поездки и '
+            'подготовки AI-команды для адаптации маршрута.'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+    trip_start_iso = str(trip["start_date"])[:10]
+    trip_end_iso = str(trip["end_date"])[:10]
+
+    try:
+        with st.spinner("Получаем прогноз погоды…"):
+            location_data = weather.geocode_destination(destination)
+
+            if not location_data:
+                st.warning(
+                    "Не удалось определить координаты направления. "
+                    "Попробуйте указать город более точно при создании поездки."
+                )
+                st.stop()
+
+            raw_forecast = weather.get_weather_forecast(
+                latitude=location_data["latitude"],
+                longitude=location_data["longitude"],
+                timezone=location_data.get("timezone", "auto"),
+            )
+
+            weather_days = weather.build_daily_weather(
+                raw_forecast=raw_forecast,
+                start_date=trip_start_iso,
+                end_date=trip_end_iso,
+            )
+
+    except Exception:
+        st.warning(
+            "Прогноз погоды временно недоступен. "
+            "Это не влияет на сохранённый маршрут."
+        )
+        st.caption(
+            "Попробуйте обновить страницу позже. "
+            "Погодный сервис может быть временно недоступен."
+        )
+        weather_days = []
+        raw_forecast = {}
+        location_data = {}
+
+    if weather_days:
+        location_name = location_data.get("name") or destination
+        location_country = location_data.get("country") or ""
+
+        location_text = location_name
+
+        if location_country:
+            location_text += f", {location_country}"
+
+        st.success(
+            f"Прогноз получен для направления: {location_text}"
+        )
+
+        st.caption(
+            "Показаны только даты, для которых погодный сервис "
+            "предоставляет доступный прогноз."
+        )
+
+        # --------------------------------------------------
+        # Собираем часы активностей по каждому дню маршрута.
+        # Это позволит показать почасовую погоду в нужные часы.
+        # --------------------------------------------------
+
+        activity_hours_by_date = {}
+
+        for route_day in data.get("days", []):
+            route_date = str(route_day.get("date") or "")[:10]
+
+            if not route_date:
+                continue
+
+            activity_hours = set()
+
+            for activity in route_day.get("activities") or []:
+                raw_time = text_value(activity.get("time"))
+
+                try:
+                    hour_value = int(raw_time[:2])
+
+                    if 0 <= hour_value <= 23:
+                        activity_hours.add(hour_value)
+
+                except (TypeError, ValueError):
+                    continue
+
+            activity_hours_by_date[route_date] = activity_hours
+
+        weather_risk_days = []
+
+        # --------------------------------------------------
+        # Карточка прогноза для каждого дня.
+        # --------------------------------------------------
+
+        for weather_day in weather_days:
+            weather_date = weather_day.get("date", "")
+            weather_warnings = weather_day.get("warnings") or []
+
+            if weather_warnings:
+                weather_risk_days.append(weather_day)
+
+            day_number = "—"
+
+            for route_day in data.get("days", []):
+                if str(route_day.get("date") or "")[:10] == weather_date:
+                    day_number = route_day.get("day", "—")
+                    break
+
+            day_title = (
+                f"День {day_number} · "
+                f"{format_date_ru(weather_date)} · "
+                f"{weather_day.get('icon', '🌡️')} "
+                f"{weather_day.get('condition', 'Прогноз')}"
+            )
+
+            with st.expander(day_title, expanded=(weather_date == trip_start_iso)):
+                metric_col_1, metric_col_2, metric_col_3, metric_col_4 = st.columns(4)
+
+                with metric_col_1:
+                    st.metric(
+                        "Температура",
+                        (
+                            f"{weather_day.get('temp_min', '—'):.0f}…"
+                            f"{weather_day.get('temp_max', '—'):.0f} °C"
+                        ),
+                    )
+
+                with metric_col_2:
+                    st.metric(
+                        "Ощущается как",
+                        (
+                            f"{weather_day.get('feels_min', '—'):.0f}…"
+                            f"{weather_day.get('feels_max', '—'):.0f} °C"
+                        ),
+                    )
+
+                with metric_col_3:
+                    st.metric(
+                        "Вероятность осадков",
+                        f"{weather_day.get('rain_probability', 0)}%",
+                    )
+
+                with metric_col_4:
+                    st.metric(
+                        "Ветер",
+                        f"{weather_day.get('wind_max', 0):.0f} м/с",
+                    )
+
+                precipitation_mm = as_float(
+                    weather_day.get("precipitation_mm")
+                )
+
+                if precipitation_mm > 0:
+                    st.caption(
+                        "Ожидаемое количество осадков: "
+                        f"{precipitation_mm:.1f} мм."
+                    )
+
+                clothing_tip = text_value(
+                    weather_day.get("clothing_tip")
+                )
+
+                if clothing_tip:
+                    st.info(f"🎒 {clothing_tip}")
+
+                if weather_warnings:
+                    for weather_warning in weather_warnings:
+                        st.warning(f"⚠️ {weather_warning}")
+                else:
+                    st.success(
+                        "Погодных предупреждений для этого дня не обнаружено."
+                    )
+
+                # ------------------------------------------
+                # Почасовой прогноз для часов активностей.
+                # Если в маршруте нет точного времени —
+                # показываем утро, день и вечер.
+                # ------------------------------------------
+
+                activity_hours = activity_hours_by_date.get(
+                    weather_date,
+                    set(),
+                )
+
+                if not activity_hours:
+                    activity_hours = {10, 14, 18}
+
+                hourly_items = weather.get_hourly_weather_for_day(
+                    raw_forecast=raw_forecast,
+                    target_date=weather_date,
+                    hours=activity_hours,
+                )
+
+                if hourly_items:
+                    st.markdown("##### Погода во время активностей")
+
+                    hourly_columns = st.columns(
+                        min(len(hourly_items), 4)
+                    )
+
+                    for index, hourly_item in enumerate(hourly_items):
+                        with hourly_columns[index % len(hourly_columns)]:
+                            st.caption(
+                                f"{hourly_item.get('hour', '—'):02d}:00"
+                            )
+
+                            st.markdown(
+                                (
+                                    f"### {hourly_item.get('icon', '🌡️')} "
+                                    f"{hourly_item.get('temp', 0):.0f} °C"
+                                )
+                            )
+
+                            st.caption(
+                                hourly_item.get(
+                                    "condition",
+                                    "Нет данных",
+                                )
+                            )
+
+                            st.caption(
+                                f"Осадки: "
+                                f"{hourly_item.get('rain_probability', 0)}%"
+                            )
+
+                            st.caption(
+                                f"Ветер: "
+                                f"{hourly_item.get('wind', 0):.0f} м/с"
+                            )
+
+        # --------------------------------------------------
+        # Подготовка погодного контекста для AI.
+        # --------------------------------------------------
+
+        st.markdown(
+            '<div class="tm-section-title">✦ Адаптация маршрута под погоду</div>',
+            unsafe_allow_html=True,
+        )
+
+        if weather_risk_days:
+            st.warning(
+                f"В прогнозе найдено дней с погодными рисками: "
+                f"{len(weather_risk_days)}."
+            )
+
+            for risk_day in weather_risk_days:
+                st.write(
+                    f"• **{format_date_ru(risk_day.get('date'))}** — "
+                    f"{risk_day.get('condition')}, "
+                    f"{risk_day.get('temp_min'):.0f}…"
+                    f"{risk_day.get('temp_max'):.0f} °C"
+                )
+
+        else:
+            st.success(
+                "В доступном прогнозе нет сильных погодных рисков. "
+                "Маршрут можно оставить без изменений."
+            )
+
+        weather_context_for_ai = weather.build_ai_weather_context(
+            weather_days
+        )
+
+        if st.button(
+            "✦ Подготовить AI-команду с учётом погоды",
+            key=f"prepare_weather_ai_request_{trip_id}",
+            use_container_width=True,
+        ):
+            # Храним прогноз отдельно от обычного текста команды.
+            # Это уменьшает риск, что пользователь случайно испортит
+            # структуру погодного JSON в поле редактирования.
+            st.session_state[
+                f"ai_weather_context_{trip_id}"
+            ] = weather_context_for_ai
+
+            st.session_state[
+                f"ai_edit_request_{trip_id}"
+            ] = (
+                "Учти актуальный прогноз погоды при корректировке маршрута. "
+                "В дни с дождём, грозой, сильным ветром или жарой "
+                "замени только неподходящие длительные уличные активности "
+                "на подходящие крытые или более комфортные альтернативы. "
+                "Сохрани направление, даты, бюджет, число дней и главные "
+                "впечатления поездки. Не меняй остальные дни без причины."
+            )
+
+            st.success(
+                "AI-команда подготовлена. Откройте вкладку "
+                "«💬 Изменить с AI», при необходимости отредактируйте "
+                "текст и запустите обновление маршрута."
+            )
+
+    else:
+        st.info(
+            "Детальный прогноз пока недоступен для дат этой поездки."
+        )
+
+        st.caption(
+            "Open-Meteo предоставляет прогноз только на ограниченный срок "
+            "вперёд. Проверьте погоду примерно за 7–14 дней до поездки."
+        )
 
 # ==========================================================
 # ВКЛАДКА: БЮДЖЕТ
@@ -3648,10 +3969,15 @@ with tab_edit:
                 "обычно это занимает 20–60 секунд."
             ):
                 try:
+                    weather_context_for_ai = st.session_state.get(
+                        f"ai_weather_context_{trip_id}"
+                    )
+                
                     edit_result = ai.edit_trip_with_ai(
                         current_data=data,
                         trip_context=dict(trip),
                         user_request=clean_request,
+                        weather_context=weather_context_for_ai,
                     )
 
                     updated_data = edit_result["data"]
