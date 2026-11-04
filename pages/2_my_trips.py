@@ -333,6 +333,11 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 """
 
 st.markdown(CSS, unsafe_allow_html=True)
+st.markdown(CSS, unsafe_allow_html=True)
+
+branding.apply_glass_buttons()
+
+auth.render_main_menu_button()
 
 auth.render_main_menu_button()
 
