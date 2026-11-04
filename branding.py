@@ -2,7 +2,7 @@ import streamlit as st
 
 
 def apply_clean_layout() -> None:
-    """Скрывает служебные элементы Streamlit."""
+    """Скрывает служебные элементы интерфейса Streamlit."""
     st.markdown(
         """
         <style>
@@ -32,7 +32,7 @@ def apply_clean_layout() -> None:
 
 
 def show_author_mark() -> None:
-    """Показывает подпись автора в левом нижнем углу."""
+    """Выводит подпись автора в левом нижнем углу."""
     st.markdown(
         """
         <style>
@@ -46,7 +46,7 @@ def show_author_mark() -> None:
             padding: 0 !important;
 
             color: rgba(148, 163, 184, 0.62) !important;
-            font-family: Inter, Arial, sans-serif !important;
+            font-family: Arial, sans-serif !important;
             font-size: 12px !important;
             font-weight: 400 !important;
             line-height: 1.2 !important;
@@ -76,15 +76,5 @@ def show_author_mark() -> None:
 
 
 def apply_glass_buttons() -> None:
-    """
-    Применяет стеклянный стиль поверх локального CSS страницы.
-
-    Функцию нужно вызывать после:
-    st.markdown(CSS, unsafe_allow_html=True)
-    """
+    """Переопределяет старые градиенты кнопок после CSS страницы."""
     st.markdown(
-        """
-        <style>
-        /* Обычные кнопки, кнопки форм, ссылки-кнопки и page_link */
-        .stButton > button,
-        .stFormSubmitButton
