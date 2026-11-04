@@ -3,6 +3,7 @@ import json
 from datetime import date, timedelta
 
 import streamlit as st
+from streamlit_searchbox import st_searchbox
 
 import ai
 import auth
