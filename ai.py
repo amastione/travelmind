@@ -328,7 +328,8 @@ def generate(user_prompt: str) -> dict:
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.7,
-        max_tokens=6500,
+        max_tokens=7000,
+        timeout=75,
         response_format={"type": "json_object"},
     )
 
@@ -510,6 +511,7 @@ wow_moments, packing, phrases, tips.
                 ],
                 temperature=0.2,
                 max_tokens=8192,
+                timeout=75.0,
                 response_format={"type": "json_object"},
             )
 
