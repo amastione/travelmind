@@ -333,6 +333,124 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 
 st.markdown(CSS, unsafe_allow_html=True)
 
+# Стиль кнопок только для этой страницы.
+# Он добавляется после основного CSS и не меняет поле поиска DaData.
+st.markdown(
+    """
+    <style>
+    /* Обычные кнопки Streamlit */
+    .stButton > button,
+    .stFormSubmitButton > button {
+        border: 1px solid rgba(255, 255, 255, 0.26) !important;
+        border-radius: 15px !important;
+
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.20),
+            rgba(148, 163, 184, 0.13)
+        ) !important;
+
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(15, 23, 42, 0.22),
+            0 8px 22px rgba(0, 0, 0, 0.20) !important;
+
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+
+        transition:
+            transform 180ms ease,
+            background 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease !important;
+    }
+
+    /* Основное действие: создание маршрута */
+    .stFormSubmitButton > button {
+        min-height: 52px !important;
+        border-color: rgba(165, 243, 252, 0.38) !important;
+
+        background: linear-gradient(
+            135deg,
+            rgba(34, 211, 238, 0.24),
+            rgba(99, 102, 241, 0.22)
+        ) !important;
+    }
+
+    /* Навигационная кнопка «Главное меню» */
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+    [data-testid="stPageLink-NavLink"] {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        min-height: 46px !important;
+        padding: 0.68rem 1rem !important;
+
+        border: 1px solid rgba(255, 255, 255, 0.26) !important;
+        border-radius: 15px !important;
+
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.20),
+            rgba(148, 163, 184, 0.13)
+        ) !important;
+
+        color: #F8FAFC !important;
+        text-decoration: none !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(15, 23, 42, 0.22),
+            0 8px 22px rgba(0, 0, 0, 0.20) !important;
+
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+    }
+
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+    [data-testid="stPageLink-NavLink"] p {
+        margin: 0 !important;
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+    }
+
+    /* Hover-эффект */
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover,
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
+    [data-testid="stPageLink-NavLink"]:hover {
+        transform: translateY(-1px) !important;
+        border-color: rgba(186, 230, 253, 0.52) !important;
+
+        background: linear-gradient(
+            135deg,
+            rgba(103, 232, 249, 0.26),
+            rgba(167, 139, 250, 0.21)
+        ) !important;
+
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.34),
+            0 12px 28px rgba(34, 211, 238, 0.13),
+            0 8px 20px rgba(0, 0, 0, 0.23) !important;
+    }
+
+    .stButton > button:active,
+    .stFormSubmitButton > button:active {
+        transform: scale(0.985) !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+auth.render_main_menu_button()
+
 # Единый стиль кнопок: матовое стекло в духе iOS.
 # Добавлен отдельным блоком после CSS страницы, поэтому не меняет
 # оформление поля DaData, формы и других компонентов.
