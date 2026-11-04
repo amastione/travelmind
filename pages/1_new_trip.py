@@ -9,6 +9,7 @@ import auth
 import db
 import site_access
 import branding
+import weather
 
 st.set_page_config(
     page_title="Спланировать поездку",
@@ -406,6 +407,96 @@ if generated_trip_id:
 # ==========================================================
 # ФОРМА СОЗДАНИЯ ПОЕЗДКИ
 # ==========================================================
+
+# ==========================================================
+# ПОИСК И ВЫБОР ГОРОДА
+# ==========================================================
+
+if "trip_destination" not in st.session_state:
+    st.session_state["trip_destination"] = ""
+
+if "destination_search_results" not in st.session_state:
+    st.session_state["destination_search_results"] = []
+
+st.markdown("### 📍 Выберите направление")
+
+st.caption(
+    "Начните вводить город, найдите подходящий вариант и выберите его. "
+    "Это поможет точнее построить маршрут, карту и прогноз погоды."
+)
+
+search_column, search_button_column = st.columns([4, 1])
+
+with search_column:
+    destination_search_query = st.text_input(
+        "Поиск города",
+        placeholder="Например: Санкт-Петербург, Стамбул или Казань",
+        key="destination_search_query",
+        label_visibility="collapsed",
+    ).strip()
+
+with search_button_column:
+    search_destination_clicked = st.button(
+        "🔎 Найти",
+        key="search_destination_button",
+        use_container_width=True,
+    )
+
+if search_destination_clicked:
+    if len(destination_search_query) < 3:
+        st.warning("Введите минимум 3 символа для поиска города.")
+        st.session_state["destination_search_results"] = []
+    else:
+        with st.spinner("Ищем города…"):
+            st.session_state["destination_search_results"] = (
+                weather.search_destinations(destination_search_query)
+            )
+
+search_results = st.session_state.get(
+    "destination_search_results",
+    [],
+)
+
+if search_results:
+    st.success(f"Найдено вариантов: {len(search_results)}.")
+
+    selected_destination_index = st.selectbox(
+        "Выберите город",
+        options=list(range(len(search_results))),
+        format_func=lambda index: (
+            f"📍 {search_results[index]['label']}"
+        ),
+        key="destination_search_selected_index",
+    )
+
+    selected_destination = search_results[
+        selected_destination_index
+    ]
+
+    st.caption(
+        "Будет использовано: "
+        f"**{selected_destination['label']}**"
+    )
+
+    if st.button(
+        "✓ Использовать выбранный город",
+        key="use_selected_destination",
+        use_container_width=True,
+    ):
+        st.session_state["trip_destination"] = (
+            selected_destination["label"]
+        )
+        st.session_state["destination_search_results"] = []
+        st.toast("Направление подставлено в форму поездки.")
+        st.rerun()
+
+elif search_destination_clicked and destination_search_query:
+    st.info(
+        "Города не найдены. Проверьте написание или укажите "
+        "ближайший крупный населённый пункт."
+    )
+
+st.divider()
 
 PACES = {
     "Спокойный": "slow",
