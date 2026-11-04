@@ -550,6 +550,14 @@ st.caption(
     "Поиск в DaData начинается после трёх символов."
 )
 
+if "route_generation_in_progress" not in st.session_state:
+    st.session_state["route_generation_in_progress"] = False
+
+
+def start_route_generation():
+    """Блокирует повторный запуск генерации маршрута."""
+    st.session_state["route_generation_in_progress"] = True
+
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
 
@@ -641,8 +649,14 @@ with st.form("plan_form"):
     st.write("")
 
     submitted = st.form_submit_button(
-        "✨ Создать маршрут с AI",
+        (
+            "⏳ AI создаёт маршрут…"
+            if st.session_state["route_generation_in_progress"]
+            else "✨ Создать маршрут с AI"
+        ),
         use_container_width=True,
+        disabled=st.session_state["route_generation_in_progress"],
+        on_click=start_route_generation,
     )
 
 if not submitted:
@@ -699,6 +713,8 @@ with st.spinner(
         result = ai.generate(user_prompt)
 
     except json.JSONDecodeError:
+        st.session_state["route_generation_in_progress"] = False
+
         st.error(
             "Модель вернула некорректный ответ. "
             "Пожалуйста, попробуйте ещё раз."
@@ -706,8 +722,16 @@ with st.spinner(
         st.stop()
 
     except Exception as error:
-        st.error(f"Ошибка обращения к AI-модели: {error}")
+        st.session_state["route_generation_in_progress"] = False
+
+        st.error(
+            "Не удалось создать маршрут. "
+            "Проверьте подключение и попробуйте ещё раз."
+        )
         st.stop()
+
+# Генерация успешно завершилась.
+st.session_state["route_generation_in_progress"] = False
 
 data = result["data"]
 
