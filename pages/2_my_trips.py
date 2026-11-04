@@ -336,7 +336,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 branding.apply_glass_buttons()
 
 branding.apply_clean_layout()
-branding.show_or_mark()
+branding.show_author_mark()
 site_access.require_site_access()
 
 auth.render_main_menu_button()
