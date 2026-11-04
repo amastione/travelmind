@@ -492,7 +492,17 @@ if "trip_dates" not in st.session_state:
 
 if "trip_destination" not in st.session_state:
     st.session_state["trip_destination"] = ""
+st.subheader("📍 Основные параметры")
 
+dest = st.text_input(
+    "Куда отправляемся?",
+    key="trip_destination",
+    placeholder="Например: Дагестан, Каменномостский, Грозный",
+    help=(
+        "Можно указать город, регион, посёлок, село или другое "
+        "туристическое направление."
+    ),
+).strip()
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
