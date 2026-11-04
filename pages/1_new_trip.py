@@ -140,9 +140,13 @@ h3 {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 
-[data-testid="stWidgetLabel"] p {
-    color: #D6E0EF !important;
-    font-weight: 650;
+/* Подписи у полей формы */
+[data-testid="stWidgetLabel"] p,
+label,
+label p {
+    color: #F8FAFC !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
 }
 
 .stTextInput input,
