@@ -10,6 +10,7 @@ import db
 import site_access
 import branding
 import weather
+import dadata
 
 st.set_page_config(
     page_title="Спланировать поездку",
