@@ -2421,7 +2421,6 @@ with tab_weather:
     )
 
     trip_start_iso = str(trip["start_date"])[:10]
-        trip_start_iso = str(trip["start_date"])[:10]
     trip_end_iso = str(trip["end_date"])[:10]
 
     # Отдельное поле для поиска погоды.
