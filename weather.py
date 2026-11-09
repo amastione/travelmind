@@ -735,3 +735,115 @@ def build_ai_weather_context(
         )
 
     return result
+# ==========================================================
+# ПОГОДА ДЛЯ ТОЧКИ, УКАЗАННОЙ В AI-МАРШРУТЕ
+# ==========================================================
+
+def resolve_route_weather_location(
+    route_data: dict[str, Any] | None,
+    trip_destination: str,
+) -> dict[str, Any] | None:
+    """
+    Определяет точку прогноза по данным маршрута.
+
+    Сначала ищет основную точку из route_data["weather"].
+    Если она не найдена — ищет направление самой поездки.
+
+    Координаты, придуманные AI, автоматически не используются.
+    """
+    route = route_data if isinstance(route_data, dict) else {}
+
+    weather_settings = route.get("weather")
+
+    if not isinstance(weather_settings, dict):
+        weather_settings = {}
+
+    primary_location = " ".join(
+        str(weather_settings.get("primary_location") or "").split()
+    )
+
+    location_hint = " ".join(
+        str(weather_settings.get("location_hint") or "").split()
+    )
+
+    terrain_note = str(
+        weather_settings.get("terrain_note") or ""
+    ).strip()
+
+    destination = " ".join(
+        str(trip_destination or "").split()
+    )
+
+    candidates = []
+
+    if primary_location:
+        # Сохраняем региональный контекст, если он есть.
+        query = primary_location
+
+        if (
+            location_hint
+            and location_hint.casefold() not in query.casefold()
+        ):
+            query = f"{query}, {location_hint}"
+
+        candidates.append((query, "route_primary_location"))
+
+    if destination:
+        candidates.append((destination, "trip_destination_fallback"))
+
+    seen = set()
+
+    for query, selection_source in candidates:
+        query_key = query.casefold()
+
+        if query_key in seen:
+            continue
+
+        seen.add(query_key)
+
+        location = geocode_destination(query)
+
+        if not location:
+            continue
+
+        # Не изменяем исходный результат геокодера.
+        resolved_location = dict(location)
+
+        resolved_location["coordinates_source"] = "geocoder"
+        resolved_location["selection_source"] = selection_source
+        resolved_location["weather_query"] = query
+        resolved_location["terrain_note"] = terrain_note
+
+        return resolved_location
+
+    return None
+
+
+def get_route_weather_forecast(
+    route_data: dict[str, Any] | None,
+    trip_destination: str,
+) -> dict[str, Any] | None:
+    """
+    Получает прогноз для основной точки маршрута.
+
+    None означает, что точку определить не удалось.
+    Ошибки запроса прогноза передаются вызывающему коду.
+    """
+    location = resolve_route_weather_location(
+        route_data=route_data,
+        trip_destination=trip_destination,
+    )
+
+    if location is None:
+        return None
+
+    raw_forecast = get_weather_forecast(
+        latitude=location["latitude"],
+        longitude=location["longitude"],
+        timezone=str(location.get("timezone") or "auto"),
+    )
+
+    return {
+        "location": location,
+        "raw_forecast": raw_forecast,
+    }
