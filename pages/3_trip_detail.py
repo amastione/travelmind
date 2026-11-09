@@ -18,6 +18,7 @@ import cover_selector
 import db
 import site_access
 import weather
+import history
 
 st.set_page_config(
     page_title="Маршрут поездки",
@@ -4146,6 +4147,100 @@ with tab_tips:
         '<div class="tm-section-title">✦ Полезное для поездки</div>',
         unsafe_allow_html=True,
     )
+    # ======================================================
+    # ИСТОРИЧЕСКАЯ СПРАВКА ИЗ ОТКРЫТОГО ИСТОЧНИКА
+    # ======================================================
+
+    st.subheader("🏛️ Историческая справка")
+
+    route_weather = data.get("weather") or {}
+
+    if not isinstance(route_weather, dict):
+        route_weather = {}
+
+    history_primary_location = text_value(
+        route_weather.get("primary_location")
+    ).strip()
+
+    history_location_hint = text_value(
+        route_weather.get("location_hint")
+    ).strip()
+
+    with st.spinner("Ищем справочную информацию о месте…"):
+        historical_reference = history.get_historical_reference(
+            primary_location=history_primary_location,
+            location_hint=history_location_hint,
+            trip_destination=destination,
+        )
+
+    if historical_reference:
+        reference_title = text_value(
+            historical_reference.get("title"),
+            history_primary_location or destination,
+        )
+
+        reference_summary = text_value(
+            historical_reference.get("summary")
+        )
+
+        source_name = text_value(
+            historical_reference.get("source_name"),
+            "Wikipedia",
+        )
+
+        source_url = text_value(
+            historical_reference.get("source_url")
+        )
+
+        retrieved_at = text_value(
+            historical_reference.get("retrieved_at")
+        )
+
+        searched_place = text_value(
+            historical_reference.get("query_used")
+        )
+
+        with st.container(border=True):
+            st.markdown(f"#### {escape(reference_title)}")
+
+            if reference_summary:
+                st.write(reference_summary)
+
+            if source_url:
+                st.link_button(
+                    f"🔗 Открыть статью: {source_name}",
+                    source_url,
+                    use_container_width=True,
+                    key=f"history_source_{trip_id}",
+                )
+
+            source_caption = (
+                f"Источник: {source_name}. "
+                "Текст получен без генерации AI."
+            )
+
+            if searched_place:
+                source_caption += (
+                    f" Запрос для поиска: «{searched_place}»."
+                )
+
+            if retrieved_at:
+                source_caption += f" Получено: {retrieved_at}."
+
+            st.caption(source_caption)
+
+            st.caption(
+                "ℹ️ Справка носит ознакомительный характер. "
+                "Для учебных, юридических или научных целей "
+                "проверяйте факты по первоисточникам и официальным сайтам."
+            )
+
+    else:
+        st.info(
+            "Справочная статья для основной точки маршрута пока не найдена. "
+            "Попробуйте уточнить название места во вкладке «Погода» "
+            "или проверьте информацию на официальных ресурсах."
+        )
 
     wow_moments = data.get("wow_moments") or []
 
