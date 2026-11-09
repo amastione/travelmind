@@ -1120,7 +1120,7 @@ def _normalize_trip_ideas(result: dict) -> dict:
 
         used_destinations.add(destination_key)
 
-    if len(normalized_ideas) < 5:
+    if len(normalized_ideas) < 6:
         raise ValueError(
             "AI вернул слишком мало пригодных вариантов. "
             "Попробуйте уточнить точку, увеличить радиус или изменить интересы."
@@ -1131,7 +1131,7 @@ def _normalize_trip_ideas(result: dict) -> dict:
             result.get("search_summary"),
             500,
         ),
-        "ideas": normalized_ideas[:8],
+        "ideas": normalized_ideas[:6],
     }
 
 
@@ -1213,7 +1213,7 @@ def generate_trip_ideas(request_json: str) -> dict:
 - Дополнительные пожелания: {notes or "нет"}
 
 ЗАДАЧА:
-Предложи РОВНО 5 реалистичных идей для короткой поездки.
+Предложи РОВНО 6 реалистичных идей для короткой поездки.
 
 КРИТИЧНО:
 - Верни только JSON-объект.
