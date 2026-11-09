@@ -739,42 +739,255 @@ if isinstance(trip_idea_prefill, dict):
         trip_idea_prefill.get("title") or ""
     ).strip()
 
-    # Не записываем значение в key streamlit-searchbox.
-    # Направление храним отдельно и используем при создании маршрута.
-    if idea_destination:
-        st.session_state[
-            "trip_idea_destination"
-        ] = idea_destination
+# ==========================================================
+# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
+# ==========================================================
 
+# streamlit-searchbox хранит по своему key служебный словарь.
+# Если после старой версии там случайно осталась строка,
+# удаляем её, чтобы не возникала ошибка options_js.
+searchbox_state = st.session_state.get(
+    "destination_searchbox_restored"
+)
+
+if searchbox_state is not None and not isinstance(
+    searchbox_state,
+    dict,
+):
+    st.session_state.pop(
+        "destination_searchbox_restored",
+        None,
+    )
+
+# Данные приходят со страницы «Идеи для поездки».
+trip_idea_prefill = st.session_state.pop(
+    "trip_idea_prefill",
+    None,
+)
+
+if isinstance(trip_idea_prefill, dict):
+    idea_destination = str(
+        trip_idea_prefill.get("destination") or ""
+    ).strip()
+
+    idea_notes = str(
+        trip_idea_prefill.get("notes") or ""
+    ).strip()
+
+    idea_title = str(
+        trip_idea_prefill.get("title") or ""
+    ).strip()
+
+    # Не записываем текст прямо в key searchbox:
+    # этот компонент ожидает там служебный словарь.
+    if idea_destination:
+        st.session_state["trip_idea_destination"] = idea_destination
         st.session_state["trip_destination"] = idea_destination
 
-    # Обычный textarea поддерживает предзаполнение через key.
+    # Обычное поле textarea можно заполнить через session_state.
     if idea_notes:
         st.session_state["trip_notes"] = idea_notes
 
     if idea_title:
-        st.session_state[
-            "trip_idea_selected_title"
-        ] = idea_title
+        st.session_state["trip_idea_selected_title"] = idea_title
+
+
+# ==========================================================
+# ОСНОВНЫЕ ПАРАМЕТРЫ И ПОИСК НАПРАВЛЕНИЯ
+# ==========================================================
+
+st.subheader("📍 Основные параметры")
+
+selected_idea_title = st.session_state.pop(
+    "trip_idea_selected_title",
+    "",
+)
+
+if selected_idea_title:
+    st.info(
+        f"✨ Вы выбрали идею: «{selected_idea_title}». "
+        "Направление и пожелания уже добавлены. "
+        "При необходимости их можно изменить."
+    )
+
+st.markdown(
+    '<div class="tm-destination-label">Куда отправляемся?</div>',
+    unsafe_allow_html=True,
+)
+
+with st.container(key="tm_destination_search"):
+    selected_destination = st_searchbox(
+        search_function=find_destination_options,
+        label="",
+        placeholder="Город, регион или посёлок",
+        key="destination_searchbox_restored",
+    )
+
+# Если пользователь выбрал вариант в DaData — он приоритетнее.
+searchbox_destination = (
+    selected_destination.strip()
+    if isinstance(selected_destination, str)
+    else ""
+)
+
+# Если направление пришло из AI-идеи — используем его,
+# пока пользователь не выберет другой вариант в DaData.
+idea_destination = str(
+    st.session_state.get("trip_idea_destination") or ""
+).strip()
+
+dest = searchbox_destination or idea_destination
+
+if dest:
+    st.session_state["trip_destination"] = dest
+
+st.caption(
+    "Выберите подсказку или пункт «Использовать мой текст». "
+    "Поиск в DaData начинается после трёх символов."
+)
+
+if idea_destination and not searchbox_destination:
+    st.info(
+        f"📍 Выбрано направление из AI-идеи: "
+        f"«{idea_destination}»."
+    )
+
+
+# ==========================================================
+# ФОРМА СОЗДАНИЯ МАРШРУТА
+# ==========================================================
+
+with st.form("plan_form"):
+    st.subheader("📅 Даты поездки")
+
+    dates = st.date_input(
+        "Даты поездки",
+        min_value=today,
+        format="DD/MM/YYYY",
+        key="trip_dates",
+        help=(
+            "Нажмите первую дату — это начало поездки. "
+            "Затем нажмите вторую дату — это окончание."
+        ),
+    )
+
+    st.write("")
+
+    st.subheader("💳 Бюджет и формат поездки")
+
+    column_3, column_4, column_5 = st.columns(3)
+
+    with column_3:
+        budget = st.number_input(
+            "Общий бюджет",
+            min_value=50,
+            value=1000,
+            step=50,
+        )
+
+    with column_4:
+        curr = st.selectbox(
+            "Валюта",
+            ["RUB", "USD", "EUR"],
+        )
+
+    with column_5:
+        people = st.number_input(
+            "Путешественников",
+            min_value=1,
+            max_value=10,
+            value=2,
+        )
+
+    style = st.selectbox(
+        "Какой формат отдыха вам ближе?",
+        [
+            "Сбалансированный",
+            "Бюджетный",
+            "Комфорт / люкс",
+            "Культурный",
+            "Активный",
+            "Гастрономический",
+            "С детьми",
+            "Романтический",
+        ],
+    )
+
+    pace = st.radio(
+        "Темп путешествия",
+        list(PACES),
+        index=1,
+        horizontal=True,
+    )
+
+    st.write("")
+
+    st.subheader("✨ Предпочтения")
+
+    interests = st.multiselect(
+        "Что вам интересно?",
+        INTERESTS,
+        default=["история", "местная кухня"],
+        placeholder="Выберите интересы",
+        help=(
+            "Выберите несколько интересов — AI использует их "
+            "при создании маршрута и подборе активностей."
+        ),
+    )
+
+    notes = st.text_area(
+        "Особые пожелания",
+        placeholder=(
+            "Например: без долгих пеших прогулок, "
+            "вегетарианское питание, интересуют видовые площадки."
+        ),
+        key="trip_notes",
+    )
+
+    st.write("")
+
+    submitted = st.form_submit_button(
+        "✨ Создать маршрут с AI",
+        use_container_width=True,
+    )
+
+
+# ==========================================================
+# ОБРАБОТКА ОТПРАВКИ ФОРМЫ
+# ==========================================================
+
+# При обычном открытии страницы ничего ниже не выполняем.
+# Поэтому не будет предупреждений до нажатия кнопки.
+if not submitted:
+    st.stop()
+
 
 # ==========================================================
 # ВАЛИДАЦИЯ ВВОДА
 # ==========================================================
 
 if not dest.strip():
-    st.error("Укажите направление поездки.")
+    st.info(
+        "📍 Сначала выберите направление поездки. Введите город, "
+        "регион или посёлок в поле выше, затем выберите подсказку "
+        "либо пункт «Использовать мой текст»."
+    )
     st.stop()
 
 if not isinstance(dates, (list, tuple)) or len(dates) != 2:
-    st.error("Выберите дату начала и дату окончания поездки.")
+    st.info(
+        "📅 Выберите дату начала и дату окончания путешествия, "
+        "чтобы TravelMind мог составить маршрут."
+    )
     st.stop()
 
 start, end = dates
 days = (end - start).days + 1
 
 if days < 1 or days > ai.MAX_DAYS:
-    st.error(
-        f"Поездка должна длиться от 1 до {ai.MAX_DAYS} дней."
+    st.info(
+        f"📅 Выберите поездку продолжительностью "
+        f"от 1 до {ai.MAX_DAYS} дней."
     )
     st.stop()
 
