@@ -588,6 +588,79 @@ if generated_trip_id:
     st.stop()
 
 # ==========================================================
+# ОТЛОЖЕННАЯ ГЕНЕРАЦИЯ МАРШРУТА
+# ==========================================================
+
+pending_trip = st.session_state.get("pending_trip_generation")
+
+if isinstance(pending_trip, dict):
+    with st.spinner(
+        "✦ AI анализирует предпочтения и составляет маршрут… "
+        "обычно это занимает 20–60 секунд."
+    ):
+        try:
+            user_prompt = ai.build_prompt(
+                dest=str(pending_trip["destination"]).strip(),
+                start=pending_trip["start"].isoformat(),
+                end=pending_trip["end"].isoformat(),
+                days=int(pending_trip["days"]),
+                budget=pending_trip["budget"],
+                curr=pending_trip["currency"],
+                people=pending_trip["people"],
+                style=pending_trip["style"],
+                pace=pending_trip["pace"],
+                interests=pending_trip["interests"],
+                notes=pending_trip["notes"],
+            )
+
+            result = ai.generate(user_prompt)
+            data = result["data"]
+
+            trip_id = db.save_trip(
+                user_id,
+                {
+                    "title": data.get("title", "Поездка"),
+                    "destination": pending_trip["destination"],
+                    "start_date": pending_trip["start"].isoformat(),
+                    "end_date": pending_trip["end"].isoformat(),
+                    "budget": pending_trip["budget"],
+                    "currency": pending_trip["currency"],
+                    "people": pending_trip["people"],
+                },
+                json.dumps(data, ensure_ascii=False),
+            )
+
+            db.init_expenses_from_plan(trip_id, data)
+
+        except json.JSONDecodeError:
+            st.session_state.pop("pending_trip_generation", None)
+            st.error(
+                "Модель вернула некорректный ответ. "
+                "Пожалуйста, попробуйте ещё раз."
+            )
+            st.stop()
+
+        except Exception:
+            st.session_state.pop("pending_trip_generation", None)
+            st.error(
+                "Не удалось создать маршрут. "
+                "Пожалуйста, попробуйте ещё раз."
+            )
+            st.stop()
+
+    # Здесь форма ещё НЕ отрисована, поэтому её ключи можно очистить.
+    reset_new_trip_form()
+
+    st.session_state.pop("pending_trip_generation", None)
+    st.session_state["generated_trip_id"] = int(trip_id)
+    st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
+    st.session_state["generated_tokens_out"] = result.get("tokens_out", 0)
+
+    auth.remember_trip(trip_id)
+
+    st.rerun()
+
+# ==========================================================
 # ФОРМА СОЗДАНИЯ ПОЕЗДКИ
 # ==========================================================
 
