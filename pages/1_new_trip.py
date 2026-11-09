@@ -451,29 +451,6 @@ st.markdown(
 
 auth.render_main_menu_button()
 
-if st.button(
-    "🧭 Пока не знаете, куда поехать? Найти идеи",
-    use_container_width=True,
-    key="open_trip_ideas",
-):
-    # Убираем экран результата предыдущего маршрута.
-    st.session_state.pop("generated_trip_id", None)
-    st.session_state.pop("generated_tokens_in", None)
-    st.session_state.pop("generated_tokens_out", None)
-    st.session_state.pop("pending_trip_generation", None)
-
-    # Убираем старые результаты AI-подбора идей:
-    # «Подходящие направления», карточки и счётчики токенов.
-    st.session_state.pop("trip_ideas_result", None)
-    st.session_state.pop("trip_ideas_tokens_in", None)
-    st.session_state.pop("trip_ideas_tokens_out", None)
-
-    # Страховочный флаг: страница идей повторит очистку при открытии.
-    st.session_state["clear_trip_ideas_on_open"] = True
-
-    st.switch_page("pages/4_trip_ideas.py")
-
-
 st.markdown(
     '<div class="tm-page-eyebrow">TravelMind AI</div>',
     unsafe_allow_html=True,
@@ -944,6 +921,29 @@ st.caption(
     "Выберите подсказку или пункт «Использовать мой текст». "
     "Поиск в DaData начинается после трёх символов."
 )
+
+if st.button(
+    "🧭 Пока не знаете, куда поехать? Найти идеи",
+    use_container_width=True,
+    key="open_trip_ideas",
+):
+    # Убираем экран результата предыдущего маршрута.
+    st.session_state.pop("generated_trip_id", None)
+    st.session_state.pop("generated_tokens_in", None)
+    st.session_state.pop("generated_tokens_out", None)
+    st.session_state.pop("pending_trip_generation", None)
+
+    # Убираем старые результаты AI-подбора идей:
+    # «Подходящие направления», карточки и счётчики токенов.
+    st.session_state.pop("trip_ideas_result", None)
+    st.session_state.pop("trip_ideas_tokens_in", None)
+    st.session_state.pop("trip_ideas_tokens_out", None)
+
+    # Страховочный флаг: страница идей повторит очистку при открытии.
+    st.session_state["clear_trip_ideas_on_open"] = True
+
+    st.switch_page("pages/4_trip_ideas.py")
+
 
 if idea_destination and not searchbox_destination:
     st.info(
