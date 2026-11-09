@@ -185,6 +185,85 @@ footer {
 st.markdown(CSS, unsafe_allow_html=True)
 branding.apply_glass_buttons()
 branding.show_author_mark()
+
+# Локальные исправления формы и кнопки навигации.
+# Добавляются после общего glass-стиля, поэтому имеют приоритет.
+st.markdown(
+    """
+    <style>
+    /* ------------------------------------------------------
+       ГЛАВНОЕ МЕНЮ: одинаковый размер и центрирование текста
+       ------------------------------------------------------ */
+
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
+    [data-testid="stPageLink-NavLink"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 100% !important;
+        min-height: 48px !important;
+        box-sizing: border-box !important;
+
+        text-align: center !important;
+    }
+
+    section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
+    [data-testid="stPageLink-NavLink"] p {
+        width: auto !important;
+        margin: 0 !important;
+        color: #F8FAFC !important;
+        text-align: center !important;
+    }
+
+    /* ------------------------------------------------------
+       ПОДПИСИ И ТЕКСТ В ФОРМЕ
+       ------------------------------------------------------ */
+
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] label,
+    [data-testid="stWidgetLabel"] label p,
+    [data-testid="stWidgetLabel"] div {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+    }
+
+    /* Подписи вариантов radio: «Рядом...» / «По пути...» */
+    .stRadio label,
+    .stRadio label p,
+    [data-testid="stRadio"] label,
+    [data-testid="stRadio"] label p {
+        color: #E8F0FA !important;
+        font-weight: 600 !important;
+        opacity: 1 !important;
+    }
+
+    /* Текст внутри полей ввода */
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input,
+    [data-baseweb="select"] div,
+    [data-baseweb="select"] span {
+        color: #F8FAFC !important;
+    }
+
+    /* Подсказки в пустых полях */
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder {
+        color: #9AABC2 !important;
+        opacity: 1 !important;
+    }
+
+    /* Радиокнопка при выборе */
+    .stRadio [data-checked="true"] {
+        color: #67E8F9 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 auth.render_main_menu_button()
 
 
