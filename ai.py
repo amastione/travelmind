@@ -1130,44 +1130,44 @@ def _normalize_trip_ideas(result: dict) -> dict:
 
         used_destinations.add(destination_key)
 
-    if not normalized_ideas:
-    raise ValueError(
-        "AI не вернул ни одного пригодного направления. "
-        "Уточните местность, увеличьте радиус или измените интересы."
-    )
-
-# Интерфейс показывает только красивое количество карточек:
-# 1, 2, 4, 6 или 8.
-#
-# Примеры:
-# 8 идей → 8
-# 7 идей → 6
-# 6 идей → 6
-# 5 идей → 4
-# 4 идеи → 4
-# 3 идеи → 2
-# 2 идеи → 2
-# 1 идея → 1
-ideas_count = len(normalized_ideas)
-
-if ideas_count >= 8:
-    display_count = 8
-elif ideas_count >= 6:
-    display_count = 6
-elif ideas_count >= 4:
-    display_count = 4
-elif ideas_count >= 2:
-    display_count = 2
-else:
-    display_count = 1
-
-return {
-    "search_summary": _safe_trip_idea_text(
-        result.get("search_summary"),
-        500,
-    ),
-    "ideas": normalized_ideas[:display_count],
-}
+            if not normalized_ideas:
+                raise ValueError(
+                    "AI не вернул ни одного пригодного направления. "
+                    "Уточните местность, увеличьте радиус или измените интересы."
+                )
+        
+            # Интерфейс показывает только красивое количество карточек:
+            # 1, 2, 4, 6 или 8.
+            #
+            # Примеры:
+            # 8 идей → 8
+            # 7 идей → 6
+            # 6 идей → 6
+            # 5 идей → 4
+            # 4 идеи → 4
+            # 3 идеи → 2
+            # 2 идеи → 2
+            # 1 идея → 1
+            ideas_count = len(normalized_ideas)
+        
+            if ideas_count >= 8:
+                display_count = 8
+            elif ideas_count >= 6:
+                display_count = 6
+            elif ideas_count >= 4:
+                display_count = 4
+            elif ideas_count >= 2:
+                display_count = 2
+            else:
+                display_count = 1
+        
+            return {
+                "search_summary": _safe_trip_idea_text(
+                    result.get("search_summary"),
+                    500,
+                ),
+                "ideas": normalized_ideas[:display_count],
+            }
 
 
 @st.cache_data(ttl=12 * 3600, show_spinner=False)
@@ -1260,6 +1260,7 @@ def generate_trip_ideas(request_json: str) -> dict:
 - Не добавляй повторяющиеся, слишком далёкие, сомнительные или слабые
   варианты только ради количества.
 - Если качественных вариантов меньше, верни меньше идей.
+"""
 
     client = _create_llm_client()
     last_error = None
