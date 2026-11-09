@@ -29,7 +29,13 @@ st.session_state.pop("generated_trip_id", None)
 st.session_state.pop("generated_tokens_in", None)
 st.session_state.pop("generated_tokens_out", None)
 st.session_state.pop("pending_trip_generation", None)
-
+# Очищаем предыдущую выдачу только если пользователь открыл
+# страницу через кнопку «Пока не знаете, куда поехать?».
+# Без флага результаты не удаляются при обычных перезапусках страницы.
+if st.session_state.pop("clear_trip_ideas_on_open", False):
+    st.session_state.pop("trip_ideas_result", None)
+    st.session_state.pop("trip_ideas_tokens_in", None)
+    st.session_state.pop("trip_ideas_tokens_out", None)
 
 CSS = """
 <style>
