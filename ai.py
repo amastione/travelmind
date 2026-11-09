@@ -361,14 +361,27 @@ def generate(user_prompt: str) -> dict:
         response_format={"type": "json_object"},
     )
 
+    choices = response.choices or []
+
+    if not choices:
+        raise ValueError("AI-провайдер не вернул вариантов ответа.")
+
+    content = str(
+        choices[0].message.content or ""
+    ).strip()
+
+    if not content:
+        raise ValueError("AI вернул пустой ответ.")
+
+    parsed_data = _parse_json(content)
+
     usage = response.usage
 
     return {
-        "data": _parse_json(response.choices[0].message.content),
+        "data": parsed_data,
         "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
         "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
     }
-
 
 # ==========================================================
 # AI-РЕДАКТИРОВАНИЕ СОХРАНЁННОГО МАРШРУТА
