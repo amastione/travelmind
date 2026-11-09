@@ -14,13 +14,7 @@ GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
-REGION_ALIASES = {
-    "кбр": "Кабардино-Балкарская Республика",
-    "кчр": "Карачаево-Черкесская Республика",
-    "рсо-алания": "Республика Северная Осетия — Алания",
-    "рсо алания": "Республика Северная Осетия — Алания",
-    "республика ингушетия": "Ингушетия",
-}
+
 
 # Прогноз Open-Meteo имеет ограниченный горизонт.
 FORECAST_MAX_DAYS = 16
@@ -142,108 +136,15 @@ def _destination_search_variants(destination: str) -> list[str]:
 
 def _osm_search_variants(destination: str) -> list[str]:
     """
-    Формирует расширенный набор запросов для OpenStreetMap Nominatim.
+    Передаёт геокодеру исходное название с контекстом.
 
-    Особенно нужен для природных объектов, где название может быть
-    записано в OSM иначе, чем пользователь ввёл его в TravelMind.
+    Не подставляет произвольные регионы и страны,
+    не меняет название географического объекта.
     """
-    original = " ".join(str(destination or "").split())
+    query = " ".join(str(destination or "").split())
 
-    if not original:
-        return []
+    return [query] if query else []
 
-    variants = [original]
-    normalized = original.casefold()
-
-    # Раскрываем распространённые сокращения регионов.
-    for short_name, full_name in REGION_ALIASES.items():
-        if short_name in normalized:
-            expanded = normalized.replace(short_name, full_name.casefold())
-            variants.append(expanded.capitalize())
-
-    # Часто OSM лучше ищет запрос с полным названием страны.
-    for item in list(variants):
-        if "россия" not in item.casefold():
-            variants.append(f"{item}, Россия")
-
-    # Первая часть до запятой:
-    # «Чегемское ущелье, Кабардино-Балкария» → «Чегемское ущелье».
-    first_part = original.split(",", 1)[0].strip()
-
-    if first_part:
-        variants.append(first_part)
-        variants.append(f"{first_part}, Россия")
-
-    # Для природных объектов добавляем известный региональный контекст.
-    # Это повышает шанс найти место с неидеальным названием в OSM.
-    object_words = (
-        "ущелье",
-        "водопад",
-        "водопады",
-        "озеро",
-        "гора",
-        "плато",
-        "перевал",
-        "каньон",
-        "парк",
-        "заповедник",
-    )
-
-    if any(word in first_part.casefold() for word in object_words):
-        variants.extend(
-            [
-                f"{first_part}, Северный Кавказ, Россия",
-                f"{first_part}, Кабардино-Балкарская Республика, Россия",
-            ]
-        )
-
-    # Если пользователь написал «Чегемское ущелье», пробуем «Чегем».
-    # Для погоды в крайнем случае лучше прогноз ближайшего населённого
-    # пункта, чем полное отсутствие прогноза.
-    fallback_words = (
-        "ущелье",
-        "водопады",
-        "водопад",
-        "озеро",
-        "гора",
-        "плато",
-        "перевал",
-        "каньон",
-        "национальный парк",
-        "заповедник",
-    )
-
-    simplified_name = first_part.casefold()
-
-    for word in fallback_words:
-        simplified_name = simplified_name.replace(word, " ")
-
-    simplified_name = " ".join(simplified_name.split())
-
-    if simplified_name and simplified_name != first_part.casefold():
-        variants.extend(
-            [
-                simplified_name.capitalize(),
-                f"{simplified_name.capitalize()}, Россия",
-                (
-                    f"{simplified_name.capitalize()}, "
-                    "Кабардино-Балкарская Республика, Россия"
-                ),
-            ]
-        )
-
-    unique_variants = []
-    seen = set()
-
-    for item in variants:
-        clean_item = " ".join(str(item or "").split())
-        item_key = clean_item.casefold()
-
-        if clean_item and item_key not in seen:
-            seen.add(item_key)
-            unique_variants.append(clean_item)
-
-    return unique_variants
 
 def _build_osm_place_name(
     place: dict[str, Any],
@@ -322,14 +223,18 @@ def _geocode_place_with_osm(
 
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
             continue
+        
+        address = place.get("address")
 
+        if not isinstance(address, dict):
+            address = {}
         return {
             "name": _build_osm_place_name(
                 place,
                 fallback_name=destination,
             ),
-            "country": "Россия",
-            "admin1": "",
+            "country": str(address.get("country") or ""),
+            "admin1": str(address.get("state") or ""),
             "latitude": latitude,
             "longitude": longitude,
             # Для Open-Meteo подходит auto: часовой пояс определяется
@@ -378,17 +283,15 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
             response.raise_for_status()
 
         except requests.RequestException:
-            raise RuntimeError(
-                "Сервис поиска мест временно недоступен. "
-                "Попробуйте получить прогноз позже."
-            ) from None
+            # Ошибка одного провайдера не должна блокировать
+            # дальнейший поиск через Nominatim.
+            continue
 
         try:
             payload = response.json()
         except ValueError:
-            raise RuntimeError(
-                "Сервис поиска мест вернул некорректный ответ."
-            ) from None
+            continue
+        
 
         if not isinstance(payload, dict) or payload.get("error"):
             continue
@@ -424,14 +327,9 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
     # Для природных объектов используем расширенный список вариантов:
     # сокращения регионов, полные названия субъектов, название без региона,
     # а также возможное название ближайшего населённого пункта.
+    # Nominatim получает исходное название вместе с регионом
+    # и страной, без искусственно придуманных вариантов.
     osm_queries = _osm_search_variants(destination)
-    
-    # Добавляем стандартные короткие варианты Open-Meteo, если их ещё нет.
-    for variant in search_variants:
-        if variant.casefold() not in {
-            item.casefold() for item in osm_queries
-        }:
-            osm_queries.append(variant)
 
     seen_queries = set()
 
