@@ -970,11 +970,11 @@ with st.form("plan_form"):
 
 
 # ==========================================================
+
+# ==========================================================
 # ОБРАБОТКА ОТПРАВКИ ФОРМЫ
 # ==========================================================
 
-# При обычном открытии страницы ничего ниже не выполняем.
-# Поэтому не будет предупреждений до нажатия кнопки.
 if not submitted:
     st.stop()
 
@@ -1008,86 +1008,26 @@ if days < 1 or days > ai.MAX_DAYS:
     )
     st.stop()
 
-# ==========================================================
-# СБОРКА ПРОМПТА
-# ==========================================================
-
-user_prompt = ai.build_prompt(
-    dest=dest.strip(),
-    start=start.isoformat(),
-    end=end.isoformat(),
-    days=days,
-    budget=budget,
-    curr=curr,
-    people=people,
-    style=style,
-    pace=PACES[pace],
-    interests=", ".join(interests) or "любые",
-    notes=notes.strip() or "нет",
-)
 
 # ==========================================================
-# ГЕНЕРАЦИЯ AI-МАРШРУТА
+# СОХРАНЕНИЕ ПАРАМЕТРОВ И ПЕРЕЗАПУСК
 # ==========================================================
 
-with st.spinner(
-    "✦ AI анализирует предпочтения и составляет маршрут… "
-    "обычно это занимает 20–60 секунд."
-):
-    try:
-        result = ai.generate(user_prompt)
-
-    except json.JSONDecodeError:
-        st.error(
-            "Модель вернула некорректный ответ. "
-            "Пожалуйста, попробуйте ещё раз."
-        )
-        st.stop()
-
-    except Exception:
-        st.error(
-            "Не удалось создать маршрут. "
-            "Пожалуйста, попробуйте ещё раз."
-        )
-        st.stop()
-
-data = result["data"]
-
-# ==========================================================
-# ПРОВЕРКА КАЧЕСТВА
-# ==========================================================
-
-for warning in ai.validate(data):
-    st.warning(warning)
-
-# ==========================================================
-# СОХРАНЕНИЕ МАРШРУТА
-# ==========================================================
-
-trip_id = db.save_trip(
-    user_id,
-    {
-        "title": data.get("title", "Поездка"),
-        "destination": dest.strip(),
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-        "budget": budget,
-        "currency": curr,
-        "people": people,
-    },
-    json.dumps(data, ensure_ascii=False),
-)
-
-db.init_expenses_from_plan(trip_id, data)
-
-# Виджеты формы уже были созданы в этом запуске Streamlit.
-# Поэтому очистку выполняем на следующем перезапуске страницы.
-st.session_state["reset_new_trip_form_pending"] = True
-
-st.session_state["generated_trip_id"] = int(trip_id)
-st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
-st.session_state["generated_tokens_out"] = result.get("tokens_out", 0)
-
-auth.remember_trip(trip_id)
+# Не вызываем AI прямо здесь: форма уже отрисована.
+# Сохраняем параметры и запускаем отдельный прогон Streamlit,
+# где будет отображаться только spinner, без повторной формы.
+st.session_state["pending_trip_generation"] = {
+    "destination": dest.strip(),
+    "start": start,
+    "end": end,
+    "days": days,
+    "budget": budget,
+    "currency": curr,
+    "people": people,
+    "style": style,
+    "pace": PACES[pace],
+    "interests": ", ".join(interests) or "любые",
+    "notes": notes.strip() or "нет",
+}
 
 st.rerun()
