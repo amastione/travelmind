@@ -239,13 +239,45 @@ st.markdown(
         opacity: 1 !important;
     }
 
-    /* Текст внутри полей ввода */
+    /* ------------------------------------------------------
+       ПОЛЯ ВВОДА: тёмное стекло + читаемый светлый текст
+   ------------------------------------------------------ */
+
     .stTextInput input,
     .stTextArea textarea,
-    .stNumberInput input,
-    [data-baseweb="select"] div,
-    [data-baseweb="select"] span {
+    .stNumberInput input {
+        border: 1px solid rgba(148, 163, 184, 0.34) !important;
+        border-radius: 13px !important;
+    
+        background: rgba(7, 11, 20, 0.78) !important;
         color: #F8FAFC !important;
+    
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.04),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.16) !important;
+    }
+    
+    /* Убирает светлый фон, который Streamlit может добавить textarea */
+    .stTextArea textarea {
+        min-height: 110px !important;
+    }
+    
+    /* Состояние фокуса */
+    .stTextInput input:focus,
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus {
+        border-color: rgba(103, 232, 249, 0.82) !important;
+        background: rgba(7, 11, 20, 0.92) !important;
+        box-shadow:
+            0 0 0 3px rgba(34, 211, 238, 0.13),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    /* Текст-подсказка до ввода */
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
     }
 
     /* Подсказки в пустых полях */
