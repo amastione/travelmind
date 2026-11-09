@@ -645,8 +645,25 @@ def find_destination_options(search_term):
     return options
 
 # ==========================================================
+# ==========================================================
 # ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
 # ==========================================================
+
+# streamlit-searchbox хранит по своему key служебный словарь.
+# После предыдущей версии там могла остаться строка, из-за которой
+# компонент падал с TypeError: ... ["options_js"].
+searchbox_state = st.session_state.get(
+    "destination_searchbox_restored"
+)
+
+if searchbox_state is not None and not isinstance(
+    searchbox_state,
+    dict,
+):
+    st.session_state.pop(
+        "destination_searchbox_restored",
+        None,
+    )
 
 trip_idea_prefill = st.session_state.pop(
     "trip_idea_prefill",
@@ -666,95 +683,23 @@ if isinstance(trip_idea_prefill, dict):
         trip_idea_prefill.get("title") or ""
     ).strip()
 
-    # Ключ searchbox устанавливаем до создания компонента.
+    # Не записываем значение в key streamlit-searchbox.
+    # Направление храним отдельно и используем при создании маршрута.
     if idea_destination:
         st.session_state[
-            "destination_searchbox_restored"
+            "trip_idea_destination"
         ] = idea_destination
 
         st.session_state["trip_destination"] = idea_destination
 
-    # Эта заметка подставится в textarea ниже.
+    # Обычный textarea поддерживает предзаполнение через key.
     if idea_notes:
         st.session_state["trip_notes"] = idea_notes
 
     if idea_title:
-        st.session_state["trip_idea_selected_title"] = idea_title
-
-st.subheader("📍 Основные параметры")
-
-selected_idea_title = st.session_state.pop(
-    "trip_idea_selected_title",
-    "",
-)
-
-if selected_idea_title:
-    st.info(
-        f"Вы выбрали идею: «{selected_idea_title}». "
-        "Направление и пожелания уже добавлены в форму — "
-        "при необходимости отредактируйте их."
-    )
-
-st.markdown(
-    '<div class="tm-destination-label">Куда отправляемся?</div>',
-    unsafe_allow_html=True,
-)
-
-with st.container(key="tm_destination_search"):
-    selected_destination = st_searchbox(
-        search_function=find_destination_options,
-        label="",
-        placeholder="Город, регион или посёлок",
-        key="destination_searchbox_restored",
-    )
-
-# Если пользователь выбрал DaData-подсказку, используем её.
-# Иначе используем направление, пришедшее из модуля «Идеи для поездки».
-searchbox_destination = (
-    selected_destination.strip()
-    if isinstance(selected_destination, str)
-    else ""
-)
-
-idea_destination = str(
-    st.session_state.get("trip_idea_destination") or ""
-).strip()
-
-dest = searchbox_destination or idea_destination
-
-if dest:
-    st.session_state["trip_destination"] = dest
-
-st.caption(
-    "Выберите подсказку или пункт «Использовать мой текст». "
-    "Поиск в DaData начинается после трёх символов."
-)
-
-if idea_destination and not searchbox_destination:
-    st.info(
-        f"Выбрано направление из AI-идеи: «{idea_destination}». "
-        "При необходимости найдите и выберите другое направление выше."
-    )
-
-with st.form("plan_form"):
-    st.subheader("📅 Даты поездки")
-
-    dates = st.date_input(
-        "Даты поездки",
-        min_value=today,
-        format="DD/MM/YYYY",
-        key="trip_dates",
-        help=(
-            "Нажмите первую дату — это начало поездки. "
-            "Затем нажмите вторую дату — это окончание. "
-            "Все дни между ними будут выбраны автоматически."
-        ),
-    )
-
-    st.write("")
-
-
-    st.subheader("💳 Бюджет и формат поездки")
+        st.session_state[
+            "trip_idea_selected_title"
+        ] = idea_title
 
 # ==========================================================
 # ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
