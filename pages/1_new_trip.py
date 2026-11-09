@@ -451,12 +451,21 @@ st.markdown(
 
 auth.render_main_menu_button()
 
-st.page_link(
-    "pages/4_trip_ideas.py",
-    label="✨ Пока не знаете, куда поехать? Найти идеи",
-    icon="🧭",
+if st.button(
+    "🧭 Пока не знаете, куда поехать? Найти идеи",
     use_container_width=True,
-)
+    key="open_trip_ideas",
+):
+    # Убираем экран результата предыдущей генерации.
+    st.session_state.pop("generated_trip_id", None)
+    st.session_state.pop("generated_tokens_in", None)
+    st.session_state.pop("generated_tokens_out", None)
+
+    # На случай, если предыдущая генерация была запущена,
+    # но ещё не завершилась.
+    st.session_state.pop("pending_trip_generation", None)
+
+    st.switch_page("pages/4_trip_ideas.py")
 
 
 st.markdown(
