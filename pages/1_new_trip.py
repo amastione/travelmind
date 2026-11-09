@@ -490,6 +490,31 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+def reset_new_trip_form() -> None:
+    """
+    Очищает одноразовые данные формы после создания маршрута
+    или при нажатии «Создать ещё одну поездку».
+    """
+    keys_to_remove = [
+        "trip_idea_prefill",
+        "trip_idea_destination",
+        "trip_idea_selected_title",
+        "trip_destination",
+        "trip_notes",
+        "destination_searchbox_restored",
+    ]
+
+    for key in keys_to_remove:
+        st.session_state.pop(key, None)
+
+    # Возвращаем календарь к стандартному диапазону.
+    current_day = date.today()
+
+    st.session_state["trip_dates"] = (
+        current_day + timedelta(days=14),
+        current_day + timedelta(days=17),
+    )
+
 # ==========================================================
 # ЭКРАН ПОСЛЕ УСПЕШНОГО СОЗДАНИЯ МАРШРУТА
 # ==========================================================
@@ -533,7 +558,14 @@ if generated_trip_id:
         ):
             auth.remember_trip(int(generated_trip_id))
 
+            reset_new_trip_form()
+            
             st.session_state.pop("generated_trip_id", None)
+            st.session_state.pop("generated_tokens_in", None)
+            st.session_state.pop("generated_tokens_out", None)
+            
+            st.switch_page("pages/3_trip_detail.py")
+            
             st.session_state.pop("generated_tokens_in", None)
             st.session_state.pop("generated_tokens_out", None)
 
@@ -545,9 +577,12 @@ if generated_trip_id:
             use_container_width=True,
             key="create_another_trip",
         ):
+            reset_new_trip_form()
+
             st.session_state.pop("generated_trip_id", None)
             st.session_state.pop("generated_tokens_in", None)
             st.session_state.pop("generated_tokens_out", None)
+
             st.rerun()
 
     st.stop()
@@ -751,6 +786,19 @@ searchbox_state = st.session_state.get(
 )
 
 if searchbox_state is not None and not isinstance(
+
+# ==========================================================
+# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
+# ==========================================================
+
+# streamlit-searchbox использует служебный словарь в session_state.
+# Удаляем только некорректное старое строковое значение, если оно осталось
+# от предыдущих версий страницы.
+searchbox_state = st.session_state.get(
+    "destination_searchbox_restored"
+)
+
+if searchbox_state is not None and not isinstance(
     searchbox_state,
     dict,
 ):
@@ -759,7 +807,7 @@ if searchbox_state is not None and not isinstance(
         None,
     )
 
-# Данные приходят со страницы «Идеи для поездки».
+# Данные приходят только один раз со страницы «Идеи для поездки».
 trip_idea_prefill = st.session_state.pop(
     "trip_idea_prefill",
     None,
@@ -778,19 +826,18 @@ if isinstance(trip_idea_prefill, dict):
         trip_idea_prefill.get("title") or ""
     ).strip()
 
-    # Не записываем текст прямо в key searchbox:
-    # этот компонент ожидает там служебный словарь.
+    # Не записываем строку в key searchbox: компонент ожидает dict.
+    # Храним выбранное AI-направление отдельно.
     if idea_destination:
         st.session_state["trip_idea_destination"] = idea_destination
         st.session_state["trip_destination"] = idea_destination
 
-    # Обычное поле textarea можно заполнить через session_state.
+    # textarea можно безопасно предзаполнить через его key.
     if idea_notes:
         st.session_state["trip_notes"] = idea_notes
 
     if idea_title:
         st.session_state["trip_idea_selected_title"] = idea_title
-
 
 # ==========================================================
 # ОСНОВНЫЕ ПАРАМЕТРЫ И ПОИСК НАПРАВЛЕНИЯ
@@ -1063,13 +1110,14 @@ trip_id = db.save_trip(
 
 db.init_expenses_from_plan(trip_id, data)
 
-# Сохраняем данные между перезапусками Streamlit.
+# После успешного сохранения очищаем одноразовые данные идеи,
+# чтобы они не попали в следующую поездку.
+reset_new_trip_form()
+
 st.session_state["generated_trip_id"] = int(trip_id)
 st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
 st.session_state["generated_tokens_out"] = result.get("tokens_out", 0)
 
-# Сохраняем созданную поездку как текущую.
 auth.remember_trip(trip_id)
 
-# На новом запуске появится экран с кнопкой открытия маршрута.
 st.rerun()
