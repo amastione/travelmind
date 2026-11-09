@@ -930,6 +930,323 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
         ),
     }
 
+# ==========================================================
+# AI-ИДЕИ ДЛЯ ПОЕЗДКИ
+# ==========================================================
+
+TRIP_IDEAS_SYSTEM_PROMPT = """Ты — эксперт TravelMind по коротким
+автомобильным путешествиям, поездкам выходного дня и остановкам по пути.
+
+Твоя задача — предложить пользователю 5–8 реалистичных направлений,
+куда можно отправиться, если у него есть свободные дни, примерная точка
+старта и интересы.
+
+СТРОГИЕ ПРАВИЛА:
+- Верни ТОЛЬКО один валидный JSON-объект.
+- Не используй Markdown, комментарии или текст вне JSON.
+- Все текстовые значения пиши на русском языке.
+- Предлагай только реально существующие места, города, природные объекты,
+  районы и достопримечательности.
+- Не выдумывай точные режимы работы, стоимость билетов, расписания,
+  состояние дорог и уровень безопасности.
+- Расстояние указывай только как ориентировочное целое число в километрах.
+- Не утверждай, что расстояние рассчитано по навигатору.
+- Учитывай транспорт, свободное время, интересы, бюджет и пожелания.
+- Если режим «по пути», выбирай места, которые логично включить между
+  стартом и конечной точкой или посетить с разумным отклонением.
+- Не предлагай недоступные без специальной подготовки, разрешений,
+  внедорожника или опасные места без явного предупреждения в caution.
+- Варианты должны отличаться друг от друга, но соответствовать интересам.
+- Не составляй подробный план по дням: пользователь пока выбирает идею.
+- Поле theme выбери строго из:
+  mountains, nature, culture, food, beach, adventure, city, mixed.
+- Поле cover_profile выбери строго из:
+  city_summer, city_autumn, city_winter,
+  moscow, saint_peter, sochi,
+  northern_city_autumn, northern_city_winter,
+  caucasus_summer, caucasus_winter,
+  mountains_summer, mountains_winter,
+  sea_summer, sea_sunset,
+  europe_city, europe_winter,
+  tropical_island, desert_city.
+
+JSON-СХЕМА:
+{
+  "search_summary": "Короткий вывод: какой формат поездки лучше подойдёт.",
+  "ideas": [
+    {
+      "id": "idea_1",
+      "title": "Короткое название направления",
+      "destination": "Название места, регион, страна",
+      "theme": "mountains|nature|culture|food|beach|adventure|city|mixed",
+      "cover_profile": "одно значение из разрешённого списка",
+      "estimated_distance_km": 0,
+      "recommended_days": "1–2 дня",
+      "budget_level": "низкий|средний|высокий",
+      "transport_note": "Короткая заметка о дороге или транспорте",
+      "highlights": [
+        "Первое главное впечатление",
+        "Вторая особенность",
+        "Третья особенность"
+      ],
+      "why_it_fits": "Почему вариант подходит пользователю.",
+      "caution": "Важное предупреждение или пустая строка."
+    }
+  ]
+}"""
+
+
+def _safe_trip_idea_text(value, max_length=500) -> str:
+    """Приводит значение AI к безопасной короткой строке."""
+    return str(value or "").strip()[:max_length]
+
+
+def _normalize_trip_ideas(result: dict) -> dict:
+    """
+    Проверяет и приводит AI-ответ к структуре идей.
+
+    Некорректные элементы отбрасываются. Если пригодных идей меньше пяти,
+    вызывающая страница покажет понятное предупреждение пользователю.
+    """
+    if not isinstance(result, dict):
+        raise ValueError("AI вернул не JSON-объект с идеями.")
+
+    raw_ideas = result.get("ideas")
+
+    if not isinstance(raw_ideas, list):
+        raise ValueError("AI не вернул список идей для поездки.")
+
+    allowed_themes = {
+        "mountains",
+        "nature",
+        "culture",
+        "food",
+        "beach",
+        "adventure",
+        "city",
+        "mixed",
+    }
+
+    normalized_ideas = []
+    used_destinations = set()
+
+    for index, item in enumerate(raw_ideas[:10], start=1):
+        if not isinstance(item, dict):
+            continue
+
+        title = _safe_trip_idea_text(item.get("title"), 120)
+        destination = _safe_trip_idea_text(
+            item.get("destination"),
+            180,
+        )
+
+        if not title or not destination:
+            continue
+
+        destination_key = destination.lower()
+
+        if destination_key in used_destinations:
+            continue
+
+        theme = _safe_trip_idea_text(
+            item.get("theme"),
+            30,
+        ).lower()
+
+        if theme not in allowed_themes:
+            theme = "mixed"
+
+        cover_profile = _safe_trip_idea_text(
+            item.get("cover_profile"),
+            50,
+        ).lower()
+
+        if cover_profile not in ALLOWED_COVER_PROFILES:
+            cover_profile = ""
+
+        try:
+            distance = int(
+                round(float(item.get("estimated_distance_km") or 0))
+            )
+        except (TypeError, ValueError):
+            distance = 0
+
+        distance = max(distance, 0)
+
+        raw_highlights = item.get("highlights")
+        highlights = []
+
+        if isinstance(raw_highlights, list):
+            for highlight in raw_highlights[:4]:
+                text = _safe_trip_idea_text(highlight, 180)
+
+                if text:
+                    highlights.append(text)
+
+        if not highlights:
+            highlights = ["Интересное направление для короткой поездки."]
+
+        normalized_ideas.append(
+            {
+                "id": f"idea_{index}",
+                "title": title,
+                "destination": destination,
+                "theme": theme,
+                "cover_profile": cover_profile,
+                "estimated_distance_km": distance,
+                "recommended_days": _safe_trip_idea_text(
+                    item.get("recommended_days"),
+                    50,
+                ) or "Уточняется",
+                "budget_level": _safe_trip_idea_text(
+                    item.get("budget_level"),
+                    30,
+                ) or "средний",
+                "transport_note": _safe_trip_idea_text(
+                    item.get("transport_note"),
+                    250,
+                ),
+                "highlights": highlights,
+                "why_it_fits": _safe_trip_idea_text(
+                    item.get("why_it_fits"),
+                    450,
+                ),
+                "caution": _safe_trip_idea_text(
+                    item.get("caution"),
+                    350,
+                ),
+            }
+        )
+
+        used_destinations.add(destination_key)
+
+    if len(normalized_ideas) < 5:
+        raise ValueError(
+            "AI вернул слишком мало пригодных вариантов. "
+            "Попробуйте уточнить точку, увеличить радиус или изменить интересы."
+        )
+
+    return {
+        "search_summary": _safe_trip_idea_text(
+            result.get("search_summary"),
+            500,
+        ),
+        "ideas": normalized_ideas[:8],
+    }
+
+
+@st.cache_data(ttl=12 * 3600, show_spinner=False)
+def generate_trip_ideas(request_json: str) -> dict:
+    """
+    Подбирает 5–8 идей для поездки.
+
+    request_json передаётся строкой, чтобы Streamlit мог безопасно
+    кэшировать одинаковые запросы на 12 часов.
+    """
+    try:
+        request_data = json.loads(request_json)
+    except (json.JSONDecodeError, TypeError) as error:
+        raise ValueError(
+            "Не удалось прочитать параметры поиска идей."
+        ) from error
+
+    origin = _safe_trip_idea_text(request_data.get("origin"), 180)
+    destination = _safe_trip_idea_text(
+        request_data.get("destination"),
+        180,
+    )
+    search_mode = _safe_trip_idea_text(
+        request_data.get("search_mode"),
+        30,
+    )
+    radius_km = request_data.get("radius_km") or 0
+    days = request_data.get("days") or 1
+    transport = _safe_trip_idea_text(
+        request_data.get("transport"),
+        80,
+    )
+    budget = _safe_trip_idea_text(
+        request_data.get("budget"),
+        80,
+    )
+    interests = request_data.get("interests") or []
+    notes = _safe_trip_idea_text(request_data.get("notes"), 700)
+
+    if not origin:
+        raise ValueError("Укажите точку старта.")
+
+    if search_mode not in {"nearby", "on_the_way"}:
+        search_mode = "nearby"
+
+    if search_mode == "on_the_way" and not destination:
+        raise ValueError("Для поиска по пути укажите конечную точку.")
+
+    if not isinstance(interests, list):
+        interests = []
+
+    interests_text = ", ".join(
+        _safe_trip_idea_text(item, 60)
+        for item in interests
+        if _safe_trip_idea_text(item, 60)
+    ) or "без специальных предпочтений"
+
+    mode_text = (
+        "По пути к месту назначения"
+        if search_mode == "on_the_way"
+        else "Рядом со стартовой точкой"
+    )
+
+    destination_text = destination or "не указана"
+
+    user_prompt = f"""ПАРАМЕТРЫ ПОЛЬЗОВАТЕЛЯ:
+- Режим поиска: {mode_text}
+- Точка старта: {origin}
+- Конечная точка: {destination_text}
+- Радиус поиска или допустимый крюк: до {radius_km} км
+- Свободное время: {days} дн.
+- Транспорт: {transport or "автомобиль"}
+- Бюджет: {budget or "не указан"}
+- Интересы: {interests_text}
+- Дополнительные пожелания: {notes or "нет"}
+
+ЗАДАЧА:
+Предложи от 5 до 8 разнообразных, реалистичных идей для короткой поездки.
+Сначала верни краткий search_summary, затем идеи строго по JSON-схеме."""
+
+    client = _create_llm_client()
+
+    response = client.chat.completions.create(
+        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+        messages=[
+            {
+                "role": "system",
+                "content": TRIP_IDEAS_SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": user_prompt,
+            },
+        ],
+        temperature=0.55,
+        max_tokens=2800,
+        timeout=75,
+        response_format={"type": "json_object"},
+    )
+
+    content = str(
+        response.choices[0].message.content or ""
+    ).strip()
+
+    parsed_data = _parse_json(content)
+    normalized_data = _normalize_trip_ideas(parsed_data)
+
+    usage = response.usage
+
+    return {
+        "data": normalized_data,
+        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
+        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+    }
 
 # ==========================================================
 # ВАЛИДАЦИЯ МАРШРУТА
