@@ -600,17 +600,70 @@ if generated_trip_id:
     st.stop()
 
 # ==========================================================
+# ЭКРАН ОШИБКИ ГЕНЕРАЦИИ
+# ==========================================================
+
+failed_trip = st.session_state.get("failed_trip_generation")
+generation_error = str(
+    st.session_state.get("trip_generation_error") or ""
+).strip()
+
+if isinstance(failed_trip, dict):
+    st.error(
+        "Не удалось создать маршрут. "
+        "Ваши параметры сохранены — их не нужно вводить заново."
+    )
+
+    if generation_error:
+        st.caption(
+            f"Техническая информация: {generation_error[:500]}"
+        )
+
+    retry_column, back_column = st.columns(2)
+
+    with retry_column:
+        if st.button(
+            "🔄 Попробовать ещё раз",
+            type="primary",
+            use_container_width=True,
+            key="retry_trip_generation",
+        ):
+            # Возвращаем прежние параметры в очередь генерации.
+            st.session_state["pending_trip_generation"] = failed_trip
+            st.session_state.pop("failed_trip_generation", None)
+            st.session_state.pop("trip_generation_error", None)
+            st.rerun()
+
+    with back_column:
+        if st.button(
+            "✏️ Вернуться к параметрам",
+            use_container_width=True,
+            key="return_to_trip_form",
+        ):
+            # Параметры формы пользователь может изменить вручную.
+            st.session_state.pop("failed_trip_generation", None)
+            st.session_state.pop("trip_generation_error", None)
+            st.rerun()
+
+    st.stop()
+
+
+# ==========================================================
 # ОТЛОЖЕННАЯ ГЕНЕРАЦИЯ МАРШРУТА
 # ==========================================================
 
 pending_trip = st.session_state.get("pending_trip_generation")
 
 if isinstance(pending_trip, dict):
-    with st.spinner(
-        "✦ AI анализирует предпочтения и составляет маршрут… "
-        "обычно это занимает 20–60 секунд."
-    ):
-        try:
+    generation_stage = "подготовка запроса"
+
+    try:
+        with st.spinner(
+            "✦ AI анализирует предпочтения и составляет маршрут… "
+            "обычно это занимает 20–60 секунд."
+        ):
+            generation_stage = "сборка AI-запроса"
+
             user_prompt = ai.build_prompt(
                 dest=str(pending_trip["destination"]).strip(),
                 start=pending_trip["start"].isoformat(),
@@ -625,9 +678,22 @@ if isinstance(pending_trip, dict):
                 notes=pending_trip["notes"],
             )
 
+            generation_stage = "обращение к AI-модели"
             result = ai.generate(user_prompt)
+
+            generation_stage = "проверка ответа AI"
             data = result["data"]
 
+            # Базовая проверка структуры до записи в БД.
+            validation_errors = ai.validate(data)
+
+            if validation_errors:
+                raise ValueError(
+                    "AI вернул маршрут с неполной структурой: "
+                    + " ".join(validation_errors[:5])
+                )
+
+            generation_stage = "сохранение маршрута"
             trip_id = db.save_trip(
                 user_id,
                 {
@@ -642,28 +708,32 @@ if isinstance(pending_trip, dict):
                 json.dumps(data, ensure_ascii=False),
             )
 
+            generation_stage = "создание плана расходов"
             db.init_expenses_from_plan(trip_id, data)
 
-        except json.JSONDecodeError:
-            st.session_state.pop("pending_trip_generation", None)
-            st.error(
-                "Модель вернула некорректный ответ. "
-                "Пожалуйста, попробуйте ещё раз."
-            )
-            st.stop()
+    except Exception as error:
+        # Сохраняем исходные параметры, чтобы пользователь мог
+        # повторить именно тот же запрос одной кнопкой.
+        st.session_state["failed_trip_generation"] = pending_trip
+        st.session_state.pop("pending_trip_generation", None)
 
-        except Exception:
-            st.session_state.pop("pending_trip_generation", None)
-            st.error(
-                "Не удалось создать маршрут. "
-                "Пожалуйста, попробуйте ещё раз."
-            )
-            st.stop()
+        error_text = str(error).strip() or error.__class__.__name__
 
-    # Здесь форма ещё НЕ отрисована, поэтому её ключи можно очистить.
+        st.session_state["trip_generation_error"] = (
+            f"Этап: {generation_stage}. "
+            f"Причина: {error_text[:450]}"
+        )
+
+        st.rerun()
+
+    # Успех: форма ещё не создана в этом запуске Streamlit,
+    # поэтому её ключи можно очистить безопасно.
     reset_new_trip_form()
 
     st.session_state.pop("pending_trip_generation", None)
+    st.session_state.pop("failed_trip_generation", None)
+    st.session_state.pop("trip_generation_error", None)
+
     st.session_state["generated_trip_id"] = int(trip_id)
     st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
     st.session_state["generated_tokens_out"] = result.get("tokens_out", 0)
