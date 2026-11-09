@@ -515,6 +515,11 @@ def reset_new_trip_form() -> None:
         current_day + timedelta(days=17),
     )
 
+# Если маршрут только что был создан, очищаем данные формы
+# до создания виджетов на новом запуске Streamlit.
+if st.session_state.pop("reset_new_trip_form_pending", False):
+    reset_new_trip_form()
+
 # ==========================================================
 # ЭКРАН ПОСЛЕ УСПЕШНОГО СОЗДАНИЯ МАРШРУТА
 # ==========================================================
@@ -1002,9 +1007,9 @@ trip_id = db.save_trip(
 
 db.init_expenses_from_plan(trip_id, data)
 
-# После успешного сохранения очищаем одноразовые данные идеи,
-# чтобы они не попали в следующую поездку.
-reset_new_trip_form()
+# Виджеты формы уже были созданы в этом запуске Streamlit.
+# Поэтому очистку выполняем на следующем перезапуске страницы.
+st.session_state["reset_new_trip_form_pending"] = True
 
 st.session_state["generated_trip_id"] = int(trip_id)
 st.session_state["generated_tokens_in"] = result.get("tokens_in", 0)
