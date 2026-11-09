@@ -515,10 +515,7 @@ def reset_new_trip_form() -> None:
         current_day + timedelta(days=17),
     )
 
-# Если маршрут только что был создан, очищаем данные формы
-# до создания виджетов на новом запуске Streamlit.
-if st.session_state.pop("reset_new_trip_form_pending", False):
-    reset_new_trip_form()
+
 
 # ==========================================================
 # ЭКРАН ПОСЛЕ УСПЕШНОГО СОЗДАНИЯ МАРШРУТА
