@@ -456,14 +456,20 @@ if st.button(
     use_container_width=True,
     key="open_trip_ideas",
 ):
-    # Убираем экран результата предыдущей генерации.
+    # Убираем экран результата предыдущего маршрута.
     st.session_state.pop("generated_trip_id", None)
     st.session_state.pop("generated_tokens_in", None)
     st.session_state.pop("generated_tokens_out", None)
-
-    # На случай, если предыдущая генерация была запущена,
-    # но ещё не завершилась.
     st.session_state.pop("pending_trip_generation", None)
+
+    # Убираем старые результаты AI-подбора идей:
+    # «Подходящие направления», карточки и счётчики токенов.
+    st.session_state.pop("trip_ideas_result", None)
+    st.session_state.pop("trip_ideas_tokens_in", None)
+    st.session_state.pop("trip_ideas_tokens_out", None)
+
+    # Страховочный флаг: страница идей повторит очистку при открытии.
+    st.session_state["clear_trip_ideas_on_open"] = True
 
     st.switch_page("pages/4_trip_ideas.py")
 
