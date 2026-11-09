@@ -373,36 +373,31 @@ def render_idea_card(idea: dict, index: int) -> None:
 
     title = escape(str(idea.get("title") or "Идея для поездки"))
     destination = escape(str(idea.get("destination") or ""))
+
     recommended_days = escape(
         str(idea.get("recommended_days") or "Уточняется")
     )
+
     budget_level = escape(
         str(idea.get("budget_level") or "средний")
     )
+
     transport_note = escape(
         str(idea.get("transport_note") or "")
     )
+
     why_it_fits = escape(
         str(idea.get("why_it_fits") or "")
     )
+
     caution = escape(
         str(idea.get("caution") or "")
     )
 
-    distance = idea.get("estimated_distance_km") or 0
-
     try:
-        distance = int(distance)
+        distance = int(idea.get("estimated_distance_km") or 0)
     except (TypeError, ValueError):
         distance = 0
-
-    highlights_html = ""
-
-    for item in idea.get("highlights") or []:
-        item_text = escape(str(item).strip())
-
-        if item_text:
-            highlights_html += f"<li>{item_text}</li>"
 
     distance_text = (
         f"≈ {distance} км"
@@ -410,33 +405,56 @@ def render_idea_card(idea: dict, index: int) -> None:
         else "Расстояние уточняется"
     )
 
+    highlights_items = []
+
+    for item in idea.get("highlights") or []:
+        item_text = escape(str(item).strip())
+
+        if item_text:
+            highlights_items.append(f"<li>{item_text}</li>")
+
+    highlights_html = "".join(highlights_items)
+
+    if not highlights_html:
+        highlights_html = (
+            "<li>Интересное направление для короткой поездки.</li>"
+        )
+
+    caution_html = ""
+
+    if caution:
+        caution_html = (
+            f'<div class="tm-caution">⚠️ {caution}</div>'
+        )
+
+    why_text = (
+        why_it_fits
+        or "Подходит под указанные параметры путешествия."
+    )
+
+    # Важно: HTML собирается без Markdown-отступов.
+    # Иначе Streamlit показывает теги как текстовый блок кода.
+    card_html = (
+        f'<div class="tm-idea-card">'
+        f'<div class="tm-idea-title">{icon} {title}</div>'
+        f'<div class="tm-idea-place">📍 {destination}</div>'
+        f'<div class="tm-idea-meta">'
+        f'🚗 {distance_text}<br>'
+        f'🕒 Оптимально: {recommended_days}<br>'
+        f'💳 Бюджет: {budget_level}'
+        f'</div>'
+        f'<div class="tm-idea-why">'
+        f'<b>Почему подходит:</b> {why_text}'
+        f'</div>'
+        f'<ul class="tm-idea-highlights">'
+        f'{highlights_html}'
+        f'</ul>'
+        f'{caution_html}'
+        f'</div>'
+    )
+
     st.markdown(
-        f"""
-        <div class="tm-idea-card">
-            <div class="tm-idea-title">{icon} {title}</div>
-            <div class="tm-idea-place">📍 {destination}</div>
-
-            <div class="tm-idea-meta">
-                🚗 {distance_text}<br>
-                🕒 Оптимально: {recommended_days}<br>
-                💳 Бюджет: {budget_level}
-            </div>
-
-            <div class="tm-idea-why">
-                <b>Почему подходит:</b> {why_it_fits or "Подходит под указанные параметры."}
-            </div>
-
-            <ul class="tm-idea-highlights">
-                {highlights_html}
-            </ul>
-
-            {
-                f'<div class="tm-caution">⚠️ {caution}</div>'
-                if caution
-                else ""
-            }
-        </div>
-        """,
+        card_html,
         unsafe_allow_html=True,
     )
 
@@ -449,7 +467,9 @@ def render_idea_card(idea: dict, index: int) -> None:
         use_container_width=True,
     ):
         st.session_state["trip_idea_prefill"] = {
-            "destination": str(idea.get("destination") or "").strip(),
+            "destination": str(
+                idea.get("destination") or ""
+            ).strip(),
             "notes": build_idea_notes(idea),
             "title": str(idea.get("title") or "").strip(),
             "theme": theme,
