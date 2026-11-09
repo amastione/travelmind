@@ -451,7 +451,12 @@ st.markdown(
 
 auth.render_main_menu_button()
 
-
+st.page_link(
+    "pages/4_trip_ideas.py",
+    label="✨ Пока не знаете, куда поехать? Найти идеи",
+    icon="🧭",
+    use_container_width=True,
+)
 
 
 st.markdown(
@@ -639,8 +644,56 @@ def find_destination_options(search_term):
 
     return options
 
+# ==========================================================
+# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
+# ==========================================================
+
+trip_idea_prefill = st.session_state.pop(
+    "trip_idea_prefill",
+    None,
+)
+
+if isinstance(trip_idea_prefill, dict):
+    idea_destination = str(
+        trip_idea_prefill.get("destination") or ""
+    ).strip()
+
+    idea_notes = str(
+        trip_idea_prefill.get("notes") or ""
+    ).strip()
+
+    idea_title = str(
+        trip_idea_prefill.get("title") or ""
+    ).strip()
+
+    # Ключ searchbox устанавливаем до создания компонента.
+    if idea_destination:
+        st.session_state[
+            "destination_searchbox_restored"
+        ] = idea_destination
+
+        st.session_state["trip_destination"] = idea_destination
+
+    # Эта заметка подставится в textarea ниже.
+    if idea_notes:
+        st.session_state["trip_notes"] = idea_notes
+
+    if idea_title:
+        st.session_state["trip_idea_selected_title"] = idea_title
 
 st.subheader("📍 Основные параметры")
+
+selected_idea_title = st.session_state.pop(
+    "trip_idea_selected_title",
+    "",
+)
+
+if selected_idea_title:
+    st.info(
+        f"Вы выбрали идею: «{selected_idea_title}». "
+        "Направление и пожелания уже добавлены в форму — "
+        "при необходимости отредактируйте их."
+    )
 
 st.markdown(
     '<div class="tm-destination-label">Куда отправляемся?</div>',
@@ -757,6 +810,7 @@ with st.form("plan_form"):
             "Например: без долгих пеших прогулок, "
             "вегетарианское питание, интересуют видовые площадки."
         ),
+        key="trip_notes",
     )
 
     st.write("")
