@@ -708,14 +708,22 @@ with st.container(key="tm_destination_search"):
         key="destination_searchbox_restored",
     )
 
-# Не используем старое направление, если выбор очищен.
-dest = (
+# Если пользователь выбрал DaData-подсказку, используем её.
+# Иначе используем направление, пришедшее из модуля «Идеи для поездки».
+searchbox_destination = (
     selected_destination.strip()
     if isinstance(selected_destination, str)
     else ""
 )
 
-st.session_state["trip_destination"] = dest
+idea_destination = str(
+    st.session_state.get("trip_idea_destination") or ""
+).strip()
+
+dest = searchbox_destination or idea_destination
+
+if dest:
+    st.session_state["trip_destination"] = dest
 
 st.caption(
     "Выберите подсказку или пункт «Использовать мой текст». "
