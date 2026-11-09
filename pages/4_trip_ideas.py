@@ -160,8 +160,10 @@ footer {
 }
 
 .tm-idea-highlights {
+    max-height: 78px;
     margin: 0.8rem 0 0;
     padding-left: 1.1rem;
+    overflow: hidden;
     color: #AABDD4;
     font-size: 0.9rem;
     line-height: 1.55;
@@ -183,10 +185,6 @@ footer {
     line-height: 1.45;
 }
 
-.tm-idea-highlights {
-    max-height: 78px;
-    overflow: hidden;
-}
 
 @media (max-width: 640px) {
     .block-container {
@@ -413,7 +411,7 @@ def render_idea_card(idea: dict, index: int) -> None:
     )
 
     caution = escape(
-        str(idea.get("caution") or ""
+        str(idea.get("caution") or "")
     )
 
     try:
