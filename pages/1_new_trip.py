@@ -744,84 +744,61 @@ with st.form("plan_form"):
 
     st.subheader("💳 Бюджет и формат поездки")
 
-    column_3, column_4, column_5 = st.columns(3)
+# ==========================================================
+# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
+# ==========================================================
 
-    with column_3:
-        budget = st.number_input(
-            "Общий бюджет",
-            min_value=50,
-            value=1000,
-            step=50,
-        )
+# streamlit-searchbox хранит по своему key служебный словарь.
+# После предыдущей версии там могла остаться строка, из-за которой
+# компонент падал с TypeError: ... ["options_js"].
+searchbox_state = st.session_state.get(
+    "destination_searchbox_restored"
+)
 
-    with column_4:
-        curr = st.selectbox(
-            "Валюта",
-            ["RUB", "USD", "EUR"],
-        )
-
-    with column_5:
-        people = st.number_input(
-            "Путешественников",
-            min_value=1,
-            max_value=10,
-            value=2,
-        )
-
-    style = st.selectbox(
-        "Какой формат отдыха вам ближе?",
-        [
-            "Сбалансированный",
-            "Бюджетный",
-            "Комфорт / люкс",
-            "Культурный",
-            "Активный",
-            "Гастрономический",
-            "С детьми",
-            "Романтический",
-        ],
+if searchbox_state is not None and not isinstance(
+    searchbox_state,
+    dict,
+):
+    st.session_state.pop(
+        "destination_searchbox_restored",
+        None,
     )
 
-    pace = st.radio(
-        "Темп путешествия",
-        list(PACES),
-        index=1,
-        horizontal=True,
-    )
+trip_idea_prefill = st.session_state.pop(
+    "trip_idea_prefill",
+    None,
+)
 
-    st.write("")
+if isinstance(trip_idea_prefill, dict):
+    idea_destination = str(
+        trip_idea_prefill.get("destination") or ""
+    ).strip()
 
-    st.subheader("✨ Предпочтения")
+    idea_notes = str(
+        trip_idea_prefill.get("notes") or ""
+    ).strip()
 
-    interests = st.multiselect(
-        "Что вам интересно?",
-        INTERESTS,
-        default=["история", "местная кухня"],
-        placeholder="Выберите интересы",
-        help=(
-            "Выберите несколько интересов — AI использует их при создании "
-            "маршрута и подборе активностей."
-        ),
-    )
+    idea_title = str(
+        trip_idea_prefill.get("title") or ""
+    ).strip()
 
-    notes = st.text_area(
-        "Особые пожелания",
-        placeholder=(
-            "Например: без долгих пеших прогулок, "
-            "вегетарианское питание, интересуют видовые площадки."
-        ),
-        key="trip_notes",
-    )
+    # Не записываем значение в key streamlit-searchbox.
+    # Направление храним отдельно и используем при создании маршрута.
+    if idea_destination:
+        st.session_state[
+            "trip_idea_destination"
+        ] = idea_destination
 
-    st.write("")
+        st.session_state["trip_destination"] = idea_destination
 
-    submitted = st.form_submit_button(
-        "✨ Создать маршрут с AI",
-        use_container_width=True,
-    )
+    # Обычный textarea поддерживает предзаполнение через key.
+    if idea_notes:
+        st.session_state["trip_notes"] = idea_notes
 
-if not submitted:
-    st.stop()
+    if idea_title:
+        st.session_state[
+            "trip_idea_selected_title"
+        ] = idea_title
 
 # ==========================================================
 # ВАЛИДАЦИЯ ВВОДА
