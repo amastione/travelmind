@@ -10,6 +10,7 @@ import streamlit as st
 
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 # Прогноз Open-Meteo имеет ограниченный горизонт.
@@ -130,14 +131,110 @@ def _destination_search_variants(destination: str) -> list[str]:
 
     return unique_variants
 
+def _build_osm_place_name(
+    place: dict[str, Any],
+    fallback_name: str,
+) -> str:
+    """
+    Формирует понятное короткое название места из ответа OpenStreetMap.
+    """
+    display_name = str(place.get("display_name") or "").strip()
+
+    if not display_name:
+        return fallback_name
+
+    # Не показываем пользователю слишком длинную техническую строку.
+    # Например:
+    # «Чегемские водопады, Хушто-Сырт, Чегемский район,
+    # Кабардино-Балкария, Россия»
+    # оставляем первые три значимые части.
+    parts = [
+        part.strip()
+        for part in display_name.split(",")
+        if part.strip()
+    ]
+
+    return ", ".join(parts[:3]) or fallback_name
+
+
+def _geocode_place_with_osm(
+    destination: str,
+) -> dict[str, Any] | None:
+    """
+    Ищет природный объект или достопримечательность через OpenStreetMap.
+
+    Nominatim полезен там, где Open-Meteo не находит объект:
+    водопады, ущелья, озёра, национальные парки, смотровые площадки.
+    """
+    try:
+        response = requests.get(
+            NOMINATIM_URL,
+            params={
+                "q": destination,
+                "format": "jsonv2",
+                "limit": 5,
+                "addressdetails": 1,
+                "accept-language": "ru",
+            },
+            headers={
+                # Nominatim требует осмысленный User-Agent.
+                "User-Agent": (
+                    "TravelMind/1.0 "
+                    "(educational travel planning application)"
+                ),
+            },
+            timeout=12,
+        )
+        response.raise_for_status()
+        results = response.json()
+
+    except (requests.RequestException, ValueError):
+        # Если OSM временно недоступен, не ломаем весь раздел погоды.
+        # Основной поиск Open-Meteo уже был выполнен выше.
+        return None
+
+    if not isinstance(results, list):
+        return None
+
+    for place in results:
+        if not isinstance(place, dict):
+            continue
+
+        try:
+            latitude = float(place.get("lat"))
+            longitude = float(place.get("lon"))
+        except (TypeError, ValueError):
+            continue
+
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            continue
+
+        return {
+            "name": _build_osm_place_name(
+                place,
+                fallback_name=destination,
+            ),
+            "country": "Россия",
+            "admin1": "",
+            "latitude": latitude,
+            "longitude": longitude,
+            # Для Open-Meteo подходит auto: часовой пояс определяется
+            # по найденным координатам достопримечательности.
+            "timezone": "auto",
+            "source": "openstreetmap",
+        }
+
+    return None
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
 def geocode_destination(destination: str) -> dict[str, Any] | None:
     """
-    Ищет населённый пункт и проверяет полученные координаты.
+    Ищет координаты направления для прогноза погоды.
 
-    Сначала пробует полное направление из DaData, затем название
-    города / населённого пункта без региона и страны.
+    Порядок поиска:
+    1. Open-Meteo Geocoding — города, посёлки, регионы.
+    2. OpenStreetMap Nominatim — водопады, ущелья, озёра,
+       парки и другие достопримечательности.
     """
     destination = " ".join(str(destination or "").split())
 
@@ -149,6 +246,9 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
 
     search_variants = _destination_search_variants(destination)
 
+    # ------------------------------------------------------
+    # 1. Ищем населённый пункт через Open-Meteo.
+    # ------------------------------------------------------
     for search_query in search_variants:
         try:
             response = requests.get(
@@ -162,9 +262,10 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
                 timeout=10,
             )
             response.raise_for_status()
+
         except requests.RequestException:
             raise RuntimeError(
-                "Сервис поиска городов временно недоступен. "
+                "Сервис поиска мест временно недоступен. "
                 "Попробуйте получить прогноз позже."
             ) from None
 
@@ -172,22 +273,13 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
             payload = response.json()
         except ValueError:
             raise RuntimeError(
-                "Сервис поиска городов вернул некорректный ответ."
+                "Сервис поиска мест вернул некорректный ответ."
             ) from None
 
         if not isinstance(payload, dict) or payload.get("error"):
-            raise RuntimeError(
-                "Сервис поиска городов не смог обработать запрос."
-            )
-
-        results = payload.get("results") or []
-
-        if not results:
-            # Полная строка не найдена — пробуем следующий вариант,
-            # например «Ставрополь».
             continue
 
-        valid_places = []
+        results = payload.get("results") or []
 
         for place in results:
             if not isinstance(place, dict):
@@ -202,22 +294,44 @@ def geocode_destination(destination: str) -> dict[str, Any] | None:
             if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
                 continue
 
-            valid_places.append(
-                {
-                    "name": str(place.get("name") or search_query),
-                    "country": str(place.get("country") or ""),
-                    "admin1": str(place.get("admin1") or ""),
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "timezone": str(place.get("timezone") or "auto"),
-                }
-            )
+            return {
+                "name": str(place.get("name") or search_query),
+                "country": str(place.get("country") or ""),
+                "admin1": str(place.get("admin1") or ""),
+                "latitude": latitude,
+                "longitude": longitude,
+                "timezone": str(place.get("timezone") or "auto"),
+                "source": "open_meteo",
+            }
 
-        if valid_places:
-            # Как и раньше, используем первый валидный результат Open-Meteo.
-            return valid_places[0]
+    # ------------------------------------------------------
+    # 2. Если город не найден — ищем конкретный объект на OSM.
+    # ------------------------------------------------------
+    # Сначала полное название:
+    # «Чегемские водопады, КБР, Россия».
+    osm_queries = [destination]
 
-    # Ни полная запись, ни название населённого пункта не найдены.
+    # Затем более короткие варианты, например:
+    # «Чегемские водопады».
+    for variant in search_variants:
+        if variant.casefold() != destination.casefold():
+            osm_queries.append(variant)
+
+    seen_queries = set()
+
+    for query in osm_queries:
+        normalized_query = query.casefold()
+
+        if not normalized_query or normalized_query in seen_queries:
+            continue
+
+        seen_queries.add(normalized_query)
+
+        osm_place = _geocode_place_with_osm(query)
+
+        if osm_place:
+            return osm_place
+
     return None
 
 @st.cache_data(ttl=24 * 3600, show_spinner=False)
