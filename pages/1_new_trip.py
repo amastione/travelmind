@@ -559,13 +559,8 @@ if generated_trip_id:
             auth.remember_trip(int(generated_trip_id))
 
             reset_new_trip_form()
-            
+
             st.session_state.pop("generated_trip_id", None)
-            st.session_state.pop("generated_tokens_in", None)
-            st.session_state.pop("generated_tokens_out", None)
-            
-            st.switch_page("pages/3_trip_detail.py")
-            
             st.session_state.pop("generated_tokens_in", None)
             st.session_state.pop("generated_tokens_out", None)
 
@@ -684,113 +679,6 @@ def find_destination_options(search_term):
 # ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
 # ==========================================================
 
-# streamlit-searchbox хранит по своему key служебный словарь.
-# После предыдущей версии там могла остаться строка, из-за которой
-# компонент падал с TypeError: ... ["options_js"].
-searchbox_state = st.session_state.get(
-    "destination_searchbox_restored"
-)
-
-if searchbox_state is not None and not isinstance(
-    searchbox_state,
-    dict,
-):
-    st.session_state.pop(
-        "destination_searchbox_restored",
-        None,
-    )
-
-trip_idea_prefill = st.session_state.pop(
-    "trip_idea_prefill",
-    None,
-)
-
-if isinstance(trip_idea_prefill, dict):
-    idea_destination = str(
-        trip_idea_prefill.get("destination") or ""
-    ).strip()
-
-    idea_notes = str(
-        trip_idea_prefill.get("notes") or ""
-    ).strip()
-
-    idea_title = str(
-        trip_idea_prefill.get("title") or ""
-    ).strip()
-
-    # Не записываем значение в key streamlit-searchbox.
-    # Направление храним отдельно и используем при создании маршрута.
-    if idea_destination:
-        st.session_state[
-            "trip_idea_destination"
-        ] = idea_destination
-
-        st.session_state["trip_destination"] = idea_destination
-
-    # Обычный textarea поддерживает предзаполнение через key.
-    if idea_notes:
-        st.session_state["trip_notes"] = idea_notes
-
-    if idea_title:
-        st.session_state[
-            "trip_idea_selected_title"
-        ] = idea_title
-
-# ==========================================================
-# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
-# ==========================================================
-
-# streamlit-searchbox хранит по своему key служебный словарь.
-# После предыдущей версии там могла остаться строка, из-за которой
-# компонент падал с TypeError: ... ["options_js"].
-searchbox_state = st.session_state.get(
-    "destination_searchbox_restored"
-)
-
-if searchbox_state is not None and not isinstance(
-    searchbox_state,
-    dict,
-):
-    st.session_state.pop(
-        "destination_searchbox_restored",
-        None,
-    )
-
-trip_idea_prefill = st.session_state.pop(
-    "trip_idea_prefill",
-    None,
-)
-
-if isinstance(trip_idea_prefill, dict):
-    idea_destination = str(
-        trip_idea_prefill.get("destination") or ""
-    ).strip()
-
-    idea_notes = str(
-        trip_idea_prefill.get("notes") or ""
-    ).strip()
-
-    idea_title = str(
-        trip_idea_prefill.get("title") or ""
-    ).strip()
-
-# ==========================================================
-# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
-# ==========================================================
-
-# streamlit-searchbox хранит по своему key служебный словарь.
-# Если после старой версии там случайно осталась строка,
-# удаляем её, чтобы не возникала ошибка options_js.
-searchbox_state = st.session_state.get(
-    "destination_searchbox_restored"
-)
-
-if searchbox_state is not None and not isinstance(
-
-# ==========================================================
-# ПРЕДЗАПОЛНЕНИЕ ИЗ МОДУЛЯ «ИДЕИ ДЛЯ ПОЕЗДКИ»
-# ==========================================================
-
 # streamlit-searchbox использует служебный словарь в session_state.
 # Удаляем только некорректное старое строковое значение, если оно осталось
 # от предыдущих версий страницы.
@@ -826,18 +714,22 @@ if isinstance(trip_idea_prefill, dict):
         trip_idea_prefill.get("title") or ""
     ).strip()
 
-    # Не записываем строку в key searchbox: компонент ожидает dict.
-    # Храним выбранное AI-направление отдельно.
+    # Нельзя записывать строку в key streamlit-searchbox:
+    # компонент хранит по нему служебный dict.
     if idea_destination:
         st.session_state["trip_idea_destination"] = idea_destination
         st.session_state["trip_destination"] = idea_destination
 
-    # textarea можно безопасно предзаполнить через его key.
+    # Обычное текстовое поле безопасно заполняется через key.
     if idea_notes:
         st.session_state["trip_notes"] = idea_notes
 
     if idea_title:
         st.session_state["trip_idea_selected_title"] = idea_title
+
+
+
+
 
 # ==========================================================
 # ОСНОВНЫЕ ПАРАМЕТРЫ И ПОИСК НАПРАВЛЕНИЯ
