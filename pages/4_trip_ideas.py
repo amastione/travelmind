@@ -108,17 +108,25 @@ footer {
 }
 
 .tm-idea-card {
-    min-height: 270px;
-    margin-bottom: 0.35rem;
+    display: flex;
+    flex-direction: column;
+
+    height: 390px;
+    box-sizing: border-box;
+
+    margin-bottom: 0.7rem;
     padding: 1.25rem;
+
     border: 1px solid rgba(148, 163, 184, 0.20);
     border-radius: 20px;
+
     background:
         linear-gradient(
             135deg,
             rgba(30, 41, 59, 0.72),
             rgba(15, 23, 42, 0.80)
         );
+
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.06),
         0 12px 30px rgba(0, 0, 0, 0.15);
@@ -164,6 +172,20 @@ footer {
     color: #FCD34D;
     font-size: 0.88rem;
     line-height: 1.5;
+}
+
+.tm-idea-transport {
+    margin-top: auto;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    color: #AABDD4;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.tm-idea-highlights {
+    max-height: 78px;
+    overflow: hidden;
 }
 
 @media (max-width: 640px) {
@@ -367,7 +389,7 @@ def build_idea_notes(idea: dict) -> str:
 
 
 def render_idea_card(idea: dict, index: int) -> None:
-    """Выводит карточку одной идеи и кнопку передачи в создание маршрута."""
+    """Выводит карточку одной идеи одинаковой высоты."""
     theme = str(idea.get("theme") or "mixed").lower()
     icon = THEME_ICONS.get(theme, "✈️")
 
@@ -391,11 +413,13 @@ def render_idea_card(idea: dict, index: int) -> None:
     )
 
     caution = escape(
-        str(idea.get("caution") or "")
+        str(idea.get("caution") or ""
     )
 
     try:
-        distance = int(idea.get("estimated_distance_km") or 0)
+        distance = int(
+            idea.get("estimated_distance_km") or 0
+        )
     except (TypeError, ValueError):
         distance = 0
 
@@ -420,6 +444,11 @@ def render_idea_card(idea: dict, index: int) -> None:
             "<li>Интересное направление для короткой поездки.</li>"
         )
 
+    why_text = (
+        why_it_fits
+        or "Подходит под указанные параметры путешествия."
+    )
+
     caution_html = ""
 
     if caution:
@@ -427,13 +456,15 @@ def render_idea_card(idea: dict, index: int) -> None:
             f'<div class="tm-caution">⚠️ {caution}</div>'
         )
 
-    why_text = (
-        why_it_fits
-        or "Подходит под указанные параметры путешествия."
-    )
+    transport_html = ""
 
-    # Важно: HTML собирается без Markdown-отступов.
-    # Иначе Streamlit показывает теги как текстовый блок кода.
+    if transport_note:
+        transport_html = (
+            f'<div class="tm-idea-transport">'
+            f'🚘 {transport_note}'
+            f'</div>'
+        )
+
     card_html = (
         f'<div class="tm-idea-card">'
         f'<div class="tm-idea-title">{icon} {title}</div>'
@@ -450,6 +481,7 @@ def render_idea_card(idea: dict, index: int) -> None:
         f'{highlights_html}'
         f'</ul>'
         f'{caution_html}'
+        f'{transport_html}'
         f'</div>'
     )
 
@@ -457,9 +489,6 @@ def render_idea_card(idea: dict, index: int) -> None:
         card_html,
         unsafe_allow_html=True,
     )
-
-    if transport_note:
-        st.caption(f"🚘 {transport_note}")
 
     if st.button(
         "✨ Выбрать и создать маршрут",
