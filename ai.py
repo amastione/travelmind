@@ -1140,8 +1140,9 @@ def generate_trip_ideas(request_json: str) -> dict:
     """
     Подбирает 5–8 идей для поездки.
 
-    request_json передаётся строкой, чтобы Streamlit мог безопасно
-    кэшировать одинаковые запросы на 12 часов.
+    Если модель вернула JSON не по ожидаемой схеме, TravelMind
+    автоматически делает повторный запрос с требованием исправить
+    структуру ответа.
     """
     try:
         request_data = json.loads(request_json)
@@ -1179,7 +1180,9 @@ def generate_trip_ideas(request_json: str) -> dict:
         search_mode = "nearby"
 
     if search_mode == "on_the_way" and not destination:
-        raise ValueError("Для поиска по пути укажите конечную точку.")
+        raise ValueError(
+            "Для поиска по пути укажите конечную точку."
+        )
 
     if not isinstance(interests, list):
         interests = []
@@ -1210,43 +1213,111 @@ def generate_trip_ideas(request_json: str) -> dict:
 - Дополнительные пожелания: {notes or "нет"}
 
 ЗАДАЧА:
-Предложи от 5 до 8 разнообразных, реалистичных идей для короткой поездки.
-Сначала верни краткий search_summary, затем идеи строго по JSON-схеме."""
+Предложи РОВНО 5 реалистичных идей для короткой поездки.
+
+КРИТИЧНО:
+- Верни только JSON-объект.
+- Верхнеуровневые ключи должны быть ТОЛЬКО:
+  "search_summary" и "ideas".
+- "ideas" обязательно должен быть массивом из 5 объектов.
+- Не используй ключи options, destinations, variants, results,
+  recommendations или русские названия ключей.
+- Каждый объект в "ideas" должен содержать все поля из схемы
+  системной инструкции."""
 
     client = _create_llm_client()
+    last_error = None
+    last_response_preview = ""
 
-    response = client.chat.completions.create(
-        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
-        messages=[
-            {
-                "role": "system",
-                "content": TRIP_IDEAS_SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": user_prompt,
-            },
-        ],
-        temperature=0.55,
-        max_tokens=2800,
-        timeout=75,
-        response_format={"type": "json_object"},
-    )
+    for attempt in range(2):
+        retry_prompt = user_prompt
 
-    content = str(
-        response.choices[0].message.content or ""
-    ).strip()
+        if attempt == 1:
+            retry_prompt += """
 
-    parsed_data = _parse_json(content)
-    normalized_data = _normalize_trip_ideas(parsed_data)
+ПРЕДЫДУЩИЙ ОТВЕТ НЕ ПРОШЁЛ ПРОВЕРКУ СТРУКТУРЫ.
 
-    usage = response.usage
+Исправь ответ и верни строго такую форму:
 
-    return {
-        "data": normalized_data,
-        "tokens_in": getattr(usage, "prompt_tokens", 0) or 0,
-        "tokens_out": getattr(usage, "completion_tokens", 0) or 0,
+{
+  "search_summary": "Короткий вывод",
+  "ideas": [
+    {
+      "id": "idea_1",
+      "title": "Название",
+      "destination": "Место, регион, страна",
+      "theme": "mountains",
+      "cover_profile": "caucasus_summer",
+      "estimated_distance_km": 120,
+      "recommended_days": "1–2 дня",
+      "budget_level": "средний",
+      "transport_note": "Короткая заметка",
+      "highlights": [
+        "Особенность 1",
+        "Особенность 2",
+        "Особенность 3"
+      ],
+      "why_it_fits": "Почему подходит",
+      "caution": ""
     }
+  ]
+}
+
+Верни ровно 5 объектов внутри массива "ideas".
+Не добавляй другие верхнеуровневые ключи.
+"""
+
+        try:
+            response = client.chat.completions.create(
+                model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": TRIP_IDEAS_SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": retry_prompt,
+                    },
+                ],
+                temperature=0.45,
+                max_tokens=3800,
+                timeout=75,
+                response_format={"type": "json_object"},
+            )
+
+            content = str(
+                response.choices[0].message.content or ""
+            ).strip()
+
+            last_response_preview = content[:300]
+
+            if not content:
+                raise ValueError("AI вернул пустой ответ.")
+
+            parsed_data = _parse_json(content)
+            normalized_data = _normalize_trip_ideas(parsed_data)
+
+            usage = response.usage
+
+            return {
+                "data": normalized_data,
+                "tokens_in": (
+                    getattr(usage, "prompt_tokens", 0) or 0
+                ),
+                "tokens_out": (
+                    getattr(usage, "completion_tokens", 0) or 0
+                ),
+            }
+
+        except Exception as error:
+            last_error = error
+
+    raise ValueError(
+        "AI дважды вернул ответ не по схеме идей. "
+        f"Последняя причина: {str(last_error)[:180]}. "
+        f"Начало ответа AI: {last_response_preview[:180]}"
+    )
 
 # ==========================================================
 # ВАЛИДАЦИЯ МАРШРУТА
