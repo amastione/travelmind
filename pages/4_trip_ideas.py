@@ -20,6 +20,15 @@ st.set_page_config(
 branding.apply_clean_layout()
 site_access.require_site_access()
 user_id = auth.require_auth()
+# ==========================================================
+# ОЧИСТКА РЕЗУЛЬТАТА ПРОШЛОЙ ГЕНЕРАЦИИ
+# ==========================================================
+# Пользователь перешёл в модуль поиска идей, поэтому старый
+# экран «Маршрут готов» на странице планирования больше не нужен.
+st.session_state.pop("generated_trip_id", None)
+st.session_state.pop("generated_tokens_in", None)
+st.session_state.pop("generated_tokens_out", None)
+st.session_state.pop("pending_trip_generation", None)
 
 
 CSS = """
