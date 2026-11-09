@@ -937,7 +937,17 @@ def analyze_budget_with_ai(budget_context: dict) -> dict:
 TRIP_IDEAS_SYSTEM_PROMPT = """Ты — эксперт TravelMind по коротким
 автомобильным путешествиям, поездкам выходного дня и остановкам по пути.
 
-Твоя задача — предложить пользователю 5–8 реалистичных направлений,
+- Предложи столько качественных и реалистичных идей, сколько можешь,
+  но не более 8.
+- Не добавляй слабые, повторяющиеся или сомнительные варианты только
+  ради количества.
+- Если подходящих вариантов мало, лучше верни меньше идей, но каждая
+  должна быть действительно уместной.
+- title: не более 60 символов.
+- destination: не более 100 символов.
+- transport_note, why_it_fits и caution: не более 160 символов каждое.
+- В highlights верни от 1 до 2 коротких пунктов, каждый до 90 символов.
+Твоя задача — предложить пользователю до 8 реалистичных направлений,
 куда можно отправиться, если у него есть свободные дни, примерная точка
 старта и интересы.
 
@@ -1030,7 +1040,7 @@ def _normalize_trip_ideas(result: dict) -> dict:
     normalized_ideas = []
     used_destinations = set()
 
-    for index, item in enumerate(raw_ideas[:10], start=1):
+    for index, item in enumerate(raw_ideas[:8], start=1):
         if not isinstance(item, dict):
             continue
 
@@ -1120,19 +1130,44 @@ def _normalize_trip_ideas(result: dict) -> dict:
 
         used_destinations.add(destination_key)
 
-    if len(normalized_ideas) < 6:
-        raise ValueError(
-            "AI вернул слишком мало пригодных вариантов. "
-            "Попробуйте уточнить точку, увеличить радиус или изменить интересы."
-        )
+    if not normalized_ideas:
+    raise ValueError(
+        "AI не вернул ни одного пригодного направления. "
+        "Уточните местность, увеличьте радиус или измените интересы."
+    )
 
-    return {
-        "search_summary": _safe_trip_idea_text(
-            result.get("search_summary"),
-            500,
-        ),
-        "ideas": normalized_ideas[:6],
-    }
+# Интерфейс показывает только красивое количество карточек:
+# 1, 2, 4, 6 или 8.
+#
+# Примеры:
+# 8 идей → 8
+# 7 идей → 6
+# 6 идей → 6
+# 5 идей → 4
+# 4 идеи → 4
+# 3 идеи → 2
+# 2 идеи → 2
+# 1 идея → 1
+ideas_count = len(normalized_ideas)
+
+if ideas_count >= 8:
+    display_count = 8
+elif ideas_count >= 6:
+    display_count = 6
+elif ideas_count >= 4:
+    display_count = 4
+elif ideas_count >= 2:
+    display_count = 2
+else:
+    display_count = 1
+
+return {
+    "search_summary": _safe_trip_idea_text(
+        result.get("search_summary"),
+        500,
+    ),
+    "ideas": normalized_ideas[:display_count],
+}
 
 
 @st.cache_data(ttl=12 * 3600, show_spinner=False)
@@ -1213,17 +1248,18 @@ def generate_trip_ideas(request_json: str) -> dict:
 - Дополнительные пожелания: {notes or "нет"}
 
 ЗАДАЧА:
-Предложи РОВНО 6 реалистичных идей для короткой поездки.
+Предложи до 8 реалистичных идей для короткой поездки.
 
 КРИТИЧНО:
 - Верни только JSON-объект.
 - Верхнеуровневые ключи должны быть ТОЛЬКО:
   "search_summary" и "ideas".
-- "ideas" обязательно должен быть массивом из 5 объектов.
-- Не используй ключи options, destinations, variants, results,
-  recommendations или русские названия ключей.
-- Каждый объект в "ideas" должен содержать все поля из схемы
-  системной инструкции."""
+- "ideas" должен быть массивом с одной или несколькими идеями.
+- Предпочтительно верни от 6 до 8 вариантов, если в указанной местности
+  действительно есть столько подходящих направлений.
+- Не добавляй повторяющиеся, слишком далёкие, сомнительные или слабые
+  варианты только ради количества.
+- Если качественных вариантов меньше, верни меньше идей.
 
     client = _create_llm_client()
     last_error = None
@@ -1263,7 +1299,9 @@ def generate_trip_ideas(request_json: str) -> dict:
   ]
 }
 
-Верни ровно 5 объектов внутри массива "ideas".
+Верни от 1 до 8 объектов внутри массива "ideas".
+Выбирай только качественные, реальные и подходящие направления.
+Не добавляй повторяющиеся варианты ради количества.
 Не добавляй другие верхнеуровневые ключи.
 """
 
