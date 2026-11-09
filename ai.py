@@ -1133,42 +1133,154 @@ def _normalize_trip_ideas(result: dict) -> dict:
             if not normalized_ideas:
                 raise ValueError(
                     "AI не вернул ни одного пригодного направления. "
-                    "Уточните местность, увеличьте радиус или измените интересы."
-                )
-        
-            # Интерфейс показывает только красивое количество карточек:
-            # 1, 2, 4, 6 или 8.
-            #
-            # Примеры:
-            # 8 идей → 8
-            # 7 идей → 6
-            # 6 идей → 6
-            # 5 идей → 4
-            # 4 идеи → 4
-            # 3 идеи → 2
-            # 2 идеи → 2
-            # 1 идея → 1
-            ideas_count = len(normalized_ideas)
-        
-            if ideas_count >= 8:
-                display_count = 8
-            elif ideas_count >= 6:
-                display_count = 6
-            elif ideas_count >= 4:
-                display_count = 4
-            elif ideas_count >= 2:
-                display_count = 2
-            else:
-                display_count = 1
-        
-            return {
-                "search_summary": _safe_trip_idea_text(
-                    result.get("search_summary"),
-                    500,
-                ),
-                "ideas": normalized_ideas[:display_count],
-            }
+def _normalize_trip_ideas(result: dict) -> dict:
+    """
+    Проверяет и приводит AI-ответ к структуре идей.
 
+    Некорректные элементы отбрасываются. Интерфейс показывает
+    1, 2, 4, 6 или 8 карточек — в зависимости от числа
+    действительно пригодных рекомендаций.
+    """
+    if not isinstance(result, dict):
+        raise ValueError("AI вернул не JSON-объект с идеями.")
+
+    raw_ideas = result.get("ideas")
+
+    if not isinstance(raw_ideas, list):
+        raise ValueError("AI не вернул список идей для поездки.")
+
+    allowed_themes = {
+        "mountains",
+        "nature",
+        "culture",
+        "food",
+        "beach",
+        "adventure",
+        "city",
+        "mixed",
+    }
+
+    normalized_ideas = []
+    used_destinations = set()
+
+    for index, item in enumerate(raw_ideas[:8], start=1):
+        if not isinstance(item, dict):
+            continue
+
+        title = _safe_trip_idea_text(item.get("title"), 120)
+        destination = _safe_trip_idea_text(
+            item.get("destination"),
+            180,
+        )
+
+        if not title or not destination:
+            continue
+
+        destination_key = destination.lower()
+
+        if destination_key in used_destinations:
+            continue
+
+        theme = _safe_trip_idea_text(
+            item.get("theme"),
+            30,
+        ).lower()
+
+        if theme not in allowed_themes:
+            theme = "mixed"
+
+        cover_profile = _safe_trip_idea_text(
+            item.get("cover_profile"),
+            50,
+        ).lower()
+
+        if cover_profile not in ALLOWED_COVER_PROFILES:
+            cover_profile = ""
+
+        try:
+            distance = int(
+                round(float(item.get("estimated_distance_km") or 0))
+            )
+        except (TypeError, ValueError):
+            distance = 0
+
+        distance = max(distance, 0)
+
+        highlights = []
+        raw_highlights = item.get("highlights")
+
+        if isinstance(raw_highlights, list):
+            for highlight in raw_highlights[:2]:
+                text = _safe_trip_idea_text(highlight, 180)
+
+                if text:
+                    highlights.append(text)
+
+        if not highlights:
+            highlights = [
+                "Интересное направление для короткой поездки."
+            ]
+
+        normalized_ideas.append(
+            {
+                "id": f"idea_{index}",
+                "title": title,
+                "destination": destination,
+                "theme": theme,
+                "cover_profile": cover_profile,
+                "estimated_distance_km": distance,
+                "recommended_days": _safe_trip_idea_text(
+                    item.get("recommended_days"),
+                    50,
+                ) or "Уточняется",
+                "budget_level": _safe_trip_idea_text(
+                    item.get("budget_level"),
+                    30,
+                ) or "средний",
+                "transport_note": _safe_trip_idea_text(
+                    item.get("transport_note"),
+                    250,
+                ),
+                "highlights": highlights,
+                "why_it_fits": _safe_trip_idea_text(
+                    item.get("why_it_fits"),
+                    450,
+                ),
+                "caution": _safe_trip_idea_text(
+                    item.get("caution"),
+                    350,
+                ),
+            }
+        )
+
+        used_destinations.add(destination_key)
+
+    if not normalized_ideas:
+        raise ValueError(
+            "AI не вернул ни одного пригодного направления. "
+            "Уточните местность, увеличьте радиус или измените интересы."
+        )
+
+    ideas_count = len(normalized_ideas)
+
+    if ideas_count >= 8:
+        display_count = 8
+    elif ideas_count >= 6:
+        display_count = 6
+    elif ideas_count >= 4:
+        display_count = 4
+    elif ideas_count >= 2:
+        display_count = 2
+    else:
+        display_count = 1
+
+    return {
+        "search_summary": _safe_trip_idea_text(
+            result.get("search_summary"),
+            500,
+        ),
+        "ideas": normalized_ideas[:display_count],
+    }
 
 @st.cache_data(ttl=12 * 3600, show_spinner=False)
 def generate_trip_ideas(request_json: str) -> dict:
