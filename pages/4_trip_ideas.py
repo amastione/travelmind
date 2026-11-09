@@ -160,4 +160,406 @@ footer {
 }
 
 .tm-caution {
-    margin-top
+    margin-top: 0.85rem;
+    color: #FCD34D;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding: 1.8rem 1rem 3rem;
+    }
+
+    .tm-page-title {
+        font-size: 2rem !important;
+    }
+
+    [data-testid="stForm"] {
+        padding: 1.1rem;
+    }
+}
+</style>
+"""
+
+st.markdown(CSS, unsafe_allow_html=True)
+branding.apply_glass_buttons()
+branding.show_author_mark()
+auth.render_main_menu_button()
+
+
+THEME_ICONS = {
+    "mountains": "🏔️",
+    "nature": "🌲",
+    "culture": "🏛️",
+    "food": "🍜",
+    "beach": "🏖️",
+    "adventure": "🧭",
+    "city": "🏙️",
+    "mixed": "✈️",
+}
+
+INTERESTS = [
+    "Горы и красивые дороги",
+    "Природа, озёра и водопады",
+    "История и культура",
+    "Гастрономия и местная кухня",
+    "Спа и термальные источники",
+    "Прогулки и уютные города",
+    "Активный отдых",
+    "Фотография и видовые площадки",
+    "Семейный отдых",
+    "Нетуристические места",
+]
+
+TRANSPORTS = [
+    "Автомобиль",
+    "Общественный транспорт",
+    "Смешанный транспорт",
+]
+
+BUDGETS = [
+    "Экономный",
+    "Средний",
+    "Комфортный",
+]
+
+
+def build_idea_notes(idea: dict) -> str:
+    """Собирает заметку, которая попадёт в форму создания маршрута."""
+    highlights = idea.get("highlights") or []
+
+    highlights_text = ", ".join(
+        str(item).strip()
+        for item in highlights[:3]
+        if str(item).strip()
+    )
+
+    parts = [
+        "Маршрут создан из модуля «Идеи для поездки».",
+    ]
+
+    why_it_fits = str(idea.get("why_it_fits") or "").strip()
+
+    if why_it_fits:
+        parts.append(f"Почему выбран вариант: {why_it_fits}")
+
+    if highlights_text:
+        parts.append(f"Хочу включить: {highlights_text}.")
+
+    caution = str(idea.get("caution") or "").strip()
+
+    if caution:
+        parts.append(f"Важно учесть: {caution}")
+
+    return " ".join(parts)
+
+
+def render_idea_card(idea: dict, index: int) -> None:
+    """Выводит карточку одной идеи и кнопку передачи в создание маршрута."""
+    theme = str(idea.get("theme") or "mixed").lower()
+    icon = THEME_ICONS.get(theme, "✈️")
+
+    title = escape(str(idea.get("title") or "Идея для поездки"))
+    destination = escape(str(idea.get("destination") or ""))
+    recommended_days = escape(
+        str(idea.get("recommended_days") or "Уточняется")
+    )
+    budget_level = escape(
+        str(idea.get("budget_level") or "средний")
+    )
+    transport_note = escape(
+        str(idea.get("transport_note") or "")
+    )
+    why_it_fits = escape(
+        str(idea.get("why_it_fits") or "")
+    )
+    caution = escape(
+        str(idea.get("caution") or "")
+    )
+
+    distance = idea.get("estimated_distance_km") or 0
+
+    try:
+        distance = int(distance)
+    except (TypeError, ValueError):
+        distance = 0
+
+    highlights_html = ""
+
+    for item in idea.get("highlights") or []:
+        item_text = escape(str(item).strip())
+
+        if item_text:
+            highlights_html += f"<li>{item_text}</li>"
+
+    distance_text = (
+        f"≈ {distance} км"
+        if distance > 0
+        else "Расстояние уточняется"
+    )
+
+    st.markdown(
+        f"""
+        <div class="tm-idea-card">
+            <div class="tm-idea-title">{icon} {title}</div>
+            <div class="tm-idea-place">📍 {destination}</div>
+
+            <div class="tm-idea-meta">
+                🚗 {distance_text}<br>
+                🕒 Оптимально: {recommended_days}<br>
+                💳 Бюджет: {budget_level}
+            </div>
+
+            <div class="tm-idea-why">
+                <b>Почему подходит:</b> {why_it_fits or "Подходит под указанные параметры."}
+            </div>
+
+            <ul class="tm-idea-highlights">
+                {highlights_html}
+            </ul>
+
+            {
+                f'<div class="tm-caution">⚠️ {caution}</div>'
+                if caution
+                else ""
+            }
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if transport_note:
+        st.caption(f"🚘 {transport_note}")
+
+    if st.button(
+        "✨ Выбрать и создать маршрут",
+        key=f"select_trip_idea_{index}",
+        use_container_width=True,
+    ):
+        st.session_state["trip_idea_prefill"] = {
+            "destination": str(idea.get("destination") or "").strip(),
+            "notes": build_idea_notes(idea),
+            "title": str(idea.get("title") or "").strip(),
+            "theme": theme,
+            "cover_profile": str(
+                idea.get("cover_profile") or ""
+            ).strip(),
+        }
+
+        st.switch_page("pages/1_new_trip.py")
+
+
+st.markdown(
+    '<div class="tm-page-eyebrow">TravelMind AI · Travel inspiration</div>',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    '<h1 class="tm-page-title">✨ Идеи для поездки</h1>',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="tm-page-description">
+        Укажите район, свободное время и интересы — TravelMind предложит
+        несколько направлений. Можно искать места рядом или выбрать
+        интересную остановку по пути.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="tm-info-card">
+        Пример: <b>Грозный → Минеральные Воды</b>, два свободных дня,
+        автомобиль и интерес к горам. AI предложит варианты вроде Чегемского
+        ущелья, Приэльбрусья, Верхней Балкарии или других подходящих мест.
+        Расстояния являются ориентировочными.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.form("trip_ideas_form"):
+    search_mode_label = st.radio(
+        "Как искать идеи?",
+        [
+            "Рядом с выбранной местностью",
+            "По пути к месту назначения",
+        ],
+        horizontal=True,
+    )
+
+    origin = st.text_input(
+        "Откуда или в какой местности хотите искать?",
+        placeholder=(
+            "Например: Грозный, Кавказские Минеральные Воды, "
+            "Кавказ, Республика Дагестан"
+        ),
+        help=(
+            "Необязательно указывать точную точку. "
+            "Можно написать регион или примерную местность."
+        ),
+    )
+
+    destination = ""
+
+    if search_mode_label == "По пути к месту назначения":
+        destination = st.text_input(
+            "Куда направляетесь?",
+            placeholder="Например: Минеральные Воды",
+        )
+
+    column_1, column_2, column_3 = st.columns(3)
+
+    with column_1:
+        radius_km = st.slider(
+            (
+                "Допустимый крюк, км"
+                if search_mode_label == "По пути к месту назначения"
+                else "Радиус поиска, км"
+            ),
+            min_value=50,
+            max_value=700,
+            value=250,
+            step=50,
+        )
+
+    with column_2:
+        days = st.selectbox(
+            "Сколько свободных дней?",
+            [1, 2, 3, 4, 5, 6, 7],
+            index=1,
+        )
+
+    with column_3:
+        transport = st.selectbox(
+            "Транспорт",
+            TRANSPORTS,
+        )
+
+    column_4, column_5 = st.columns(2)
+
+    with column_4:
+        budget = st.selectbox(
+            "Формат бюджета",
+            BUDGETS,
+            index=1,
+        )
+
+    with column_5:
+        interests = st.multiselect(
+            "Что интересно?",
+            INTERESTS,
+            default=[
+                "Природа, озёра и водопады",
+                "Горы и красивые дороги",
+            ],
+        )
+
+    notes = st.text_area(
+        "Дополнительные пожелания",
+        placeholder=(
+            "Например: нужна спокойная поездка с ночёвкой, "
+            "без сложных пеших маршрутов, хочется красивую дорогу."
+        ),
+    )
+
+    submitted = st.form_submit_button(
+        "✨ Найти идеи с AI",
+        use_container_width=True,
+    )
+
+if submitted:
+    search_mode = (
+        "on_the_way"
+        if search_mode_label == "По пути к месту назначения"
+        else "nearby"
+    )
+
+    request_data = {
+        "search_mode": search_mode,
+        "origin": origin.strip(),
+        "destination": destination.strip(),
+        "radius_km": radius_km,
+        "days": days,
+        "transport": transport,
+        "budget": budget,
+        "interests": interests,
+        "notes": notes.strip(),
+    }
+
+    if not request_data["origin"]:
+        st.error("Укажите стартовую точку или примерную местность.")
+        st.stop()
+
+    if search_mode == "on_the_way" and not request_data["destination"]:
+        st.error("Для поиска по пути укажите конечную точку.")
+        st.stop()
+
+    request_json = json.dumps(
+        request_data,
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+    with st.spinner(
+        "✦ TravelMind ищет подходящие направления… "
+        "обычно это занимает 15–40 секунд."
+    ):
+        try:
+            result = ai.generate_trip_ideas(request_json)
+
+        except Exception as error:
+            st.error(
+                "Не удалось подобрать идеи. Уточните местность, "
+                "увеличьте радиус или попробуйте ещё раз."
+            )
+            st.caption(f"Техническая причина: {str(error)[:250]}")
+            st.stop()
+
+    st.session_state["trip_ideas_result"] = result["data"]
+    st.session_state["trip_ideas_tokens_in"] = result.get("tokens_in", 0)
+    st.session_state["trip_ideas_tokens_out"] = result.get("tokens_out", 0)
+
+trip_ideas_result = st.session_state.get("trip_ideas_result")
+
+if trip_ideas_result:
+    summary = str(
+        trip_ideas_result.get("search_summary") or ""
+    ).strip()
+
+    if summary:
+        st.markdown(
+            f"""
+            <div class="tm-result-summary">
+                <b>AI-рекомендация:</b> {escape(summary)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    tokens_in = st.session_state.get("trip_ideas_tokens_in")
+    tokens_out = st.session_state.get("trip_ideas_tokens_out")
+
+    if tokens_in is not None and tokens_out is not None:
+        st.caption(
+            f"Использовано токенов: {tokens_in} вход / {tokens_out} выход."
+        )
+
+    st.subheader("Подходящие направления")
+
+    ideas = trip_ideas_result.get("ideas") or []
+
+    for index in range(0, len(ideas), 2):
+        left_column, right_column = st.columns(2)
+
+        with left_column:
+            render_idea_card(ideas[index], index)
+
+        if index + 1 < len(ideas):
+            with right_column:
+                render_idea_card(ideas[index + 1], index + 1)
