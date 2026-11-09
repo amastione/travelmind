@@ -2689,23 +2689,57 @@ with tab_weather:
     trip_start_iso = str(trip["start_date"])[:10]
     trip_end_iso = str(trip["end_date"])[:10]
 
-    # Отдельное поле для поиска погоды.
-    # Изменение этого поля не изменяет сохранённый маршрут.
+    # Основная точка погоды из JSON маршрута.
+    route_weather = data.get("weather")
+
+    if not isinstance(route_weather, dict):
+        route_weather = {}
+
+    primary_location = " ".join(
+        str(route_weather.get("primary_location") or "").split()
+    )
+
+    location_hint = " ".join(
+        str(route_weather.get("location_hint") or "").split()
+    )
+
+    # Для старых маршрутов без weather используем направление поездки.
+    default_weather_query = str(destination or "").strip()
+
+    if primary_location:
+        default_weather_query = primary_location
+
+        if (
+            location_hint
+            and location_hint.casefold()
+            not in primary_location.casefold()
+        ):
+            default_weather_query = (
+                f"{primary_location}, {location_hint}"
+            )
+
+    # Новый ключ отделяет поле от старой версии, в которой
+    # session_state мог сохранить общее направление поездки.
+    weather_input_key = f"weather_location_v2_{trip_id}"
+
+    if weather_input_key not in st.session_state:
+        st.session_state[weather_input_key] = default_weather_query
+
     weather_city = st.text_input(
-        "Город для прогноза погоды",
-        value=str(destination or "").strip(),
-        key=f"weather_city_{trip_id}",
+        "Место для прогноза погоды",
+        key=weather_input_key,
         help=(
-            "Укажите один населённый пункт, например: Сочи или Казань. "
-            "Для маршрута по нескольким городам проверяйте каждый отдельно. "
+            "По умолчанию используется основная точка маршрута. "
+            "Можно указать другой город, посёлок или природный объект. "
+            "Добавьте регион и страну для более точного поиска. "
             "После ввода нажмите Enter."
         ),
     ).strip()
 
     st.caption(
-        "Если направление содержит страну, несколько городов или описание "
-        "поездки, попробуйте оставить только название нужного города. "
-        "Проверьте найденный город и страну перед использованием прогноза."
+        "Изменение места прогноза не изменяет маршрут. "
+        "Для поездки по нескольким местам проверяйте каждое отдельно. "
+        "Сверяйте найденное место перед использованием прогноза."
     )
 
     weather_days = []
@@ -2720,9 +2754,52 @@ with tab_weather:
     else:
         try:
             with st.spinner("Получаем прогноз погоды…"):
-                location_data = (
-                    weather.geocode_destination(weather_city) or {}
+                # Если поле не изменено, используем точку
+                # из AI-маршрута с резервным поиском по направлению.
+                using_route_location = (
+                    " ".join(weather_city.split()).casefold()
+                    == " ".join(default_weather_query.split()).casefold()
                 )
+
+                if using_route_location:
+                    location_data = (
+                        weather.resolve_route_weather_location(
+                            route_data=data,
+                            trip_destination=str(destination or ""),
+                        )
+                        or {}
+                    )
+
+                else:
+                    # Ручной ввод имеет приоритет.
+                    # Не подменяем выбранное пользователем место
+                    # исходным направлением маршрута.
+                    location_data = (
+                        weather.geocode_destination(weather_city)
+                        or {}
+                    )
+
+                if location_data:
+                    found_place = ", ".join(
+                        str(location_data.get(key) or "").strip()
+                        for key in ("name", "admin1", "country")
+                        if str(location_data.get(key) or "").strip()
+                    )
+
+                    st.caption(
+                        f"📍 Точка прогноза: {found_place}"
+                    )
+
+                    if (
+                        location_data.get("selection_source")
+                        == "trip_destination_fallback"
+                        and primary_location
+                    ):
+                        st.caption(
+                            "Основную точку маршрута найти не удалось. "
+                            "Используется место, найденное по общему "
+                            "направлению поездки."
+                        )
 
                 if not location_data:
                     weather_lookup_failed = True
