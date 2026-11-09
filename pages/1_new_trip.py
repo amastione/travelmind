@@ -730,7 +730,11 @@ st.caption(
     "Поиск в DaData начинается после трёх символов."
 )
 
-
+if idea_destination and not searchbox_destination:
+    st.info(
+        f"Выбрано направление из AI-идеи: «{idea_destination}». "
+        "При необходимости найдите и выберите другое направление выше."
+    )
 
 with st.form("plan_form"):
     st.subheader("📅 Даты поездки")
