@@ -7,7 +7,7 @@ import streamlit as st
 from openai import OpenAI
 
 
-PROMPT_VERSION = "v3.1"
+PROMPT_VERSION = "v3.2"
 MAX_DAYS = 7
 
 
@@ -69,6 +69,22 @@ SYSTEM_PROMPT = """Ты — опытный AI-планировщик путеш�
 - packing: 5–8 вещей с учётом сезона и запланированных активностей.
 - phrases: 5 полезных фраз, если местный язык отличается от русского.
 
+ПОГОДА И ГЕОТОЧКА:
+- Обязательно верни объект weather по схеме ниже.
+- weather.primary_location — одна главная точка маршрута, для которой
+  пользователь увидит прогноз. Это должен быть конкретный город, посёлок
+  или природный объект, а не слишком общий регион.
+- weather.location_hint — уточнение: регион и страна.
+- weather.fallback_lat и weather.fallback_lon — ориентировочные координаты
+  именно primary_location, с точностью до 4 знаков после запятой.
+- Координаты нужны только как резервный вариант, если геосервис не сможет
+  найти место по названию. Не придумывай их, если не уверен: верни null.
+- Не возвращай прогноз погоды, температуру, осадки или ветер:
+  фактическую погоду получает приложение через отдельный погодный API.
+- weather.terrain_note — короткая заметка о местности: например,
+  «Горная местность, возможны заметные перепады температуры по высоте».
+  Если важной особенности нет — верни пустую строку.
+
 ОБЛОЖКА ПОЕЗДКИ:
 - cover_theme выбери строго из: city, mountains, beach, culture, food,
   nature, adventure, mixed.
@@ -129,6 +145,13 @@ tropical_island, desert_city.
 {
   "title": str,
   "overview": str,
+  "weather": {
+    "primary_location": str,
+    "location_hint": str,
+    "fallback_lat": "num|null",
+    "fallback_lon": "num|null",
+    "terrain_note": str
+  },
   "cover_theme": "city|mountains|beach|culture|food|nature|adventure|mixed",
   "cover_profile": str,
   "total_cost": num,
@@ -206,7 +229,7 @@ tropical_island, desert_city.
 # ШАБЛОН ПОЛЬЗОВАТЕЛЬСКОГО ЗАПРОСА
 # ==========================================================
 
-USER_TEMPLATE = """Версия пресета: v3.1
+USER_TEMPLATE = """Версия пресета: v3.2
 Направление: {dest}
 Даты: {start} — {end} ({days} дн.)
 Бюджет на всех без перелёта: {budget} {curr}
@@ -214,7 +237,12 @@ USER_TEMPLATE = """Версия пресета: v3.1
 Стиль: {style}
 Темп: {pace}
 Интересы: {interests}
-Пожелания: {notes}"""
+Пожелания: {notes}
+
+Дополнительно:
+- Верни объект weather по JSON-схеме.
+- Выбери одну конкретную основную точку маршрута для прогноза погоды.
+- Не возвращай сам прогноз: приложение получит его через Open-Meteo."""
 
 
 def build_prompt(
@@ -1361,7 +1389,21 @@ def validate(data: dict) -> list:
 
     if not data.get("title"):
         errors.append("Модель не вернула название маршрута.")
+    weather = data.get("weather")
 
+    if not isinstance(weather, dict):
+        errors.append(
+            "Модель не вернула данные точки для прогноза погоды."
+        )
+    else:
+        primary_location = str(
+            weather.get("primary_location") or ""
+        ).strip()
+
+        if not primary_location:
+            errors.append(
+                "Модель не указала основную точку для прогноза погоды."
+            )
     cover_profile = str(data.get("cover_profile", "")).strip().lower()
 
     if not cover_profile:
