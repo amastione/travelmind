@@ -124,3 +124,96 @@ def _get_article_extract(title: str) -> dict | None:
             "explaintext": "1",
             "inprop": "url",
             "redirects": "1",
+        }
+    )
+
+    pages = result.get("query", {}).get("pages", [])
+
+    if not isinstance(pages, list) or not pages:
+        return None
+
+    page = pages[0]
+
+    if not isinstance(page, dict) or page.get("missing"):
+        return None
+
+    article_title = _clean_text(page.get("title"))
+    extract = _clean_text(page.get("extract"))
+    full_url = _clean_text(page.get("fullurl"))
+
+    if not article_title or not extract:
+        return None
+
+    if not full_url:
+        full_url = (
+            "https://ru.wikipedia.org/wiki/"
+            + article_title.replace(" ", "_")
+        )
+
+    return {
+        "title": article_title,
+        "summary": _shorten_text(extract),
+        "source_name": "Русская Wikipedia",
+        "source_url": full_url,
+        "retrieved_at": datetime.now(timezone.utc).strftime(
+            "%d.%m.%Y %H:%M UTC"
+        ),
+    }
+
+
+@st.cache_data(ttl=7 * 24 * 3600, show_spinner=False)
+def get_historical_reference(
+    primary_location: str,
+    location_hint: str,
+    trip_destination: str,
+) -> dict | None:
+    """
+    Получает справку о главной точке маршрута.
+
+    Приоритет поиска:
+    1. Основная точка маршрута + регион.
+    2. Основная точка маршрута.
+    3. Общее направление поездки.
+
+    Возвращает текст строго из Wikipedia без генерации AI.
+    """
+    primary_location = _clean_text(primary_location)
+    location_hint = _clean_text(location_hint)
+    trip_destination = _clean_text(trip_destination)
+
+    search_queries = []
+
+    if primary_location and location_hint:
+        search_queries.append(
+            f"{primary_location}, {location_hint}"
+        )
+
+    if primary_location:
+        search_queries.append(primary_location)
+
+    if trip_destination:
+        search_queries.append(trip_destination)
+
+    checked_queries = set()
+
+    for query in search_queries:
+        normalized_query = query.casefold()
+
+        if not query or normalized_query in checked_queries:
+            continue
+
+        checked_queries.add(normalized_query)
+
+        try:
+            article_title = _find_article_title(query)
+            article_data = _get_article_extract(article_title)
+
+            if article_data:
+                article_data["query_used"] = query
+                return article_data
+
+        except Exception:
+            # Внешняя справка не должна мешать открытию маршрута.
+            continue
+
+    return None
