@@ -1389,21 +1389,7 @@ def validate(data: dict) -> list:
 
     if not data.get("title"):
         errors.append("Модель не вернула название маршрута.")
-    weather = data.get("weather")
-
-    if not isinstance(weather, dict):
-        errors.append(
-            "Модель не вернула данные точки для прогноза погоды."
-        )
-    else:
-        primary_location = str(
-            weather.get("primary_location") or ""
-        ).strip()
-
-        if not primary_location:
-            errors.append(
-                "Модель не указала основную точку для прогноза погоды."
-            )
+    
     cover_profile = str(data.get("cover_profile", "")).strip().lower()
 
     if not cover_profile:
