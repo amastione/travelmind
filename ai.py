@@ -36,6 +36,80 @@ ALLOWED_COVER_PROFILES = {
     "desert_city",
 }
 
+# ==========================================================
+# ОПРЕДЕЛЕНИЕ ОБЛОЖКИ ПО НАПРАВЛЕНИЮ
+# ==========================================================
+
+def _normalize_destination_for_cover(destination: str) -> str:
+    """
+    Нормализует строку направления, полученную вручную или из DaData.
+
+    Примеры:
+    «г Москва, Россия» → «москва»
+    «г Санкт-Петербург, Россия» → «санкт-петербург»
+    «г Краснодар, Краснодарский край, Россия» → «краснодар»
+    """
+    value = str(destination or "").strip().casefold()
+
+    if not value:
+        return ""
+
+    # Для DaData обычно первая часть до запятой — город.
+    value = value.split(",", 1)[0].strip()
+
+    # Удаляем служебный тип населённого пункта.
+    value = re.sub(
+        r"^(г\.?|город|пос\.?|посёлок|поселок|пгт\.?|"
+        r"с\.?|село|ст\.?|станица)\s+",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+
+    # Приводим разные виды дефиса к обычному.
+    value = value.replace("–", "-").replace("—", "-")
+
+    return value.strip(" .,")
+
+
+def resolve_cover_profile(
+    destination: str,
+    ai_cover_profile: str = "",
+) -> str:
+    """
+    Возвращает профиль обложки.
+
+    Для известных городов профиль задаётся принудительно, поэтому DaData,
+    AI и варианты написания направления не могут сбить выбор обложки.
+    Для остальных направлений остаётся профиль, предложенный AI.
+    """
+    city = _normalize_destination_for_cover(destination)
+
+    fixed_profiles = {
+        "москва": "moscow",
+        "санкт-петербург": "saint_peter",
+        "петербург": "saint_peter",
+        "спб": "saint_peter",
+        "сочи": "sochi",
+        "адлер": "sochi",
+        "красная поляна": "sochi",
+        "роза хутор": "sochi",
+
+        # Важно: этот профиль должен существовать в словаре изображений.
+        "краснодар": "krasnodar",
+    }
+
+    fixed_profile = fixed_profiles.get(city)
+
+    if fixed_profile:
+        return fixed_profile
+
+    ai_cover_profile = str(ai_cover_profile or "").strip().lower()
+
+    if ai_cover_profile in ALLOWED_COVER_PROFILES:
+        return ai_cover_profile
+
+    return "city_summer"
 
 # ==========================================================
 # СИСТЕМНЫЙ ПРОМПТ ДЛЯ ГЕНЕРАЦИИ МАРШРУТА
