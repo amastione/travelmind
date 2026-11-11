@@ -40,6 +40,18 @@ def checklist_item_key(
 
     return f"checklist_{trip_id}_{item_hash}"
 
+def save_checklist_checkbox(
+    trip_id: int,
+    user_id: int,
+    item_key: str,
+):
+    """Сохраняет изменение одного чекбокса в SQLite."""
+    db.set_checklist_item_status(
+        trip_id=trip_id,
+        user_id=user_id,
+        item_key=item_key,
+        is_completed=bool(st.session_state.get(item_key, False)),
+    )
 
 def get_preparation_checklist(data: dict) -> list[tuple[str, list[str]]]:
     """
@@ -4380,6 +4392,26 @@ for item_text in packing:
         ("Что взять с собой", text_value(item_text))
     )
 
+saved_checklist_statuses = db.get_checklist_statuses(
+    trip_id=trip_id,
+    user_id=user_id,
+)
+
+for section_title, item_text in all_checklist_items:
+    item_key = checklist_item_key(
+        trip_id=trip_id,
+        section=section_title,
+        item_text=item_text,
+    )
+
+    # Не перезаписываем изменение, которое пользователь только что сделал
+    # в рамках текущего запуска Streamlit.
+    if item_key not in st.session_state:
+        st.session_state[item_key] = saved_checklist_statuses.get(
+            item_key,
+            False,
+        )
+
 completed_count = 0
 
 for section_title, item_text in all_checklist_items:
@@ -4417,6 +4449,11 @@ with reset_col:
         help="Снять все отметки чек-листа этой поездки",
         use_container_width=True,
     ):
+        db.reset_checklist(
+            trip_id=trip_id,
+            user_id=user_id,
+        )
+    
         for section_title, item_text in all_checklist_items:
             item_key = checklist_item_key(
                 trip_id=trip_id,
@@ -4424,7 +4461,7 @@ with reset_col:
                 item_text=item_text,
             )
             st.session_state[item_key] = False
-
+    
         st.rerun()
 
 for section_title, section_items in checklist_sections:
@@ -4435,13 +4472,17 @@ for section_title, section_items in checklist_sections:
         for item_text in section_items:
             safe_item_text = text_value(item_text)
 
+            item_key = checklist_item_key(
+                trip_id=trip_id,
+                section=section_title,
+                item_text=safe_item_text,
+            )
+            
             st.checkbox(
                 safe_item_text,
-                key=checklist_item_key(
-                    trip_id=trip_id,
-                    section=section_title,
-                    item_text=safe_item_text,
-                ),
+                key=item_key,
+                on_change=save_checklist_checkbox,
+                args=(trip_id, user_id, item_key),
             )
 
 if packing:
