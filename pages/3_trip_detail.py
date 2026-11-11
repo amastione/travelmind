@@ -1752,6 +1752,47 @@ div[data-testid="stButton"] button[kind="secondary"] {
     ) !important;
     color: #FFFFFF !important;
 }
+/* ==========================================================
+   КНОПКА «СБРОСИТЬ» В ЧЕК-ЛИСТЕ
+   Якорь расположен непосредственно перед компонентом Streamlit.
+   ========================================================== */
+
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
+button {
+    border: 1px solid rgba(251, 113, 133, 0.60) !important;
+    background: linear-gradient(
+        135deg,
+        #9F1239 0%,
+        #BE123C 55%,
+        #E11D48 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    text-shadow: none !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 8px 18px rgba(159, 18, 57, 0.28) !important;
+}
+
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
+button:hover {
+    border-color: rgba(254, 202, 202, 0.90) !important;
+    background: linear-gradient(
+        135deg,
+        #BE123C 0%,
+        #E11D48 55%,
+        #FB7185 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
+button:active {
+    background: #9F1239 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
 </style>
 """
 
