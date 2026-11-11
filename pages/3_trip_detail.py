@@ -1763,80 +1763,57 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     outline-offset: 3px !important;
 }
 
-/* ---------- Кнопка сброса чек-листа ---------- */
-
-button[key^="reset_checklist_"],
-div[data-testid="stButton"] button[kind="secondary"] {
-    color: #F8FAFC !important;
-    -webkit-text-fill-color: #F8FAFC !important;
-}
-
-/* Точная настройка кнопки «↺ Сбросить» по ключу Streamlit */
-[data-testid="stButton"] button[data-testid*="reset_checklist"],
-[data-testid="stButton"] button[aria-label*="Сбросить"] {
-    border: 1px solid rgba(251, 113, 133, 0.48) !important;
-    background: linear-gradient(
-        135deg,
-        rgba(136, 19, 55, 0.86) 0%,
-        rgba(159, 18, 57, 0.76) 100%
-    ) !important;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.14),
-        0 8px 20px rgba(136, 19, 55, 0.24) !important;
-}
-
-[data-testid="stButton"] button[data-testid*="reset_checklist"]:hover,
-[data-testid="stButton"] button[aria-label*="Сбросить"]:hover {
-    border-color: rgba(254, 202, 202, 0.75) !important;
-    background: linear-gradient(
-        135deg,
-        rgba(190, 24, 93, 0.96) 0%,
-        rgba(225, 29, 72, 0.88) 100%
-    ) !important;
-    color: #FFFFFF !important;
-}
 /* ==========================================================
    КНОПКА «СБРОСИТЬ» В ЧЕК-ЛИСТЕ
-   Якорь расположен непосредственно перед компонентом Streamlit.
    ========================================================== */
-/* ---------- Кнопка «Сбросить» в чек-листе ---------- */
 
-/* Состояние по умолчанию: применяется сразу при открытии страницы */
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button {
-    border: 1px solid rgba(253, 164, 175, 0.70) !important;
+/* Исходный вид — сразу после загрузки страницы */
+.tm-reset-checklist-anchor
++ div[data-testid="stElementContainer"]
+button {
+    border: 1px solid rgba(253, 164, 175, 0.72) !important;
     background: linear-gradient(
         135deg,
         #881337 0%,
         #BE123C 52%,
         #E11D48 100%
     ) !important;
+
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
     text-shadow: none !important;
+
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.18),
         0 8px 18px rgba(159, 18, 57, 0.30) !important;
 }
 
-/* При наведении */
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:hover {
-    border-color: rgba(254, 202, 202, 0.90) !important;
+/* Наведение */
+.tm-reset-checklist-anchor
++ div[data-testid="stElementContainer"]
+button:hover {
+    border-color: rgba(254, 202, 202, 0.92) !important;
     background: linear-gradient(
         135deg,
         #BE123C 0%,
         #E11D48 55%,
         #FB7185 100%
     ) !important;
+
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
 
-/* При нажатии / после получения фокуса */
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:active,
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:focus {
+/* Нажатие и фокус */
+.tm-reset-checklist-anchor
++ div[data-testid="stElementContainer"]
+button:active,
+.tm-reset-checklist-anchor
++ div[data-testid="stElementContainer"]
+button:focus {
+    border-color: rgba(255, 228, 230, 0.95) !important;
     background: #9F1239 !important;
+
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
