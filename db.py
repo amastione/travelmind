@@ -55,7 +55,18 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY(trip_id) REFERENCES trips(id)
 );
 """
+CREATE TABLE IF NOT EXISTS trip_checklist_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    item_key TEXT NOT NULL,
+    is_completed INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(trip_id, item_key),
+    FOREIGN KEY(trip_id) REFERENCES trips(id)
+);
 
+CREATE INDEX IF NOT EXISTS idx_checklist_items_trip_id
+ON trip_checklist_items(trip_id);
 
 @contextmanager
 def _conn():
@@ -236,18 +247,33 @@ def get_trip(trip_id: int, user_id: int):
 
 
 def delete_trip(trip_id: int, user_id: int):
-    """Удаляет поездку и связанные с ней расходы."""
+    """Удаляет поездку, её расходы и отметки чек-листа."""
     with _conn() as connection:
+        # Сначала убеждаемся, что поездка действительно принадлежит пользователю.
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
         connection.execute(
             "DELETE FROM expenses WHERE trip_id = ?",
             (trip_id,),
         )
 
         connection.execute(
-            """
-            DELETE FROM trips
-            WHERE id = ? AND user_id = ?
-            """,
+            "DELETE FROM trip_checklist_items WHERE trip_id = ?",
+            (trip_id,),
+        )
+
+        connection.execute(
+            "DELETE FROM trips WHERE id = ? AND user_id = ?",
             (trip_id, user_id),
         )
 
@@ -614,5 +640,131 @@ def add_manual_expense(
         )
 
         return cursor.lastrowid
+# ==========================================================
+# ЧЕК-ЛИСТ ПОДГОТОВКИ К ПОЕЗДКЕ
+# ==========================================================
+
+def get_checklist_statuses(
+    trip_id: int,
+    user_id: int,
+) -> dict[str, bool]:
+    """
+    Возвращает словарь отметок чек-листа конкретной поездки.
+
+    Формат результата:
+    {
+        "checklist_12_abcdef123456": True,
+        "checklist_12_987654321abc": False,
+    }
+    """
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        rows = connection.execute(
+            """
+            SELECT item_key, is_completed
+            FROM trip_checklist_items
+            WHERE trip_id = ?
+            """,
+            (trip_id,),
+        ).fetchall()
+
+        return {
+            str(row["item_key"]): bool(row["is_completed"])
+            for row in rows
+        }
+
+
+def set_checklist_item_status(
+    trip_id: int,
+    user_id: int,
+    item_key: str,
+    is_completed: bool,
+):
+    """
+    Создаёт или обновляет отметку одного пункта чек-листа.
+
+    Проверяется, что поездка принадлежит текущему пользователю.
+    """
+    clean_item_key = str(item_key or "").strip()
+
+    if not clean_item_key:
+        raise ValueError("Не указан ключ пункта чек-листа.")
+
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        connection.execute(
+            """
+            INSERT INTO trip_checklist_items(
+                trip_id,
+                item_key,
+                is_completed,
+                updated_at
+            )
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(trip_id, item_key)
+            DO UPDATE SET
+                is_completed = excluded.is_completed,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                trip_id,
+                clean_item_key,
+                int(bool(is_completed)),
+            ),
+        )
+
+
+def reset_checklist(
+    trip_id: int,
+    user_id: int,
+):
+    """
+    Снимает все отметки чек-листа конкретной поездки.
+
+    Записи удаляются, поэтому при следующем открытии все пункты
+    отображаются неотмеченными.
+    """
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        connection.execute(
+            """
+            DELETE FROM trip_checklist_items
+            WHERE trip_id = ?
+            """,
+            (trip_id,),
+        )
 # Создание базы при импорте модуля.
 init()
