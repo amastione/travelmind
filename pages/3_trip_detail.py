@@ -4568,7 +4568,11 @@ with tab_tips:
         st.progress(progress_value)
 
     with reset_col:
-    with st.container(key="reset_checklist_container"):
+        st.markdown(
+            '<div class="tm-reset-checklist-anchor"></div>',
+            unsafe_allow_html=True,
+        )
+
         if st.button(
             "↺ Сбросить",
             key=f"reset_checklist_{trip_id}",
