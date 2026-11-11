@@ -185,51 +185,7 @@ curr = trip["currency"] or "RUB"
 # ==========================================================
 
 CSS = """
-/* ==========================================================
-   Кнопка сброса чек-листа
-   Контейнер Streamlit с key="reset_checklist_container"
-   получает класс .st-key-reset_checklist_container
-   ========================================================== */
 
-.st-key-reset_checklist_container button,
-.st-key-reset_checklist_container .stButton > button {
-    border: 1px solid rgba(253, 164, 175, 0.68) !important;
-    background: linear-gradient(
-        135deg,
-        #881337 0%,
-        #BE123C 52%,
-        #E11D48 100%
-    ) !important;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-    text-shadow: none !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 8px 18px rgba(159, 18, 57, 0.30) !important;
-}
-
-.st-key-reset_checklist_container button:hover,
-.st-key-reset_checklist_container .stButton > button:hover {
-    border-color: rgba(254, 202, 202, 0.95) !important;
-    background: linear-gradient(
-        135deg,
-        #BE123C 0%,
-        #E11D48 52%,
-        #FB7185 100%
-    ) !important;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-}
-
-.st-key-reset_checklist_container button:active,
-.st-key-reset_checklist_container .stButton > button:active,
-.st-key-reset_checklist_container button:focus,
-.st-key-reset_checklist_container .stButton > button:focus {
-    border-color: rgba(255, 228, 230, 0.95) !important;
-    background: #9F1239 !important;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-}
 <style>
 /* ---------- Основа ---------- */
 
@@ -1763,59 +1719,39 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     outline-offset: 3px !important;
 }
 
-/* ==========================================================
-   КНОПКА «СБРОСИТЬ» В ЧЕК-ЛИСТЕ
-   ========================================================== */
-
-/* Исходный вид — сразу после загрузки страницы */
-.tm-reset-checklist-anchor
-+ div[data-testid="stElementContainer"]
-button {
-    border: 1px solid rgba(253, 164, 175, 0.72) !important;
+/* Кнопка сброса: обычное состояние, фокус и нажатие */
+.st-key-reset_checklist_container button,
+.st-key-reset_checklist_container button:focus,
+.st-key-reset_checklist_container button:active {
+    border: 1px solid #FDA4AF !important;
+    border-radius: 14px !important;
     background: linear-gradient(
         135deg,
         #881337 0%,
         #BE123C 52%,
         #E11D48 100%
     ) !important;
-
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
     text-shadow: none !important;
+}
 
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 8px 18px rgba(159, 18, 57, 0.30) !important;
+/* Вложенный текст кнопки */
+.st-key-reset_checklist_container button * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
 }
 
 /* Наведение */
-.tm-reset-checklist-anchor
-+ div[data-testid="stElementContainer"]
-button:hover {
-    border-color: rgba(254, 202, 202, 0.92) !important;
+.st-key-reset_checklist_container button:hover {
+    border-color: #FFE4E6 !important;
     background: linear-gradient(
         135deg,
         #BE123C 0%,
-        #E11D48 55%,
+        #E11D48 52%,
         #FB7185 100%
     ) !important;
-
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-}
-
-/* Нажатие и фокус */
-.tm-reset-checklist-anchor
-+ div[data-testid="stElementContainer"]
-button:active,
-.tm-reset-checklist-anchor
-+ div[data-testid="stElementContainer"]
-button:focus {
-    border-color: rgba(255, 228, 230, 0.95) !important;
-    background: #9F1239 !important;
-
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
+    filter: none !important;
 }
 
 </style>
@@ -4545,31 +4481,27 @@ with tab_tips:
         st.progress(progress_value)
 
     with reset_col:
-        st.markdown(
-            '<div class="tm-reset-checklist-anchor"></div>',
-            unsafe_allow_html=True,
-        )
-
-        if st.button(
-            "↺ Сбросить",
-            key=f"reset_checklist_{trip_id}",
-            help="Снять все отметки чек-листа этой поездки",
-            use_container_width=True,
-        ):
-            db.reset_checklist(
-                trip_id=trip_id,
-                user_id=user_id,
-            )
-
-            for section_title, item_text in all_checklist_items:
-                item_key = checklist_item_key(
+        with st.container(key="reset_checklist_container"):
+            if st.button(
+                "↺ Сбросить",
+                key=f"reset_checklist_{trip_id}",
+                help="Снять все отметки чек-листа этой поездки",
+                use_container_width=True,
+            ):
+                db.reset_checklist(
                     trip_id=trip_id,
-                    section=section_title,
-                    item_text=item_text,
+                    user_id=user_id,
                 )
-                st.session_state[item_key] = False
 
-            st.rerun()
+                for section_title, item_text in all_checklist_items:
+                    item_key = checklist_item_key(
+                        trip_id=trip_id,
+                        section=section_title,
+                        item_text=item_text,
+                    )
+                    st.session_state[item_key] = False
+
+                st.rerun()
 
     for section_title, section_items in checklist_sections:
         with st.expander(
