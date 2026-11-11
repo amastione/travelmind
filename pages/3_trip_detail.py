@@ -19,6 +19,102 @@ import db
 import site_access
 import weather
 import history
+import hashlib
+
+def checklist_item_key(
+    trip_id: int,
+    section: str,
+    item_text: str,
+) -> str:
+    """
+    Создаёт стабильный ключ для конкретного пункта чек-листа.
+
+    Хеш нужен, чтобы пункты с одинаковым названием из разных разделов
+    или разных поездок не пересекались между собой.
+    """
+    raw_value = (
+        f"{trip_id}|{section}|{item_text}"
+    ).encode("utf-8")
+
+    item_hash = hashlib.sha1(raw_value).hexdigest()[:12]
+
+    return f"checklist_{trip_id}_{item_hash}"
+
+
+def get_preparation_checklist(data: dict) -> list[tuple[str, list[str]]]:
+    """
+    Формирует полезный чек-лист подготовки без нового запроса к AI.
+
+    Используются уже сгенерированные маршрут, активности, проживание
+    и список вещей. Никакие сведения о бронированиях не утверждаются:
+    приложение предлагает только проверить или сохранить информацию.
+    """
+    days = data.get("days") or []
+    hotels = data.get("hotels") or []
+    accommodation = data.get("accommodation") or {}
+
+    activities = []
+
+    for day in days:
+        if isinstance(day, dict):
+            activities.extend(day.get("activities") or [])
+
+    has_paid_activities = any(
+        float(activity.get("cost") or 0) > 0
+        for activity in activities
+        if isinstance(activity, dict)
+    )
+
+    has_transport = any(
+        str(activity.get("type") or "").upper() == "T"
+        for activity in activities
+        if isinstance(activity, dict)
+    )
+
+    has_accommodation = bool(hotels or accommodation)
+
+    before_trip = [
+        "Проверить даты поездки и общий бюджет",
+        "Сохранить маршрут TravelMind на телефон",
+        "Скачать офлайн-карту района поездки",
+    ]
+
+    if has_accommodation:
+        before_trip.append(
+            "Сравнить варианты проживания и уточнить условия бронирования"
+        )
+
+    if has_paid_activities:
+        before_trip.append(
+            "Проверить необходимость предварительных билетов "
+            "для платных мест"
+        )
+
+    if has_transport:
+        before_trip.append(
+            "Проверить время отправления и способ добраться "
+            "до первой точки маршрута"
+        )
+
+    shortly_before = [
+        "Проверить актуальный прогноз погоды",
+        "Уточнить режим работы ключевых мест",
+        "Сохранить адрес проживания и контакты офлайн",
+        "Проверить баланс карты, наличные и способы оплаты",
+    ]
+
+    departure_day = [
+        "Проверить документы, билеты и подтверждения бронирований",
+        "Зарядить телефон и пауэрбанк",
+        "Проверить маршрут до точки отправления",
+        "Взять банковскую карту и небольшой запас наличных",
+    ]
+
+    return [
+        ("До поездки", before_trip),
+        ("За 1–3 дня до поездки", shortly_before),
+        ("В день выезда", departure_day),
+    ]
 
 st.set_page_config(
     page_title="Маршрут поездки",
@@ -4257,16 +4353,123 @@ with tab_tips:
                 unsafe_allow_html=True,
             )
 
-    packing = data.get("packing") or []
+# ==========================================================
+# ЧЕК-ЛИСТ ПОДГОТОВКИ К ПОЕЗДКЕ
+# ==========================================================
 
-    if packing:
-        st.subheader("🎒 Что взять с собой")
+st.subheader("✅ Подготовка к поездке")
 
-        for index, item in enumerate(packing):
-            st.checkbox(
-                text_value(item),
-                key=f"packing_{trip_id}_{index}",
+st.caption(
+    "Отмечайте выполненные пункты. Чек-лист составлен на основе "
+    "маршрута, проживания и рекомендаций TravelMind."
+)
+
+checklist_sections = get_preparation_checklist(data)
+packing = data.get("packing") or []
+
+all_checklist_items = []
+
+for section_title, section_items in checklist_sections:
+    for item_text in section_items:
+        all_checklist_items.append(
+            (section_title, text_value(item_text))
+        )
+
+for item_text in packing:
+    all_checklist_items.append(
+        ("Что взять с собой", text_value(item_text))
+    )
+
+completed_count = 0
+
+for section_title, item_text in all_checklist_items:
+    item_key = checklist_item_key(
+        trip_id=trip_id,
+        section=section_title,
+        item_text=item_text,
+    )
+
+    if st.session_state.get(item_key, False):
+        completed_count += 1
+
+total_count = len(all_checklist_items)
+progress_value = (
+    completed_count / total_count
+    if total_count > 0
+    else 0
+)
+
+progress_percent = int(progress_value * 100)
+
+progress_col, reset_col = st.columns([4, 1])
+
+with progress_col:
+    st.markdown(
+        f"**Готово: {completed_count} из {total_count} · "
+        f"{progress_percent}%**"
+    )
+    st.progress(progress_value)
+
+with reset_col:
+    if st.button(
+        "↺ Сбросить",
+        key=f"reset_checklist_{trip_id}",
+        help="Снять все отметки чек-листа этой поездки",
+        use_container_width=True,
+    ):
+        for section_title, item_text in all_checklist_items:
+            item_key = checklist_item_key(
+                trip_id=trip_id,
+                section=section_title,
+                item_text=item_text,
             )
+            st.session_state[item_key] = False
+
+        st.rerun()
+
+for section_title, section_items in checklist_sections:
+    with st.expander(
+        f"📌 {section_title}",
+        expanded=True,
+    ):
+        for item_text in section_items:
+            safe_item_text = text_value(item_text)
+
+            st.checkbox(
+                safe_item_text,
+                key=checklist_item_key(
+                    trip_id=trip_id,
+                    section=section_title,
+                    item_text=safe_item_text,
+                ),
+            )
+
+if packing:
+    with st.expander(
+        "🎒 Что взять с собой",
+        expanded=True,
+    ):
+        st.caption(
+            "Список сформирован AI с учётом сезона "
+            "и выбранного формата путешествия."
+        )
+
+        for item_text in packing:
+            safe_item_text = text_value(item_text)
+
+            st.checkbox(
+                safe_item_text,
+                key=checklist_item_key(
+                    trip_id=trip_id,
+                    section="Что взять с собой",
+                    item_text=safe_item_text,
+                ),
+            )
+
+st.caption(
+    "ℹ️ Отметки пока сохраняются в текущей сессии приложения. "
+    "Постоянное сохранение можно добавить на следующем этапе."
+)
 
     phrases = data.get("phrases") or []
 
