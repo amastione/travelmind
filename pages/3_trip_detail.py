@@ -185,6 +185,51 @@ curr = trip["currency"] or "RUB"
 # ==========================================================
 
 CSS = """
+/* ==========================================================
+   Кнопка сброса чек-листа
+   Контейнер Streamlit с key="reset_checklist_container"
+   получает класс .st-key-reset_checklist_container
+   ========================================================== */
+
+.st-key-reset_checklist_container button,
+.st-key-reset_checklist_container .stButton > button {
+    border: 1px solid rgba(253, 164, 175, 0.68) !important;
+    background: linear-gradient(
+        135deg,
+        #881337 0%,
+        #BE123C 52%,
+        #E11D48 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    text-shadow: none !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 8px 18px rgba(159, 18, 57, 0.30) !important;
+}
+
+.st-key-reset_checklist_container button:hover,
+.st-key-reset_checklist_container .stButton > button:hover {
+    border-color: rgba(254, 202, 202, 0.95) !important;
+    background: linear-gradient(
+        135deg,
+        #BE123C 0%,
+        #E11D48 52%,
+        #FB7185 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+.st-key-reset_checklist_container button:active,
+.st-key-reset_checklist_container .stButton > button:active,
+.st-key-reset_checklist_container button:focus,
+.st-key-reset_checklist_container .stButton > button:focus {
+    border-color: rgba(255, 228, 230, 0.95) !important;
+    background: #9F1239 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
 <style>
 /* ---------- Основа ---------- */
 
@@ -4520,11 +4565,7 @@ with tab_tips:
         st.progress(progress_value)
 
     with reset_col:
-        st.markdown(
-            '<div class="tm-reset-checklist-anchor"></div>',
-            unsafe_allow_html=True,
-        )
-    
+    with st.container(key="reset_checklist_container"):
         if st.button(
             "↺ Сбросить",
             key=f"reset_checklist_{trip_id}",
