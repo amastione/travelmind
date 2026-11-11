@@ -1801,14 +1801,15 @@ div[data-testid="stButton"] button[kind="secondary"] {
    КНОПКА «СБРОСИТЬ» В ЧЕК-ЛИСТЕ
    Якорь расположен непосредственно перед компонентом Streamlit.
    ========================================================== */
+/* ---------- Кнопка «Сбросить» в чек-листе ---------- */
 
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
-button {
-    border: 1px solid rgba(251, 113, 133, 0.60) !important;
+/* Состояние по умолчанию: применяется сразу при открытии страницы */
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button {
+    border: 1px solid rgba(253, 164, 175, 0.70) !important;
     background: linear-gradient(
         135deg,
-        #9F1239 0%,
-        #BE123C 55%,
+        #881337 0%,
+        #BE123C 52%,
         #E11D48 100%
     ) !important;
     color: #FFFFFF !important;
@@ -1816,11 +1817,11 @@ button {
     text-shadow: none !important;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 8px 18px rgba(159, 18, 57, 0.28) !important;
+        0 8px 18px rgba(159, 18, 57, 0.30) !important;
 }
 
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
-button:hover {
+/* При наведении */
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:hover {
     border-color: rgba(254, 202, 202, 0.90) !important;
     background: linear-gradient(
         135deg,
@@ -1832,12 +1833,14 @@ button:hover {
     -webkit-text-fill-color: #FFFFFF !important;
 }
 
-.tm-reset-checklist-anchor + div[data-testid="stElementContainer"]
-button:active {
+/* При нажатии / после получения фокуса */
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:active,
+.tm-reset-checklist-anchor + div[data-testid="stElementContainer"] button:focus {
     background: #9F1239 !important;
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
+
 </style>
 """
 
