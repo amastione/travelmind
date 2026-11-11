@@ -4398,7 +4398,6 @@ with tab_tips:
         user_id=user_id,
     )
 
-    # Загружаем сохранённые отметки из SQLite.
     for section_title, item_text in all_checklist_items:
         item_key = checklist_item_key(
             trip_id=trip_id,
@@ -4412,17 +4411,18 @@ with tab_tips:
                 False,
             )
 
-    completed_count = 0
-
-    for section_title, item_text in all_checklist_items:
-        item_key = checklist_item_key(
-            trip_id=trip_id,
-            section=section_title,
-            item_text=item_text,
+    completed_count = sum(
+        1
+        for section_title, item_text in all_checklist_items
+        if st.session_state.get(
+            checklist_item_key(
+                trip_id=trip_id,
+                section=section_title,
+                item_text=item_text,
+            ),
+            False,
         )
-
-        if st.session_state.get(item_key, False):
-            completed_count += 1
+    )
 
     total_count = len(all_checklist_items)
 
@@ -4512,9 +4512,7 @@ with tab_tips:
                     args=(trip_id, user_id, item_key),
                 )
 
-    st.caption(
-        "✓ Отметки сохраняются для этой поездки."
-    )
+    st.caption("✓ Отметки сохраняются для этой поездки.")
 
     phrases = data.get("phrases") or []
 
@@ -4544,7 +4542,8 @@ with tab_tips:
                     '</div>'
                 ),
                 unsafe_allow_html=True,
-            )
+            )    
+
 
 # ==========================================================
 # ВКЛАДКА: ИЗМЕНИТЬ С AI
