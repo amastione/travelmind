@@ -1717,6 +1717,41 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     outline: 2px solid rgba(125, 211, 252, 0.88) !important;
     outline-offset: 3px !important;
 }
+
+/* ---------- Кнопка сброса чек-листа ---------- */
+
+button[key^="reset_checklist_"],
+div[data-testid="stButton"] button[kind="secondary"] {
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+}
+
+/* Точная настройка кнопки «↺ Сбросить» по ключу Streamlit */
+[data-testid="stButton"] button[data-testid*="reset_checklist"],
+[data-testid="stButton"] button[aria-label*="Сбросить"] {
+    border: 1px solid rgba(251, 113, 133, 0.48) !important;
+    background: linear-gradient(
+        135deg,
+        rgba(136, 19, 55, 0.86) 0%,
+        rgba(159, 18, 57, 0.76) 100%
+    ) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 8px 20px rgba(136, 19, 55, 0.24) !important;
+}
+
+[data-testid="stButton"] button[data-testid*="reset_checklist"]:hover,
+[data-testid="stButton"] button[aria-label*="Сбросить"]:hover {
+    border-color: rgba(254, 202, 202, 0.75) !important;
+    background: linear-gradient(
+        135deg,
+        rgba(190, 24, 93, 0.96) 0%,
+        rgba(225, 29, 72, 0.88) 100%
+    ) !important;
+    color: #FFFFFF !important;
+}
 </style>
 """
 
