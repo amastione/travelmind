@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS expenses (
     is_manual INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(trip_id) REFERENCES trips(id)
 );
-"""
+
 CREATE TABLE IF NOT EXISTS trip_checklist_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER NOT NULL,
@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS trip_checklist_items (
 
 CREATE INDEX IF NOT EXISTS idx_checklist_items_trip_id
 ON trip_checklist_items(trip_id);
+"""
 
 @contextmanager
 def _conn():
