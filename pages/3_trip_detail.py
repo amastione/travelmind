@@ -1838,6 +1838,80 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
     filter: none !important;
 }
 
+/* Кнопка открытия popover: полупрозрачное стекло */
+button[data-testid="stPopoverButton"],
+[data-testid="stPopover"] button[data-testid="stPopoverButton"],
+[data-testid="stPopover"] > button {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    padding: 0.68rem 1rem !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    border-radius: 14px !important;
+
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(148, 163, 184, 0.10) 100%
+    ) !important;
+
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(15, 23, 42, 0.20),
+        0 8px 22px rgba(0, 0, 0, 0.16) !important;
+
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+
+/* Вложенный текст */
+button[data-testid="stPopoverButton"] *,
+[data-testid="stPopover"] > button * {
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+}
+
+/* Фокус и открытое состояние: без белой заливки */
+button[data-testid="stPopoverButton"]:focus,
+button[data-testid="stPopoverButton"]:active,
+button[data-testid="stPopoverButton"][aria-expanded="true"],
+[data-testid="stPopover"] > button:focus,
+[data-testid="stPopover"] > button:active {
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.16),
+        rgba(148, 163, 184, 0.10)
+    ) !important;
+}
+
+/* Наведение */
+button[data-testid="stPopoverButton"]:hover,
+[data-testid="stPopover"] > button:hover {
+    border-color: rgba(186, 230, 253, 0.48) !important;
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        135deg,
+        rgba(103, 232, 249, 0.22),
+        rgba(167, 139, 250, 0.18)
+    ) !important;
+}
+
+/* Видимый фокус при управлении клавиатурой */
+button[data-testid="stPopoverButton"]:focus-visible,
+[data-testid="stPopover"] > button:focus-visible {
+    outline: 2px solid rgba(125, 211, 252, 0.88) !important;
+    outline-offset: 3px !important;
+}
 </style>
 """
 
