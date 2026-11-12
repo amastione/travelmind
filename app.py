@@ -511,7 +511,7 @@ h3 {
     
         filter: blur(14px) saturate(125%) !important;
     
-        animation: tm-logo-gradient-flow 18s ease-in-out infinite alternate !important;
+        animation: tm-logo-gradient-flow 3s ease-in-out infinite alternate !important;
     }
     
     /* Логотип всегда остаётся поверх анимированного фона */
