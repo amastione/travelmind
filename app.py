@@ -153,31 +153,58 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
+
     width: min(100%, 620px);
     min-height: 128px;
     padding: 1rem 1.5rem;
-    border: 1px solid rgba(103, 232, 249, 0.23);
+
+    border: 1px solid rgba(103, 232, 249, 0.42);
     border-radius: 26px;
-    background:
+
+    background-image:
         radial-gradient(
-            circle at 15% 10%,
-            rgba(34, 211, 238, 0.15),
-            transparent 42%
+            circle at 10% 16%,
+            rgba(34, 211, 238, 0.58) 0%,
+            rgba(34, 211, 238, 0.22) 25%,
+            transparent 50%
         ),
         radial-gradient(
-            circle at 90% 90%,
-            rgba(139, 92, 246, 0.12),
-            transparent 38%
+            circle at 88% 78%,
+            rgba(168, 85, 247, 0.52) 0%,
+            rgba(139, 92, 246, 0.20) 28%,
+            transparent 54%
+        ),
+        radial-gradient(
+            circle at 56% 18%,
+            rgba(59, 130, 246, 0.30) 0%,
+            transparent 43%
         ),
         linear-gradient(
             135deg,
-            rgba(16, 34, 57, 0.95),
-            rgba(12, 20, 42, 0.96)
+            rgba(4, 14, 31, 0.99) 0%,
+            rgba(10, 47, 71, 0.98) 46%,
+            rgba(42, 17, 73, 0.99) 100%
         );
+
+    background-size:
+        190% 200%,
+        210% 200%,
+        180% 180%,
+        240% 240%;
+
+    background-position:
+        0% 0%,
+        100% 100%,
+        50% 0%,
+        0% 50%;
+
     box-shadow:
-        0 18px 42px rgba(0, 0, 0, 0.25),
-        0 0 36px rgba(34, 211, 238, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 18px 42px rgba(0, 0, 0, 0.28),
+        0 0 42px rgba(34, 211, 238, 0.18),
+        0 0 58px rgba(139, 92, 246, 0.11),
+        inset 0 1px 0 rgba(255, 255, 255, 0.11);
+
+    animation: tm-brand-gradient-flow 18s ease-in-out infinite alternate;
 }
 
 .tm-brand-image {
@@ -610,17 +637,29 @@ h3 {
     }
     
     /* Медленное, ненавязчивое движение «сияния» */
-    @keyframes tm-logo-gradient-flow {
+    @keyframes tm-brand-gradient-flow {
         0% {
-            transform: translate3d(-7%, -5%, 0) scale(1.04) rotate(0deg);
+            background-position:
+                0% 8%,
+                100% 92%,
+                48% 0%,
+                0% 50%;
         }
     
         50% {
-            transform: translate3d(8%, 6%, 0) scale(1.14) rotate(8deg);
+            background-position:
+                82% 38%,
+                22% 70%,
+                96% 74%,
+                50% 4%;
         }
     
         100% {
-            transform: translate3d(-3%, 9%, 0) scale(1.07) rotate(-5deg);
+            background-position:
+                100% 100%,
+                0% 0%,
+                10% 100%,
+                100% 56%;
         }
     }
     
