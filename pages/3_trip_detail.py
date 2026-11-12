@@ -128,6 +128,76 @@ def get_preparation_checklist(data: dict) -> list[tuple[str, list[str]]]:
         ("В день выезда", departure_day),
     ]
 
+def build_live_activity_key(
+    day_data: dict,
+    activity: dict,
+    occurrence: int,
+) -> str:
+    """
+    Ключ активности: день, дата, название, место и номер повтора.
+
+    Время и стоимость не входят в ключ: их изменение само по себе
+    не должно снимать отметку посещения.
+    """
+    identity = {
+        "day": str(day_data.get("day") or ""),
+        "date": str(day_data.get("date") or "")[:10],
+        "title": str(activity.get("title") or "").strip(),
+        "location": str(activity.get("location") or "").strip(),
+        "occurrence": occurrence,
+    }
+
+    raw_value = json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+    ).encode("utf-8")
+
+    return hashlib.sha256(raw_value).hexdigest()[:24]
+
+
+def save_live_activity_visit(
+    trip_id: int,
+    user_id: int,
+    activity_key: str,
+    widget_key: str,
+):
+    """Сохраняет отметку до повторного отображения страницы."""
+    db.set_activity_visit(
+        trip_id=trip_id,
+        user_id=user_id,
+        activity_key=activity_key,
+        is_visited=bool(st.session_state.get(widget_key, False)),
+    )
+
+
+def build_live_map_url(
+    activity: dict,
+    destination: str,
+) -> str:
+    """Открывает место по координатам или по поисковому запросу."""
+    try:
+        lat = float(activity.get("lat"))
+        lon = float(activity.get("lon"))
+
+        if -90 <= lat <= 90 and -180 <= lon <= 180:
+            query = f"{lat},{lon}"
+        else:
+            raise ValueError("Координаты вне диапазона.")
+
+    except (TypeError, ValueError):
+        place = str(
+            activity.get("location")
+            or activity.get("title")
+            or destination
+        ).strip()
+
+        query = f"{place}, {destination}" if destination else place
+
+    return (
+        "https://www.google.com/maps/search/?api=1&query="
+        + quote_plus(query)
+    )
 st.set_page_config(
     page_title="Маршрут поездки",
     page_icon="🗺️",
@@ -2092,9 +2162,19 @@ with metric_4:
 # ВКЛАДКИ
 # ==========================================================
 
-tab_route, tab_map, tab_weather, tab_budget, tab_tips, tab_edit, tab_ai = st.tabs(
+(
+    tab_route,
+    tab_live,
+    tab_map,
+    tab_weather,
+    tab_budget,
+    tab_tips,
+    tab_edit,
+    tab_ai,
+) = st.tabs(
     [
         "▦  Маршрут по дням",
+        "📱  Я в поездке",
         "🗺️  Карта поездки",
         "☀️  Погода",
         "💰  Бюджет и расходы",
@@ -2299,7 +2379,253 @@ with tab_route:
 # ==========================================================
 # ВКЛАДКА: КАРТА И АНАЛИЗ ЛОГИСТИКИ
 # ==========================================================
+# ==========================================================
+# ВКЛАДКА: Я В ПОЕЗДКЕ
+# ==========================================================
 
+with tab_live:
+    st.subheader("📱 Я в поездке")
+
+    st.caption(
+        "Выберите день, открывайте места на карте и отмечайте "
+        "посещённые активности. Отметки сохраняются автоматически."
+    )
+
+    live_days = [
+        day
+        for day in (data.get("days") or [])
+        if isinstance(day, dict)
+    ]
+
+    if not live_days:
+        st.info("В этой поездке пока нет плана по дням.")
+
+    else:
+        # По умолчанию — сегодняшний день, если он есть в маршруте.
+        # Используется дата сервера; день всегда можно выбрать вручную.
+        today_iso = date.today().isoformat()
+
+        default_day_index = next(
+            (
+                index
+                for index, day in enumerate(live_days)
+                if str(day.get("date") or "")[:10] == today_iso
+            ),
+            0,
+        )
+
+        selected_day_index = st.selectbox(
+            "День поездки",
+            options=list(range(len(live_days))),
+            index=default_day_index,
+            format_func=lambda index: (
+                f"День {live_days[index].get('day', index + 1)}"
+                f" · {format_date_ru(live_days[index].get('date'))}"
+            ),
+            key=f"live_day_{user_id}_{trip_id}",
+        )
+
+        selected_live_day = live_days[selected_day_index]
+
+        live_theme = text_value(selected_live_day.get("theme"))
+
+        if live_theme:
+            st.markdown(f"### {live_theme}")
+
+        live_activities = [
+            activity
+            for activity in (
+                selected_live_day.get("activities") or []
+            )
+            if isinstance(activity, dict)
+        ]
+
+        if not live_activities:
+            st.info("В этом дне пока нет активностей.")
+
+        else:
+            saved_visits = db.get_activity_visits(
+                trip_id=trip_id,
+                user_id=user_id,
+            )
+
+            live_items = []
+            repeated_places = {}
+
+            for activity in live_activities:
+                # Одинаковые места внутри одного дня различаем
+                # порядковым номером повтора.
+                place_identity = (
+                    text_value(activity.get("title")).strip(),
+                    text_value(activity.get("location")).strip(),
+                )
+
+                occurrence = repeated_places.get(place_identity, 0)
+                repeated_places[place_identity] = occurrence + 1
+
+                activity_key = build_live_activity_key(
+                    day_data=selected_live_day,
+                    activity=activity,
+                    occurrence=occurrence,
+                )
+
+                widget_key = (
+                    f"live_visit_{user_id}_{trip_id}_{activity_key}"
+                )
+
+                # База — источник сохранённых отметок.
+                # Состояние устанавливается до создания чекбокса.
+                st.session_state[widget_key] = saved_visits.get(
+                    activity_key,
+                    False,
+                )
+
+                live_items.append(
+                    {
+                        "activity": activity,
+                        "activity_key": activity_key,
+                        "widget_key": widget_key,
+                        "visited": saved_visits.get(
+                            activity_key,
+                            False,
+                        ),
+                    }
+                )
+
+            visited_count = sum(
+                1 for item in live_items if item["visited"]
+            )
+            activities_count = len(live_items)
+
+            st.markdown(
+                f"**Посещено: {visited_count} из {activities_count}**"
+            )
+
+            st.progress(visited_count / activities_count)
+
+            # Первая непосещённая активность в порядке плана.
+            # Это не отслеживание времени или местоположения.
+            next_item = next(
+                (
+                    item
+                    for item in live_items
+                    if not item["visited"]
+                ),
+                None,
+            )
+
+            if next_item is None:
+                st.success(
+                    "🎉 Все активности этого дня отмечены как посещённые!"
+                )
+
+            else:
+                next_activity = next_item["activity"]
+                next_title = text_value(
+                    next_activity.get("title"),
+                    "Активность",
+                )
+                next_time = text_value(
+                    next_activity.get("time"),
+                    "Время не указано",
+                )
+
+                with st.container(border=True):
+                    st.caption("СЛЕДУЮЩЕЕ ПО ПЛАНУ")
+                    st.markdown(f"### {next_title}")
+                    st.write(f"🕒 {next_time}")
+
+                    next_location = text_value(
+                        next_activity.get("location")
+                    )
+
+                    if next_location:
+                        st.write(f"📍 {next_location}")
+
+                    st.link_button(
+                        "🧭 Открыть следующее место в картах",
+                        build_live_map_url(
+                            next_activity,
+                            destination,
+                        ),
+                        use_container_width=True,
+                    )
+
+            st.caption(
+                "Следующее место выбирается по порядку маршрута, "
+                "без определения вашей геопозиции. Карты откроют "
+                "точку назначения; путь можно построить в них."
+            )
+
+            st.markdown("### План выбранного дня")
+
+            for item_index, item in enumerate(live_items, start=1):
+                activity = item["activity"]
+
+                title = text_value(
+                    activity.get("title"),
+                    "Активность",
+                )
+                time_text = text_value(
+                    activity.get("time"),
+                    "Время не указано",
+                )
+                location = text_value(activity.get("location"))
+                description = text_value(
+                    activity.get("description")
+                )
+                tip = text_value(activity.get("tip"))
+                activity_type = text_value(activity.get("type"))
+                icon = ICONS.get(activity_type, "📍")
+
+                status_icon = "✅" if item["visited"] else icon
+
+                with st.container(border=True):
+                    st.caption(f"{item_index}. {time_text}")
+                    st.markdown(f"#### {status_icon} {title}")
+
+                    if location:
+                        st.write(f"📍 {location}")
+
+                    if description:
+                        st.write(description)
+
+                    raw_cost = activity.get("cost")
+
+                    if raw_cost is not None:
+                        st.caption(
+                            "По плану: ~"
+                            + format_money(raw_cost, curr)
+                        )
+
+                    if tip:
+                        st.info(f"💡 {tip}")
+
+                    st.link_button(
+                        "⌖ Открыть место в картах",
+                        build_live_map_url(
+                            activity,
+                            destination,
+                        ),
+                        use_container_width=True,
+                    )
+
+                    st.checkbox(
+                        "✓ Посетили",
+                        key=item["widget_key"],
+                        on_change=save_live_activity_visit,
+                        args=(
+                            trip_id,
+                            user_id,
+                            item["activity_key"],
+                            item["widget_key"],
+                        ),
+                    )
+
+            st.caption(
+                "✓ Отметки посещения сохраняются отдельно "
+                "от чек-листа подготовки и расходов."
+            )
 with tab_map:
     st.markdown(
         '<div class="tm-section-title">⌖ Карта маршрута</div>',
