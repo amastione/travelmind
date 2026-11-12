@@ -2648,27 +2648,32 @@ with tab_route:
                     unsafe_allow_html=True,
                 )
 
-                if location:
-                    activity_map_query = f"{location}, {destination}"
+                                if tip:
+                    st.caption(f"✦ {tip}")
 
-                    activity_map_url = (
-                        "https://www.google.com/maps/search/?api=1&query="
-                        + quote_plus(activity_map_query)
-                    )
+                activity_action_col, replacement_action_col = st.columns(2)
 
-                    st.link_button(
-                        "⌖ Открыть место на карте",
-                        activity_map_url,
-                        key=(
-                            f"activity_map_{trip_id}_"
-                            f"{day_number}_{activity_index}"
-                        ),
-                        use_container_width=False,
-                    )
+                with activity_action_col:
+                    if location:
+                        activity_map_query = f"{location}, {destination}"
 
-                    if tip:
-                        st.caption(f"✦ {tip}")
-    
+                        activity_map_url = (
+                            "https://www.google.com/maps/search/"
+                            "?api=1&query="
+                            + quote_plus(activity_map_query)
+                        )
+
+                        st.link_button(
+                            "⌖ Открыть место на карте",
+                            activity_map_url,
+                            key=(
+                                f"activity_map_{trip_id}_"
+                                f"{day_number}_{activity_index}"
+                            ),
+                            use_container_width=True,
+                        )
+
+                with replacement_action_col:
                     render_activity_replacement(
                         trip_id=trip_id,
                         user_id=user_id,
@@ -2678,7 +2683,6 @@ with tab_route:
                         day_index=day_index,
                         activity_index=activity_index,
                     )
-
             day_cost = as_float(day.get("day_cost"), 0)
 
             st.markdown(
