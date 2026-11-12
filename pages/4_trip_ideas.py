@@ -556,34 +556,60 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+search_mode_label = st.radio(
+    "Как искать идеи?",
+    [
+        "Рядом с выбранной местностью",
+        "По пути к месту назначения",
+    ],
+    horizontal=True,
+    key="trip_ideas_search_mode",
+)
+
 with st.form("trip_ideas_form"):
-    search_mode_label = st.radio(
-        "Как искать идеи?",
-        [
-            "Рядом с выбранной местностью",
-            "По пути к месту назначения",
-        ],
-        horizontal=True,
-    )
-
-    origin = st.text_input(
-        "Откуда или в какой местности хотите искать?",
-        placeholder=(
-            "Например: Грозный, Кавказские Минеральные Воды, "
-            "Кавказ, Республика Дагестан"
-        ),
-        help=(
-            "Необязательно указывать точную точку. "
-            "Можно написать регион или примерную местность."
-        ),
-    )
-
     destination = ""
 
     if search_mode_label == "По пути к месту назначения":
-        destination = st.text_input(
-            "Куда направляетесь?",
-            placeholder="Например: Минеральные Воды",
+        st.caption(
+            "Укажите начало и конец пути — AI предложит интересные "
+            "остановки и направления по маршруту."
+        )
+
+        origin_column, destination_column = st.columns(2)
+
+        with origin_column:
+            origin = st.text_input(
+                "Место отправления",
+                placeholder="Например: Грозный",
+                help=(
+                    "Город, населённый пункт или примерная точка, "
+                    "из которой начинается поездка."
+                ),
+                key="trip_ideas_route_origin",
+            )
+
+        with destination_column:
+            destination = st.text_input(
+                "Место назначения",
+                placeholder="Например: Минеральные Воды",
+                help=(
+                    "Конечный город или место, куда вы направляетесь."
+                ),
+                key="trip_ideas_route_destination",
+            )
+
+    else:
+        origin = st.text_input(
+            "Где хотите искать идеи?",
+            placeholder=(
+                "Например: Грозный, Кавказские Минеральные Воды, "
+                "Кавказ, Республика Дагестан"
+            ),
+            help=(
+                "Можно указать город, регион или примерную местность."
+            ),
+            key="trip_ideas_nearby_origin",
         )
 
     column_1, column_2, column_3 = st.columns(3)
@@ -591,7 +617,7 @@ with st.form("trip_ideas_form"):
     with column_1:
         radius_km = st.slider(
             (
-                "Допустимый крюк, км"
+                "Допустимый крюк от маршрута, км"
                 if search_mode_label == "По пути к месту назначения"
                 else "Радиус поиска, км"
             ),
@@ -639,6 +665,11 @@ with st.form("trip_ideas_form"):
             "Например: нужна спокойная поездка с ночёвкой, "
             "без сложных пеших маршрутов, хочется красивую дорогу."
         ),
+    )
+
+    submitted = st.form_submit_button(
+        "✨ Найти идеи с AI",
+        use_container_width=True,
     )
 
     submitted = st.form_submit_button(
