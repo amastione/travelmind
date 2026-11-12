@@ -2694,16 +2694,6 @@ with tab_route:
                         activity_index=activity_index,
                     )
 
-                with replacement_action_col:
-                    render_activity_replacement(
-                        trip_id=trip_id,
-                        user_id=user_id,
-                        trip_context=dict(trip),
-                        route_data=data,
-                        expected_data_json=trip["data"],
-                        day_index=day_index,
-                        activity_index=activity_index,
-                    )
             day_cost = as_float(day.get("day_cost"), 0)
 
             st.markdown(
