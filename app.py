@@ -468,6 +468,80 @@ h3 {
         border-radius: 19px;
     }
 
+    /* Контейнер логотипа: ограничивает свечение границами карточки */
+    .tm-brand-card {
+        position: relative !important;
+        isolation: isolate !important;
+        overflow: hidden !important;
+    
+        background: rgba(8, 15, 30, 0.72) !important;
+        border: 1px solid rgba(125, 211, 252, 0.22) !important;
+    }
+    
+    /* Медленно переливающийся градиент за PNG-логотипом */
+    .tm-brand-card::before {
+        content: "" !important;
+        position: absolute !important;
+        z-index: -1 !important;
+    
+        inset: -70% !important;
+    
+        background:
+            radial-gradient(
+                circle at 24% 28%,
+                rgba(34, 211, 238, 0.68) 0%,
+                transparent 28%
+            ),
+            radial-gradient(
+                circle at 78% 30%,
+                rgba(139, 92, 246, 0.58) 0%,
+                transparent 32%
+            ),
+            radial-gradient(
+                circle at 55% 82%,
+                rgba(59, 130, 246, 0.48) 0%,
+                transparent 34%
+            ),
+            linear-gradient(
+                135deg,
+                #07101F 0%,
+                #102C49 48%,
+                #171038 100%
+            ) !important;
+    
+        filter: blur(14px) saturate(125%) !important;
+    
+        animation: tm-logo-gradient-flow 18s ease-in-out infinite alternate !important;
+    }
+    
+    /* Логотип всегда остаётся поверх анимированного фона */
+    .tm-brand-image {
+        position: relative !important;
+        z-index: 1 !important;
+    }
+    
+    /* Медленное, ненавязчивое движение «сияния» */
+    @keyframes tm-logo-gradient-flow {
+        0% {
+            transform: translate3d(-7%, -5%, 0) scale(1.04) rotate(0deg);
+        }
+    
+        50% {
+            transform: translate3d(8%, 6%, 0) scale(1.14) rotate(8deg);
+        }
+    
+        100% {
+            transform: translate3d(-3%, 9%, 0) scale(1.07) rotate(-5deg);
+        }
+    }
+    
+    /* Учитываем системную настройку снижения анимации */
+    @media (prefers-reduced-motion: reduce) {
+        .tm-brand-card::before {
+            animation: none !important;
+        }
+    }
+    
     .tm-brand-image {
         max-height: 100px;
     }
