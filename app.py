@@ -158,53 +158,55 @@ h3 {
     min-height: 128px;
     padding: 1rem 1.5rem;
 
-    border: 1px solid rgba(103, 232, 249, 0.28);
+    border: 1px solid rgba(103, 232, 249, 0.23);
     border-radius: 26px;
 
+    /*
+       Исходная палитра TravelMind — возвращена без усиления
+       и без новых кислотных оттенков.
+    */
     background-image:
         radial-gradient(
-            circle at 12% 18%,
-            rgba(34, 211, 238, 0.34) 0%,
-            rgba(34, 211, 238, 0.10) 24%,
-            transparent 48%
-        ),
-        radial-gradient(
-            circle at 86% 76%,
-            rgba(139, 92, 246, 0.30) 0%,
-            rgba(139, 92, 246, 0.08) 28%,
-            transparent 52%
-        ),
-        radial-gradient(
-            circle at 52% 24%,
-            rgba(59, 130, 246, 0.16) 0%,
+            circle at 15% 10%,
+            rgba(34, 211, 238, 0.15),
             transparent 42%
+        ),
+        radial-gradient(
+            circle at 90% 90%,
+            rgba(139, 92, 246, 0.12),
+            transparent 38%
         ),
         linear-gradient(
             135deg,
-            rgba(9, 24, 43, 0.98) 0%,
-            rgba(17, 49, 71, 0.97) 48%,
-            rgba(27, 20, 58, 0.98) 100%
+            rgba(16, 34, 57, 0.95),
+            rgba(12, 20, 42, 0.96)
         );
 
+    /*
+       Увеличенный фон даёт пространство для плавного перемещения
+       цветовых пятен, не меняя сами цвета.
+    */
     background-size:
-        190% 195%,
-        205% 200%,
-        185% 180%,
-        230% 230%;
+        165% 175%,
+        175% 165%,
+        145% 145%;
 
     background-position:
-        0% 0%,
-        100% 100%,
-        50% 0%,
-        0% 50%;
+        8% 12%,
+        92% 88%,
+        50% 50%;
 
     box-shadow:
         0 18px 42px rgba(0, 0, 0, 0.25),
         0 0 36px rgba(34, 211, 238, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-    /* Чуть быстрее прежних 22 секунд, но всё ещё спокойно. */
-    animation: tm-brand-gradient-flow 16s ease-in-out infinite alternate;
+    /*
+       14 секунд: движение заметно, но текуче и спокойно.
+       Линейная смена не используется, чтобы не было ощущения
+       механического движения туда-сюда.
+    */
+    animation: tm-brand-gradient-flow 14s ease-in-out infinite;
 }
 
 
@@ -554,46 +556,39 @@ h3 {
         animation: tm-brand-gradient-flow 22s ease-in-out infinite alternate;
     }
     @keyframes tm-brand-gradient-flow {
-    0% {
+        0% {
             background-position:
-                0% 5%,
-                100% 95%,
-                48% 0%,
-                0% 50%;
+                8% 12%,
+                92% 88%,
+                50% 50%;
+        }
     
-            box-shadow:
-                0 18px 42px rgba(0, 0, 0, 0.25),
-                0 0 30px rgba(34, 211, 238, 0.07),
-                0 0 20px rgba(139, 92, 246, 0.04),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        25% {
+            background-position:
+                42% 28%,
+                76% 62%,
+                58% 42%;
         }
     
         50% {
             background-position:
-                82% 36%,
-                20% 68%,
-                92% 76%,
-                54% 10%;
+                78% 48%,
+                34% 32%,
+                45% 58%;
+        }
     
-            box-shadow:
-                0 18px 42px rgba(0, 0, 0, 0.25),
-                0 0 46px rgba(34, 211, 238, 0.13),
-                0 0 34px rgba(139, 92, 246, 0.10),
-                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+        75% {
+            background-position:
+                48% 76%,
+                16% 66%,
+                40% 46%;
         }
     
         100% {
             background-position:
-                100% 100%,
-                0% 0%,
-                12% 100%,
-                100% 54%;
-    
-            box-shadow:
-                0 18px 42px rgba(0, 0, 0, 0.25),
-                0 0 34px rgba(34, 211, 238, 0.09),
-                0 0 28px rgba(139, 92, 246, 0.07),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                8% 12%,
+                92% 88%,
+                50% 50%;
         }
     }
 
