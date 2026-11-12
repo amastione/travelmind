@@ -424,7 +424,7 @@ def generate(user_prompt: str) -> dict:
     client = _create_llm_client()
 
     response = client.chat.completions.create(
-        model=st.secrets.get("LLM_MODEL", "deepseek-chat"),
+        model=st.secrets.get("LLM_MODEL","gemini-3-flash-preview"),
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
@@ -1663,12 +1663,21 @@ def suggest_activity_replacements(
     choice = response.choices[0]
 
     if choice.finish_reason == "length":
+        usage = response.usage
+
         raise ValueError(
-            "Ответ AI обрезан по лимиту длины. "
+            "Gemini не завершил ответ в пределах лимита. "
+            f"Выходных токенов: "
+            f"{getattr(usage, 'completion_tokens', 'не указано')}. "
             "Альтернативы не применены."
         )
 
-    parsed = _parse_json(choice.message.content or "")
+    content = str(choice.message.content or "").strip()
+
+    if not content:
+        raise ValueError("Gemini вернул пустой ответ.")
+
+    parsed = _parse_json(content)
     raw_alternatives = parsed.get("alternatives")
 
     if not isinstance(raw_alternatives, list):
