@@ -723,6 +723,47 @@ h3 {
         font-size: 0.92rem !important;
     }
 }
+/* Убираем старый дополнительный слой, если он остался
+   от первого варианта анимации. */
+.tm-brand-card::before {
+    content: none !important;
+    animation: none !important;
+}
+
+/* Цвета и тени НЕ меняем — только движение фона. */
+.tm-brand-card {
+    background-size:
+        180% 180%,
+        180% 180%,
+        140% 140% !important;
+
+    animation: tm-logo-visible-drift 7s ease-in-out infinite alternate !important;
+}
+
+/* Цветовые пятна перемещаются навстречу друг другу.
+   Обратный проход выполняется плавно, без скачка. */
+@keyframes tm-logo-visible-drift {
+    0% {
+        background-position:
+            0% 0%,
+            100% 100%,
+            30% 50%;
+    }
+
+    100% {
+        background-position:
+            100% 100%,
+            0% 0%,
+            70% 50%;
+    }
+}
+
+/* Сохраняем поддержку системного запрета анимации. */
+@media (prefers-reduced-motion: reduce) {
+    .tm-brand-card {
+        animation: none !important;
+    }
+}
 </style>
 """
 
