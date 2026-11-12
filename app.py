@@ -462,12 +462,101 @@ h3 {
     }
 
     .tm-brand-card {
-        width: min(100%, 440px);
-        min-height: 90px;
-        padding: 0.7rem 0.9rem;
-        border-radius: 19px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    
+        width: min(100%, 620px);
+        min-height: 128px;
+        padding: 1rem 1.5rem;
+    
+        border: 1px solid rgba(103, 232, 249, 0.28);
+        border-radius: 26px;
+    
+        background-image:
+            radial-gradient(
+                circle at 12% 18%,
+                rgba(34, 211, 238, 0.34) 0%,
+                rgba(34, 211, 238, 0.10) 24%,
+                transparent 48%
+            ),
+            radial-gradient(
+                circle at 86% 76%,
+                rgba(139, 92, 246, 0.30) 0%,
+                rgba(139, 92, 246, 0.08) 28%,
+                transparent 52%
+            ),
+            radial-gradient(
+                circle at 52% 24%,
+                rgba(59, 130, 246, 0.16) 0%,
+                transparent 42%
+            ),
+            linear-gradient(
+                135deg,
+                rgba(9, 24, 43, 0.98) 0%,
+                rgba(17, 49, 71, 0.97) 48%,
+                rgba(27, 20, 58, 0.98) 100%
+            );
+    
+        /*
+           Увеличиваем слои: при смене позиции становится заметно,
+           что градиент действительно медленно движется.
+        */
+        background-size:
+            170% 180%,
+            190% 185%,
+            175% 165%,
+            220% 220%;
+    
+        background-position:
+            0% 0%,
+            100% 100%,
+            50% 0%,
+            0% 50%;
+    
+        box-shadow:
+            0 18px 42px rgba(0, 0, 0, 0.25),
+            0 0 36px rgba(34, 211, 238, 0.10),
+            inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    
+        /*
+           22 секунды — медленное спокойное переливание,
+           без резких скачков.
+        */
+        animation: tm-brand-gradient-flow 22s ease-in-out infinite alternate;
+    }
+    @keyframes tm-brand-gradient-flow {
+        0% {
+            background-position:
+                0% 0%,
+                100% 100%,
+                50% 0%,
+                0% 50%;
+        }
+    
+        50% {
+            background-position:
+                75% 42%,
+                26% 58%,
+                92% 72%,
+                52% 8%;
+        }
+    
+        100% {
+            background-position:
+                100% 100%,
+                0% 0%,
+                15% 100%,
+                100% 50%;
+        }
     }
 
+/* Отключаем движение для пользователей с настройкой reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .tm-brand-card {
+        animation: none;
+    }
+}
     /* Контейнер логотипа: ограничивает свечение границами карточки */
     .tm-brand-card {
         position: relative !important;
@@ -511,7 +600,7 @@ h3 {
     
         filter: blur(14px) saturate(125%) !important;
     
-        animation: tm-logo-gradient-flow 3s ease-in-out infinite alternate !important;
+        animation: tm-logo-gradient-flow 18s ease-in-out infinite alternate !important;
     }
     
     /* Логотип всегда остаётся поверх анимированного фона */
