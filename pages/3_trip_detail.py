@@ -1946,6 +1946,65 @@ button[data-testid="stPopoverButton"]:focus-visible,
     background: #12334B !important;
     color: #FFFFFF !important;
 }
+
+/* Кнопки выбора AI-альтернатив: тёмное стекло, не белый Streamlit */
+div[class*="st-key-replacement_options_"] .stButton > button {
+    width: 100% !important;
+    min-height: 44px !important;
+
+    background: linear-gradient(
+        135deg,
+        rgba(13, 42, 62, 0.96) 0%,
+        rgba(20, 59, 82, 0.96) 100%
+    ) !important;
+
+    border: 1px solid rgba(103, 232, 249, 0.40) !important;
+    border-radius: 12px !important;
+
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+
+    font-weight: 700 !important;
+    text-shadow: none !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 6px 16px rgba(0, 0, 0, 0.24) !important;
+
+    transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        transform 160ms ease !important;
+}
+
+/* Текст и иконки внутри кнопки — всегда светлые */
+div[class*="st-key-replacement_options_"] .stButton > button *,
+div[class*="st-key-replacement_options_"] .stButton > button p,
+div[class*="st-key-replacement_options_"] .stButton > button span {
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+}
+
+/* Наведение */
+div[class*="st-key-replacement_options_"] .stButton > button:hover {
+    background: linear-gradient(
+        135deg,
+        rgba(20, 70, 96, 1) 0%,
+        rgba(30, 86, 112, 1) 100%
+    ) !important;
+
+    border-color: rgba(103, 232, 249, 0.78) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Нажатие и фокус: также без белой заливки */
+div[class*="st-key-replacement_options_"] .stButton > button:active,
+div[class*="st-key-replacement_options_"] .stButton > button:focus {
+    background: rgba(10, 35, 52, 1) !important;
+    border-color: rgba(103, 232, 249, 0.88) !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
 </style>
 """
 
@@ -2312,7 +2371,7 @@ def render_activity_replacement(
             "режим работы и соответствие пожеланиям нужно проверить. "
             "Координаты не подтверждены — карта откроет поиск."
         )
-
+    with st.container(key=f"replacement_options_{widget_scope}"):
         for option_index, option in enumerate(
             saved_result["alternatives"]
         ):
