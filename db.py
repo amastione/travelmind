@@ -863,5 +863,366 @@ def set_activity_visit(
                 int(bool(is_visited)),
             ),
         )
+# ==========================================================
+# ТОЧЕЧНАЯ ЗАМЕНА АКТИВНОСТИ
+# ==========================================================
+
+def replace_trip_activity(
+    trip_id: int,
+    user_id: int,
+    expected_data_json: str,
+    day_index: int,
+    activity_index: int,
+    replacement: dict,
+):
+    """
+    Атомарно заменяет одну активность.
+
+    expected_data_json — исходное значение trip["data"], на основе
+    которого пользователь запросил альтернативы.
+    """
+    import hashlib
+    import json
+    import math
+
+    def money(value):
+        if isinstance(value, bool):
+            raise ValueError("Некорректная денежная сумма.")
+
+        try:
+            result = float(value)
+        except (TypeError, ValueError, OverflowError) as error:
+            raise ValueError("Не удалось прочитать стоимость.") from error
+
+        if not math.isfinite(result) or result < 0:
+            raise ValueError("Стоимость должна быть числом не меньше нуля.")
+
+        return round(result, 2)
+
+    if not isinstance(replacement, dict):
+        raise ValueError("Некорректная альтернатива.")
+
+    with _conn() as connection:
+        # Блокируем параллельную запись до завершения операции.
+        connection.execute("BEGIN IMMEDIATE")
+
+        trip = connection.execute(
+            """
+            SELECT *
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        if trip["data"] != expected_data_json:
+            raise ValueError(
+                "Маршрут уже изменился. Обновите страницу "
+                "и запросите альтернативы заново."
+            )
+
+        route = json.loads(trip["data"])
+        days = route.get("days")
+
+        if (
+            not isinstance(days, list)
+            or isinstance(day_index, bool)
+            or not isinstance(day_index, int)
+            or not 0 <= day_index < len(days)
+        ):
+            raise ValueError("Выбранный день не найден.")
+
+        day_data = days[day_index]
+
+        if not isinstance(day_data, dict):
+            raise ValueError("Некорректная структура дня.")
+
+        activities = day_data.get("activities")
+
+        if (
+            not isinstance(activities, list)
+            or isinstance(activity_index, bool)
+            or not isinstance(activity_index, int)
+            or not 0 <= activity_index < len(activities)
+        ):
+            raise ValueError("Выбранная активность не найдена.")
+
+        original = activities[activity_index]
+
+        if not isinstance(original, dict):
+            raise ValueError("Некорректная исходная активность.")
+
+        # Используем тот же алгоритм ключа, что и во вкладке
+        # «Я в поездке»: день, дата, название, место, номер повтора.
+        original_title = str(original.get("title") or "").strip()
+        original_location = str(original.get("location") or "").strip()
+
+        occurrence = sum(
+            1
+            for item in activities[:activity_index]
+            if isinstance(item, dict)
+            and str(item.get("title") or "").strip() == original_title
+            and str(item.get("location") or "").strip() == original_location
+        )
+
+        visit_identity = {
+            "day": str(day_data.get("day") or ""),
+            "date": str(day_data.get("date") or "")[:10],
+            "title": original_title,
+            "location": original_location,
+            "occurrence": occurrence,
+        }
+
+        visit_key = hashlib.sha256(
+            json.dumps(
+                visit_identity,
+                ensure_ascii=False,
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()[:24]
+
+        visit = connection.execute(
+            """
+            SELECT is_visited
+            FROM trip_activity_visits
+            WHERE trip_id = ? AND activity_key = ?
+            """,
+            (trip_id, visit_key),
+        ).fetchone()
+
+        if visit and bool(visit["is_visited"]):
+            raise ValueError(
+                "Активность уже отмечена как посещённая. "
+                "Сначала снимите отметку во вкладке «Я в поездке»."
+            )
+
+        # Ищем только плановую строку выбранной активности.
+        expense_rows = connection.execute(
+            """
+            SELECT *
+            FROM expenses
+            WHERE trip_id = ?
+              AND day = ?
+              AND activity_idx = ?
+              AND is_manual = 0
+            """,
+            (
+                trip_id,
+                day_data.get("day"),
+                activity_index,
+            ),
+        ).fetchall()
+
+        if len(expense_rows) > 1:
+            raise ValueError(
+                "Найдено несколько расходов для одной активности. "
+                "Замена остановлена, чтобы не повредить данные."
+            )
+
+        expense = expense_rows[0] if expense_rows else None
+
+        if expense:
+            if (
+                expense["title"] != original.get("title")
+                or expense["category"] != original.get("type")
+            ):
+                raise ValueError(
+                    "План расходов не соответствует маршруту. "
+                    "Замена остановлена."
+                )
+
+            if money(expense["cost_actual"] or 0) > 0:
+                raise ValueError(
+                    "Для активности уже внесён фактический расход. "
+                    "Заменять её нельзя."
+                )
+
+        original_type = str(original.get("type") or "").strip().upper()
+
+        if original_type not in {"A", "F", "T", "S", "L", "H", "W"}:
+            raise ValueError("Неизвестная категория исходной активности.")
+
+        if replacement.get("type") != original_type:
+            raise ValueError("При замене нельзя менять категорию активности.")
+
+        clean_texts = {}
+
+        for field, limit in (
+            ("title", 200),
+            ("location", 250),
+            ("description", 500),
+            ("tip", 500),
+        ):
+            value = replacement.get(field)
+
+            if (
+                not isinstance(value, str)
+                or not value.strip()
+                or len(value.strip()) > limit
+            ):
+                raise ValueError(
+                    f"Некорректное поле альтернативы: {field}."
+                )
+
+            clean_texts[field] = value.strip()
+
+        new_title_key = " ".join(clean_texts["title"].casefold().split())
+
+        existing_titles = {
+            " ".join(str(item.get("title") or "").casefold().split())
+            for item in activities
+            if isinstance(item, dict)
+        }
+
+        if new_title_key in existing_titles:
+            raise ValueError(
+                "Это место уже есть в плане выбранного дня."
+            )
+
+        old_cost = money(original.get("cost") or 0)
+        new_cost = money(replacement.get("cost"))
+        difference = round(new_cost - old_cost, 2)
+
+        # Корректируем существующие итоги на разницу,
+        # не пересобирая весь финансовый план.
+        old_day_cost = money(
+            day_data.get("day_cost")
+            if day_data.get("day_cost") is not None
+            else sum(
+                money(item.get("cost") or 0)
+                for item in activities
+                if isinstance(item, dict)
+            )
+        )
+
+        old_total_cost = money(
+            route.get("total_cost")
+            if route.get("total_cost") is not None
+            else trip["budget"] or 0
+        )
+
+        new_day_cost = round(old_day_cost + difference, 2)
+        new_total_cost = round(old_total_cost + difference, 2)
+
+        if new_day_cost < 0 or new_total_cost < 0:
+            raise ValueError(
+                "Исходные суммы бюджета противоречат стоимости активности. "
+                "Замена остановлена."
+            )
+
+        category_map = {
+            "A": "activities",
+            "F": "food",
+            "T": "transport",
+            "S": "accommodation",
+            "L": "activities",
+            "H": "other",
+            "W": "activities",
+        }
+
+        breakdown = route.get("budget_breakdown")
+
+        if not isinstance(breakdown, dict):
+            raise ValueError(
+                "В маршруте отсутствует структура бюджета."
+            )
+
+        budget_category = category_map[original_type]
+        category_total = money(breakdown.get(budget_category) or 0)
+        new_category_total = round(category_total + difference, 2)
+
+        if new_category_total < 0:
+            raise ValueError(
+                "Сумма категории бюджета меньше необходимого уменьшения. "
+                "Замена остановлена: исходный бюджет требует проверки."
+            )
+
+        # Остальные поля исходной активности сохраняем.
+        new_activity = dict(original)
+        new_activity.update(clean_texts)
+        new_activity.update(
+            {
+                "type": original_type,
+                "cost": new_cost,
+                "time": original.get("time"),
+                "duration_min": original.get("duration_min"),
+                "lat": None,
+                "lon": None,
+            }
+        )
+
+        activities[activity_index] = new_activity
+        day_data["day_cost"] = new_day_cost
+        route["total_cost"] = new_total_cost
+        breakdown[budget_category] = new_category_total
+
+        connection.execute(
+            """
+            UPDATE trips
+            SET data = ?, budget = ?
+            WHERE id = ? AND user_id = ?
+            """,
+            (
+                json.dumps(
+                    route,
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
+                new_total_cost,
+                trip_id,
+                user_id,
+            ),
+        )
+
+        if expense:
+            connection.execute(
+                """
+                UPDATE expenses
+                SET category = ?, title = ?, cost_plan = ?
+                WHERE id = ?
+                """,
+                (
+                    original_type,
+                    clean_texts["title"],
+                    new_cost,
+                    expense["id"],
+                ),
+            )
+        else:
+            connection.execute(
+                """
+                INSERT INTO expenses(
+                    trip_id,
+                    day,
+                    activity_idx,
+                    category,
+                    title,
+                    cost_plan,
+                    cost_actual,
+                    is_manual
+                )
+                VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
+                """,
+                (
+                    trip_id,
+                    day_data.get("day"),
+                    activity_index,
+                    original_type,
+                    clean_texts["title"],
+                    new_cost,
+                ),
+            )
+
+        # Старую непосещённую отметку больше не используем.
+        connection.execute(
+            """
+            DELETE FROM trip_activity_visits
+            WHERE trip_id = ? AND activity_key = ?
+            """,
+            (trip_id, visit_key),
+        )
 # Создание базы при импорте модуля.
 init()
