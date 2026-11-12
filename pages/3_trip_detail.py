@@ -1560,6 +1560,8 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:focus-visible,
 
 /* Обычные кнопки Streamlit, кнопки в формах и навигация */
 .stButton > button,
+[data-testid="stPopoverButton"] > button,
+[data-testid="stPopoverButton"] button,
 .stFormSubmitButton > button,
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"],
 [data-testid="stPageLink-NavLink"] {
@@ -1612,6 +1614,8 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"] p,
 
 /* Состояние при наведении */
 .stButton > button:hover,
+[data-testid="stPopoverButton"] > button:hover,
+[data-testid="stPopoverButton"] button:hover,
 .stFormSubmitButton > button:hover,
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
 [data-testid="stPageLink-NavLink"]:hover {
@@ -1633,6 +1637,8 @@ section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:hover,
 
 /* Нажатие */
 .stButton > button:active,
+[data-testid="stPopoverButton"] > button:active,
+[data-testid="stPopoverButton"] button:active,
 .stFormSubmitButton > button:active,
 section[data-testid="stMain"] a[data-testid="stPageLink-NavLink"]:active,
 [data-testid="stPageLink-NavLink"]:active {
