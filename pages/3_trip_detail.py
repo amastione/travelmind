@@ -373,301 +373,9 @@ button,
 # ИНТЕРФЕЙС ТОЧЕЧНОЙ ЗАМЕНЫ АКТИВНОСТИ
 # ==========================================================
 
-def render_activity_replacement(
-    trip_id: int,
-    user_id: int,
-    trip_context: dict,
-    route_data: dict,
-    expected_data_json: str,
-    day_index: int,
-    activity_index: int,
-):
-    """Показывает подбор альтернатив и подтверждение замены."""
-    day_data = route_data["days"][day_index]
-    activity = day_data["activities"][activity_index]
-    currency = str(trip_context.get("currency") or "RUB")
 
-    # Разделяем состояние по пользователям, поездкам и активностям.
-    scope = (
-        f"activity_replace_{user_id}_{trip_id}_"
-        f"{day_index}_{activity_index}"
-    )
 
-    # После изменения маршрута старые предложения не показываем.
-    route_version = hashlib.sha256(
-        expected_data_json.encode("utf-8")
-    ).hexdigest()[:12]
 
-    state_key = f"{scope}_result"
-    widget_scope = f"{scope}_{route_version}"
-
-    saved_result = st.session_state.get(state_key)
-
-    if saved_result is not None:
-        if saved_result.get("expected_data_json") != expected_data_json:
-            st.session_state.pop(state_key, None)
-            saved_result = None
-
-    with st.expander("🔄 Заменить активность", expanded=False):
-        st.caption(
-            "Подберём две альтернативы без изменения остальных пунктов. "
-            "Маршрут изменится только после вашего подтверждения."
-        )
-
-        # Проверяем ограничения до платного запроса к AI.
-        original_title = str(activity.get("title") or "").strip()
-        original_location = str(activity.get("location") or "").strip()
-
-        occurrence = sum(
-            1
-            for item in day_data["activities"][:activity_index]
-            if isinstance(item, dict)
-            and str(item.get("title") or "").strip() == original_title
-            and str(item.get("location") or "").strip() == original_location
-        )
-
-        activity_visit_key = build_live_activity_key(
-            day_data=day_data,
-            activity=activity,
-            occurrence=occurrence,
-        )
-
-        try:
-            visits = db.get_activity_visits(
-                trip_id=trip_id,
-                user_id=user_id,
-            )
-
-            if visits.get(activity_visit_key, False):
-                st.info(
-                    "Это место уже отмечено как посещённое. "
-                    "Для замены сначала снимите отметку "
-                    "во вкладке «Я в поездке»."
-                )
-                return
-
-            planned_expenses = [
-                item
-                for item in db.get_expenses(trip_id)
-                if int(item["is_manual"] or 0) == 0
-                and str(item["day"]) == str(day_data.get("day"))
-                and item["activity_idx"] == activity_index
-            ]
-
-            if any(
-                as_float(item["cost_actual"]) > 0
-                for item in planned_expenses
-            ):
-                st.info(
-                    "Для этой активности уже внесён фактический расход. "
-                    "Замена заблокирована, чтобы сохранить учёт трат."
-                )
-                return
-
-        except Exception:
-            st.error(
-                "Не удалось проверить расходы и отметки посещения. "
-                "Подбор временно недоступен."
-            )
-            return
-
-        reason = st.selectbox(
-            "Что изменить?",
-            options=[
-                "Дешевле",
-                "Ближе к соседним местам",
-                "В помещении",
-                "Для семьи",
-                "Свой запрос",
-            ],
-            key=f"{widget_scope}_reason",
-        )
-
-        custom_request = st.text_input(
-            "Дополнительные пожелания",
-            placeholder=(
-                "Например: без лестниц или больше местной кухни"
-            ),
-            max_chars=400,
-            key=f"{widget_scope}_notes",
-        )
-
-        original_cost = as_float(activity.get("cost"), 0)
-
-        # В первой версии не увеличиваем стоимость активности.
-        # Для причины «Дешевле» просим уменьшить её минимум на 20%.
-        max_cost = round(
-            original_cost * 0.8
-            if reason == "Дешевле"
-            else original_cost,
-            2,
-        )
-
-        st.caption(
-            "Максимальная плановая стоимость альтернативы: "
-            f"{format_money(max_cost, currency)} на всю группу. "
-            "Время, длительность и категория сохраняются."
-        )
-
-        if original_cost == 0:
-            st.caption(
-                "Исходная активность бесплатная — "
-                "предлагаем только бесплатные варианты."
-            )
-
-        if st.button(
-            "✨ Подобрать две альтернативы",
-            key=f"{widget_scope}_generate",
-            use_container_width=True,
-        ):
-            if reason == "Свой запрос" and not custom_request.strip():
-                st.warning("Напишите, что именно нужно изменить.")
-
-            else:
-                request_text = reason
-
-                if custom_request.strip():
-                    request_text += ". " + custom_request.strip()
-
-                # Новый запрос заменяет предыдущие предложения.
-                st.session_state.pop(state_key, None)
-                saved_result = None
-
-                with st.spinner("Подбираем альтернативы…"):
-                    try:
-                        result = ai.suggest_activity_replacements(
-                            trip_context=trip_context,
-                            day_data=day_data,
-                            activity_index=activity_index,
-                            reason=request_text,
-                            max_cost=max_cost,
-                        )
-
-                        saved_result = {
-                            "expected_data_json": expected_data_json,
-                            "alternatives": result["alternatives"],
-                            "tokens_in": result.get("tokens_in", 0),
-                            "tokens_out": result.get("tokens_out", 0),
-                        }
-
-                        st.session_state[state_key] = saved_result
-
-                    except ValueError as error:
-                        st.warning(str(error))
-
-                    except Exception as error:
-                        status_code = getattr(error, "status_code", None)
-
-                        if status_code == 429:
-                            st.warning(
-                                "Лимит AI временно исчерпан. "
-                                "Это ограничение провайдера. "
-                                "Маршрут не изменён."
-                            )
-                        elif status_code in (401, 403):
-                            st.error(
-                                "Нет доступа к AI-модели. "
-                                "Проверьте настройки API в Secrets."
-                            )
-                        else:
-                            st.error(
-                                "Не удалось получить альтернативы. "
-                                "Маршрут не изменён. Попробуйте позже."
-                            )
-
-        if not saved_result:
-            return
-
-        st.markdown("##### Предложенные варианты")
-
-        st.warning(
-            "Это рекомендации AI: существование места, цены, "
-            "режим работы и соответствие пожеланиям нужно проверить. "
-            "Координаты не подтверждены — карта откроет поиск."
-        )
-
-        for option_index, option in enumerate(
-            saved_result["alternatives"]
-        ):
-            candidate = option["activity"]
-
-            with st.container(border=True):
-                st.markdown(
-                    f"#### {option_index + 1}. "
-                    f"{candidate['title']}"
-                )
-
-                st.write(f"📍 {candidate['location']}")
-                st.write(candidate["description"])
-
-                st.write(
-                    "**Ориентировочно на группу:** "
-                    + format_money(candidate["cost"], currency)
-                )
-
-                st.write(f"**Почему подходит:** {option['why']}")
-                st.caption(f"💡 {candidate['tip']}")
-
-                search_query = (
-                    f"{candidate['location']}, "
-                    f"{trip_context.get('destination') or ''}"
-                )
-
-                st.link_button(
-                    "⌖ Проверить место на карте",
-                    (
-                        "https://www.google.com/maps/search/"
-                        "?api=1&query="
-                        + quote_plus(search_query)
-                    ),
-                    use_container_width=True,
-                )
-
-                if st.button(
-                    "✓ Выбрать этот вариант",
-                    key=f"{widget_scope}_apply_{option_index}",
-                    use_container_width=True,
-                ):
-                    try:
-                        db.replace_trip_activity(
-                            trip_id=trip_id,
-                            user_id=user_id,
-                            expected_data_json=(
-                                saved_result["expected_data_json"]
-                            ),
-                            day_index=day_index,
-                            activity_index=activity_index,
-                            replacement=candidate,
-                        )
-
-                    except ValueError as error:
-                        st.error(str(error))
-
-                    except Exception:
-                        st.error(
-                            "Не удалось сохранить замену. "
-                            "Обновите страницу перед повторной попыткой."
-                        )
-
-                    else:
-                        st.session_state.pop(state_key, None)
-
-                        # Ранее полученный анализ бюджета устарел.
-                        st.session_state.pop(
-                            f"budget_ai_analysis_{trip_id}",
-                            None,
-                        )
-
-                        st.toast("Активность заменена. Бюджет обновлён.")
-                        st.rerun()
-
-        if st.button(
-            "Отменить подбор",
-            key=f"{widget_scope}_cancel",
-            use_container_width=True,
-        ):
-            st.session_state.pop(state_key, None)
-            st.rerun()
 
 /* ---------- Шапка поездки ---------- */
 
@@ -2270,6 +1978,305 @@ def build_booking_links(destination, start_date, end_date):
         "map": map_url,
     }
 
+# ==========================================================
+# ИНТЕРФЕЙС ТОЧЕЧНОЙ ЗАМЕНЫ АКТИВНОСТИ
+# ==========================================================
+
+def render_activity_replacement(
+    trip_id: int,
+    user_id: int,
+    trip_context: dict,
+    route_data: dict,
+    expected_data_json: str,
+    day_index: int,
+    activity_index: int,
+):
+    """Показывает подбор альтернатив и подтверждение замены."""
+    day_data = route_data["days"][day_index]
+    activity = day_data["activities"][activity_index]
+    currency = str(trip_context.get("currency") or "RUB")
+
+    # Разделяем состояние по пользователям, поездкам и активностям.
+    scope = (
+        f"activity_replace_{user_id}_{trip_id}_"
+        f"{day_index}_{activity_index}"
+    )
+
+    # После изменения маршрута старые предложения не показываем.
+    route_version = hashlib.sha256(
+        expected_data_json.encode("utf-8")
+    ).hexdigest()[:12]
+
+    state_key = f"{scope}_result"
+    widget_scope = f"{scope}_{route_version}"
+
+    saved_result = st.session_state.get(state_key)
+
+    if saved_result is not None:
+        if saved_result.get("expected_data_json") != expected_data_json:
+            st.session_state.pop(state_key, None)
+            saved_result = None
+
+    with st.expander("🔄 Заменить активность", expanded=False):
+        st.caption(
+            "Подберём две альтернативы без изменения остальных пунктов. "
+            "Маршрут изменится только после вашего подтверждения."
+        )
+
+        # Проверяем ограничения до платного запроса к AI.
+        original_title = str(activity.get("title") or "").strip()
+        original_location = str(activity.get("location") or "").strip()
+
+        occurrence = sum(
+            1
+            for item in day_data["activities"][:activity_index]
+            if isinstance(item, dict)
+            and str(item.get("title") or "").strip() == original_title
+            and str(item.get("location") or "").strip() == original_location
+        )
+
+        activity_visit_key = build_live_activity_key(
+            day_data=day_data,
+            activity=activity,
+            occurrence=occurrence,
+        )
+
+        try:
+            visits = db.get_activity_visits(
+                trip_id=trip_id,
+                user_id=user_id,
+            )
+
+            if visits.get(activity_visit_key, False):
+                st.info(
+                    "Это место уже отмечено как посещённое. "
+                    "Для замены сначала снимите отметку "
+                    "во вкладке «Я в поездке»."
+                )
+                return
+
+            planned_expenses = [
+                item
+                for item in db.get_expenses(trip_id)
+                if int(item["is_manual"] or 0) == 0
+                and str(item["day"]) == str(day_data.get("day"))
+                and item["activity_idx"] == activity_index
+            ]
+
+            if any(
+                as_float(item["cost_actual"]) > 0
+                for item in planned_expenses
+            ):
+                st.info(
+                    "Для этой активности уже внесён фактический расход. "
+                    "Замена заблокирована, чтобы сохранить учёт трат."
+                )
+                return
+
+        except Exception:
+            st.error(
+                "Не удалось проверить расходы и отметки посещения. "
+                "Подбор временно недоступен."
+            )
+            return
+
+        reason = st.selectbox(
+            "Что изменить?",
+            options=[
+                "Дешевле",
+                "Ближе к соседним местам",
+                "В помещении",
+                "Для семьи",
+                "Свой запрос",
+            ],
+            key=f"{widget_scope}_reason",
+        )
+
+        custom_request = st.text_input(
+            "Дополнительные пожелания",
+            placeholder=(
+                "Например: без лестниц или больше местной кухни"
+            ),
+            max_chars=400,
+            key=f"{widget_scope}_notes",
+        )
+
+        original_cost = as_float(activity.get("cost"), 0)
+
+        # В первой версии не увеличиваем стоимость активности.
+        # Для причины «Дешевле» просим уменьшить её минимум на 20%.
+        max_cost = round(
+            original_cost * 0.8
+            if reason == "Дешевле"
+            else original_cost,
+            2,
+        )
+
+        st.caption(
+            "Максимальная плановая стоимость альтернативы: "
+            f"{format_money(max_cost, currency)} на всю группу. "
+            "Время, длительность и категория сохраняются."
+        )
+
+        if original_cost == 0:
+            st.caption(
+                "Исходная активность бесплатная — "
+                "предлагаем только бесплатные варианты."
+            )
+
+        if st.button(
+            "✨ Подобрать две альтернативы",
+            key=f"{widget_scope}_generate",
+            use_container_width=True,
+        ):
+            if reason == "Свой запрос" and not custom_request.strip():
+                st.warning("Напишите, что именно нужно изменить.")
+
+            else:
+                request_text = reason
+
+                if custom_request.strip():
+                    request_text += ". " + custom_request.strip()
+
+                # Новый запрос заменяет предыдущие предложения.
+                st.session_state.pop(state_key, None)
+                saved_result = None
+
+                with st.spinner("Подбираем альтернативы…"):
+                    try:
+                        result = ai.suggest_activity_replacements(
+                            trip_context=trip_context,
+                            day_data=day_data,
+                            activity_index=activity_index,
+                            reason=request_text,
+                            max_cost=max_cost,
+                        )
+
+                        saved_result = {
+                            "expected_data_json": expected_data_json,
+                            "alternatives": result["alternatives"],
+                            "tokens_in": result.get("tokens_in", 0),
+                            "tokens_out": result.get("tokens_out", 0),
+                        }
+
+                        st.session_state[state_key] = saved_result
+
+                    except ValueError as error:
+                        st.warning(str(error))
+
+                    except Exception as error:
+                        status_code = getattr(error, "status_code", None)
+
+                        if status_code == 429:
+                            st.warning(
+                                "Лимит AI временно исчерпан. "
+                                "Это ограничение провайдера. "
+                                "Маршрут не изменён."
+                            )
+                        elif status_code in (401, 403):
+                            st.error(
+                                "Нет доступа к AI-модели. "
+                                "Проверьте настройки API в Secrets."
+                            )
+                        else:
+                            st.error(
+                                "Не удалось получить альтернативы. "
+                                "Маршрут не изменён. Попробуйте позже."
+                            )
+
+        if not saved_result:
+            return
+
+        st.markdown("##### Предложенные варианты")
+
+        st.warning(
+            "Это рекомендации AI: существование места, цены, "
+            "режим работы и соответствие пожеланиям нужно проверить. "
+            "Координаты не подтверждены — карта откроет поиск."
+        )
+
+        for option_index, option in enumerate(
+            saved_result["alternatives"]
+        ):
+            candidate = option["activity"]
+
+            with st.container(border=True):
+                st.markdown(
+                    f"#### {option_index + 1}. "
+                    f"{candidate['title']}"
+                )
+
+                st.write(f"📍 {candidate['location']}")
+                st.write(candidate["description"])
+
+                st.write(
+                    "**Ориентировочно на группу:** "
+                    + format_money(candidate["cost"], currency)
+                )
+
+                st.write(f"**Почему подходит:** {option['why']}")
+                st.caption(f"💡 {candidate['tip']}")
+
+                search_query = (
+                    f"{candidate['location']}, "
+                    f"{trip_context.get('destination') or ''}"
+                )
+
+                st.link_button(
+                    "⌖ Проверить место на карте",
+                    (
+                        "https://www.google.com/maps/search/"
+                        "?api=1&query="
+                        + quote_plus(search_query)
+                    ),
+                    use_container_width=True,
+                )
+
+                if st.button(
+                    "✓ Выбрать этот вариант",
+                    key=f"{widget_scope}_apply_{option_index}",
+                    use_container_width=True,
+                ):
+                    try:
+                        db.replace_trip_activity(
+                            trip_id=trip_id,
+                            user_id=user_id,
+                            expected_data_json=(
+                                saved_result["expected_data_json"]
+                            ),
+                            day_index=day_index,
+                            activity_index=activity_index,
+                            replacement=candidate,
+                        )
+
+                    except ValueError as error:
+                        st.error(str(error))
+
+                    except Exception:
+                        st.error(
+                            "Не удалось сохранить замену. "
+                            "Обновите страницу перед повторной попыткой."
+                        )
+
+                    else:
+                        st.session_state.pop(state_key, None)
+
+                        # Ранее полученный анализ бюджета устарел.
+                        st.session_state.pop(
+                            f"budget_ai_analysis_{trip_id}",
+                            None,
+                        )
+
+                        st.toast("Активность заменена. Бюджет обновлён.")
+                        st.rerun()
+
+        if st.button(
+            "Отменить подбор",
+            key=f"{widget_scope}_cancel",
+            use_container_width=True,
+        ):
+            st.session_state.pop(state_key, None)
+            st.rerun()
 
 # ==========================================================
 # ШАПКА ПОЕЗДКИ
