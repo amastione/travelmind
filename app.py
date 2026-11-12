@@ -737,7 +737,7 @@ h3 {
         180% 180%,
         140% 140% !important;
 
-    animation: tm-logo-visible-drift 7s ease-in-out infinite alternate !important;
+    animation: tm-logo-visible-drift 3s ease-in-out infinite alternate !important;
 }
 
 /* Цветовые пятна перемещаются навстречу друг другу.
