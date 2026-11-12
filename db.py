@@ -67,6 +67,17 @@ CREATE TABLE IF NOT EXISTS trip_checklist_items (
 
 CREATE INDEX IF NOT EXISTS idx_checklist_items_trip_id
 ON trip_checklist_items(trip_id);
+
+CREATE TABLE IF NOT EXISTS trip_activity_visits (
+    trip_id INTEGER NOT NULL,
+    activity_key TEXT NOT NULL,
+    is_visited INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (trip_id, activity_key),
+    FOREIGN KEY(trip_id) REFERENCES trips(id)
+);
+"""
+"""
 """
 
 @contextmanager
@@ -272,7 +283,10 @@ def delete_trip(trip_id: int, user_id: int):
             "DELETE FROM trip_checklist_items WHERE trip_id = ?",
             (trip_id,),
         )
-
+        connection.execute(
+            "DELETE FROM trip_activity_visits WHERE trip_id = ?",
+            (trip_id,),
+        )
         connection.execute(
             "DELETE FROM trips WHERE id = ? AND user_id = ?",
             (trip_id, user_id),
@@ -766,6 +780,88 @@ def reset_checklist(
             WHERE trip_id = ?
             """,
             (trip_id,),
+        )
+# ==========================================================
+# РЕЖИМ «Я В ПОЕЗДКЕ»: ПОСЕЩЕНИЕ АКТИВНОСТЕЙ
+# ==========================================================
+
+def get_activity_visits(
+    trip_id: int,
+    user_id: int,
+) -> dict[str, bool]:
+    """Возвращает отметки посещения поездки текущего пользователя."""
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        rows = connection.execute(
+            """
+            SELECT activity_key, is_visited
+            FROM trip_activity_visits
+            WHERE trip_id = ?
+            """,
+            (trip_id,),
+        ).fetchall()
+
+        return {
+            str(row["activity_key"]): bool(row["is_visited"])
+            for row in rows
+        }
+
+
+def set_activity_visit(
+    trip_id: int,
+    user_id: int,
+    activity_key: str,
+    is_visited: bool,
+):
+    """Создаёт или обновляет отметку посещения с проверкой владельца."""
+    clean_key = str(activity_key or "").strip()
+
+    if not clean_key:
+        raise ValueError("Не указан ключ активности.")
+
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        connection.execute(
+            """
+            INSERT INTO trip_activity_visits(
+                trip_id,
+                activity_key,
+                is_visited,
+                updated_at
+            )
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(trip_id, activity_key)
+            DO UPDATE SET
+                is_visited = excluded.is_visited,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                trip_id,
+                clean_key,
+                int(bool(is_visited)),
+            ),
         )
 # Создание базы при импорте модуля.
 init()
