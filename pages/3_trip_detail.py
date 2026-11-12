@@ -2017,7 +2017,10 @@ def render_activity_replacement(
             st.session_state.pop(state_key, None)
             saved_result = None
 
-    with st.expander("🔄 Заменить активность", expanded=False):
+    with st.popover(
+        "🔄 Заменить активность",
+        use_container_width=True,
+    ):
         st.caption(
             "Подберём две альтернативы без изменения остальных пунктов. "
             "Маршрут изменится только после вашего подтверждения."
@@ -2651,9 +2654,12 @@ with tab_route:
                 if tip:
                     st.caption(f"✦ {tip}")
 
-                activity_action_col, replacement_action_col = st.columns(2)
+                map_action_col, replace_action_col = st.columns(
+                    [1, 1],
+                    gap="small",
+                )
 
-                with activity_action_col:
+                with map_action_col:
                     if location:
                         activity_map_query = f"{location}, {destination}"
 
@@ -2664,7 +2670,7 @@ with tab_route:
                         )
 
                         st.link_button(
-                            "⌖ Открыть место на карте",
+                            "⌖ Открыть на карте",
                             activity_map_url,
                             key=(
                                 f"activity_map_{trip_id}_"
@@ -2672,6 +2678,21 @@ with tab_route:
                             ),
                             use_container_width=True,
                         )
+                    else:
+                        # Пустой элемент сохраняет ровную сетку,
+                        # если у активности нет указанного места.
+                        st.markdown("<div></div>", unsafe_allow_html=True)
+
+                with replace_action_col:
+                    render_activity_replacement(
+                        trip_id=trip_id,
+                        user_id=user_id,
+                        trip_context=dict(trip),
+                        route_data=data,
+                        expected_data_json=trip["data"],
+                        day_index=day_index,
+                        activity_index=activity_index,
+                    )
 
                 with replacement_action_col:
                     render_activity_replacement(
