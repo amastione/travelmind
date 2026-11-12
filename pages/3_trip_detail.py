@@ -2648,7 +2648,7 @@ with tab_route:
                     unsafe_allow_html=True,
                 )
 
-                                if tip:
+                if tip:
                     st.caption(f"✦ {tip}")
 
                 activity_action_col, replacement_action_col = st.columns(2)
