@@ -2337,6 +2337,9 @@ def render_activity_replacement(
                         }
 
                         st.session_state[state_key] = saved_result
+                        # Новый запуск закрывает popover.
+                        # Карточки отрисуются ниже, под активностью.
+                        st.rerun()
 
                     except ValueError as error:
                         st.warning(str(error))
