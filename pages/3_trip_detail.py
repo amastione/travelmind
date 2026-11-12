@@ -2659,18 +2659,18 @@ with tab_route:
                         use_container_width=False,
                     )
 
-                if tip:
-                    st.caption(f"✦ {tip}")
-
-                render_activity_replacement(
-                    trip_id=trip_id,
-                    user_id=user_id,
-                    trip_context=dict(trip),
-                    route_data=data,
-                    expected_data_json=trip["data"],
-                    day_index=day_index,
-                    activity_index=activity_index,
-                )
+                    if tip:
+                        st.caption(f"✦ {tip}")
+    
+                    render_activity_replacement(
+                        trip_id=trip_id,
+                        user_id=user_id,
+                        trip_context=dict(trip),
+                        route_data=data,
+                        expected_data_json=trip["data"],
+                        day_index=day_index,
+                        activity_index=activity_index,
+                    )
 
             day_cost = as_float(day.get("day_cost"), 0)
 
