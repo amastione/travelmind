@@ -672,10 +672,6 @@ with st.form("trip_ideas_form"):
         use_container_width=True,
     )
 
-    submitted = st.form_submit_button(
-        "✨ Найти идеи с AI",
-        use_container_width=True,
-    )
 
 if submitted:
     search_mode = (
