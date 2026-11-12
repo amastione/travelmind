@@ -158,39 +158,39 @@ h3 {
     min-height: 128px;
     padding: 1rem 1.5rem;
 
-    border: 1px solid rgba(103, 232, 249, 0.42);
+    border: 1px solid rgba(103, 232, 249, 0.28);
     border-radius: 26px;
 
     background-image:
         radial-gradient(
-            circle at 10% 16%,
-            rgba(34, 211, 238, 0.58) 0%,
-            rgba(34, 211, 238, 0.22) 25%,
-            transparent 50%
+            circle at 12% 18%,
+            rgba(34, 211, 238, 0.34) 0%,
+            rgba(34, 211, 238, 0.10) 24%,
+            transparent 48%
         ),
         radial-gradient(
-            circle at 88% 78%,
-            rgba(168, 85, 247, 0.52) 0%,
-            rgba(139, 92, 246, 0.20) 28%,
-            transparent 54%
+            circle at 86% 76%,
+            rgba(139, 92, 246, 0.30) 0%,
+            rgba(139, 92, 246, 0.08) 28%,
+            transparent 52%
         ),
         radial-gradient(
-            circle at 56% 18%,
-            rgba(59, 130, 246, 0.30) 0%,
-            transparent 43%
+            circle at 52% 24%,
+            rgba(59, 130, 246, 0.16) 0%,
+            transparent 42%
         ),
         linear-gradient(
             135deg,
-            rgba(4, 14, 31, 0.99) 0%,
-            rgba(10, 47, 71, 0.98) 46%,
-            rgba(42, 17, 73, 0.99) 100%
+            rgba(9, 24, 43, 0.98) 0%,
+            rgba(17, 49, 71, 0.97) 48%,
+            rgba(27, 20, 58, 0.98) 100%
         );
 
     background-size:
-        190% 200%,
-        210% 200%,
-        180% 180%,
-        240% 240%;
+        190% 195%,
+        205% 200%,
+        185% 180%,
+        230% 230%;
 
     background-position:
         0% 0%,
@@ -199,13 +199,14 @@ h3 {
         0% 50%;
 
     box-shadow:
-        0 18px 42px rgba(0, 0, 0, 0.28),
-        0 0 42px rgba(34, 211, 238, 0.18),
-        0 0 58px rgba(139, 92, 246, 0.11),
-        inset 0 1px 0 rgba(255, 255, 255, 0.11);
+        0 18px 42px rgba(0, 0, 0, 0.25),
+        0 0 36px rgba(34, 211, 238, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-    animation: tm-brand-gradient-flow 18s ease-in-out infinite alternate;
+    /* Чуть быстрее прежних 22 секунд, но всё ещё спокойно. */
+    animation: tm-brand-gradient-flow 16s ease-in-out infinite alternate;
 }
+
 
 .tm-brand-image {
     display: block;
@@ -553,28 +554,46 @@ h3 {
         animation: tm-brand-gradient-flow 22s ease-in-out infinite alternate;
     }
     @keyframes tm-brand-gradient-flow {
-        0% {
+    0% {
             background-position:
-                0% 0%,
-                100% 100%,
-                50% 0%,
+                0% 5%,
+                100% 95%,
+                48% 0%,
                 0% 50%;
+    
+            box-shadow:
+                0 18px 42px rgba(0, 0, 0, 0.25),
+                0 0 30px rgba(34, 211, 238, 0.07),
+                0 0 20px rgba(139, 92, 246, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
     
         50% {
             background-position:
-                75% 42%,
-                26% 58%,
-                92% 72%,
-                52% 8%;
+                82% 36%,
+                20% 68%,
+                92% 76%,
+                54% 10%;
+    
+            box-shadow:
+                0 18px 42px rgba(0, 0, 0, 0.25),
+                0 0 46px rgba(34, 211, 238, 0.13),
+                0 0 34px rgba(139, 92, 246, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
         }
     
         100% {
             background-position:
                 100% 100%,
                 0% 0%,
-                15% 100%,
-                100% 50%;
+                12% 100%,
+                100% 54%;
+    
+            box-shadow:
+                0 18px 42px rgba(0, 0, 0, 0.25),
+                0 0 34px rgba(34, 211, 238, 0.09),
+                0 0 28px rgba(139, 92, 246, 0.07),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
     }
 
