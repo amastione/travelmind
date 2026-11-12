@@ -1912,6 +1912,40 @@ button[data-testid="stPopoverButton"]:focus-visible,
     outline: 2px solid rgba(125, 211, 252, 0.88) !important;
     outline-offset: 3px !important;
 }
+
+/* Тёмная основная кнопка внутри панели замены */
+[data-testid="stPopoverBody"] button[kind="primary"] {
+    background: #12334B !important;
+    border: 1px solid rgba(103, 232, 249, 0.45) !important;
+    border-radius: 14px !important;
+
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 6px 16px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Белый текст, включая вложенные элементы */
+[data-testid="stPopoverBody"] button[kind="primary"] * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+/* Наведение */
+[data-testid="stPopoverBody"] button[kind="primary"]:hover {
+    background: #194762 !important;
+    border-color: #67E8F9 !important;
+    filter: none !important;
+}
+
+/* Нажатие и фокус */
+[data-testid="stPopoverBody"] button[kind="primary"]:active,
+[data-testid="stPopoverBody"] button[kind="primary"]:focus {
+    background: #12334B !important;
+    color: #FFFFFF !important;
+}
 </style>
 """
 
@@ -2210,6 +2244,7 @@ def render_activity_replacement(
         if st.button(
             "✨ Подобрать две альтернативы",
             key=f"{widget_scope}_generate",
+            type="primary",
             use_container_width=True,
         ):
             if reason == "Свой запрос" and not custom_request.strip():
