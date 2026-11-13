@@ -217,7 +217,9 @@ def _section_title(
 
 
 def _footer(canvas, document) -> None:
-    """Рисует номер страницы."""
+    """Рисует футер шрифтом с поддержкой кириллицы."""
+    regular_font, _ = _register_cyrillic_font()
+
     canvas.saveState()
 
     canvas.setStrokeColor(BORDER_COLOR)
@@ -229,8 +231,9 @@ def _footer(canvas, document) -> None:
         1.25 * cm,
     )
 
-    canvas.setFont("TravelMindDejaVu", 8)
+    canvas.setFont(regular_font, 8)
     canvas.setFillColor(MUTED_COLOR)
+
     canvas.drawString(
         document.leftMargin,
         0.82 * cm,
@@ -244,7 +247,6 @@ def _footer(canvas, document) -> None:
     )
 
     canvas.restoreState()
-
 
 def build_offline_passport_pdf(
     trip: Any,
