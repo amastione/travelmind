@@ -6,6 +6,7 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from html import escape
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
