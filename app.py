@@ -924,7 +924,27 @@ st.markdown(
 # ==========================================================
 # ВХОД И РЕГИСТРАЦИЯ
 # ==========================================================
+st.markdown(
+    """
+    <style>
+    /* Названия вкладок — светлые даже до нажатия. */
+    [role="tablist"] [role="tab"],
+    [role="tablist"] [role="tab"] * {
+        color: #F1F5F9 !important;
+        -webkit-text-fill-color: #F1F5F9 !important;
+        opacity: 1 !important;
+    }
 
+    /* Выбранная вкладка — бирюзовая вместо стандартной красной. */
+    [role="tablist"] [role="tab"][aria-selected="true"],
+    [role="tablist"] [role="tab"][aria-selected="true"] * {
+        color: #67E8F9 !important;
+        -webkit-text-fill-color: #67E8F9 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 with st.container(key="travelmind_auth_panel"):
     tab_login, tab_register = st.tabs(
         [
