@@ -127,6 +127,13 @@ def _register_cyrillic_font() -> tuple[str, str]:
         pdfmetrics.registerFont(
             TTFont(bold_name, str(bold_path))
         )
+    pdfmetrics.registerFontFamily(
+        regular_name,
+        normal=regular_name,
+        bold=bold_name,
+        italic=regular_name,
+        boldItalic=bold_name,
+    )
 
     return regular_name, bold_name
 
@@ -135,10 +142,18 @@ def _paragraph(
     text: Any,
     style: ParagraphStyle,
 ) -> Paragraph:
-    """Создаёт Paragraph и безопасно заменяет спецсимволы."""
-    safe_text = _text(text, "").replace("&", "&amp;")
-    safe_text = safe_text.replace("<", "&lt;").replace(">", "&gt;")
+    """
+    Экранирует текст, сохраняя только используемые нами
+    теги жирного начертания и переноса строки.
+    """
+    safe_text = escape(_text(text, ""), quote=False)
+
+    safe_text = safe_text.replace("&lt;b&gt;", "<b>")
+    safe_text = safe_text.replace("&lt;/b&gt;", "</b>")
+    safe_text = safe_text.replace("&lt;br/&gt;", "<br/>")
+    safe_text = safe_text.replace("&lt;br&gt;", "<br/>")
     safe_text = safe_text.replace("\n", "<br/>")
+
     return Paragraph(safe_text, style)
 
 
