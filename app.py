@@ -786,6 +786,35 @@ h3 {
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
+
+/* Контрастные подписи вкладок входа */
+div[data-testid="stTabs"] button[data-baseweb="tab"] {
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+    opacity: 1 !important;
+}
+
+div[data-testid="stTabs"] button[data-baseweb="tab"] p,
+div[data-testid="stTabs"] button[data-baseweb="tab"] div,
+div[data-testid="stTabs"] button[data-baseweb="tab"] span {
+    color: #F8FAFC !important;
+    -webkit-text-fill-color: #F8FAFC !important;
+    opacity: 1 !important;
+}
+
+/* Выбранная вкладка — абсолютно белая */
+div[data-testid="stTabs"]
+button[data-baseweb="tab"][aria-selected="true"],
+div[data-testid="stTabs"]
+button[data-baseweb="tab"][aria-selected="true"] p,
+div[data-testid="stTabs"]
+button[data-baseweb="tab"][aria-selected="true"] div,
+div[data-testid="stTabs"]
+button[data-baseweb="tab"][aria-selected="true"] span {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    opacity: 1 !important;
+}
 </style>
 """
 
