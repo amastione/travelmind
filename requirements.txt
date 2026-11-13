@@ -7,3 +7,4 @@ streamlit-folium
 requests
 streamlit-searchbox
 reportlab==4.2.5
+matplotlib==3.9.2
