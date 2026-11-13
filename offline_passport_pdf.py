@@ -229,7 +229,7 @@ def _footer(canvas, document) -> None:
         1.25 * cm,
     )
 
-    canvas.setFont("Helvetica", 8)
+    canvas.setFont("TravelMindDejaVu", 8)
     canvas.setFillColor(MUTED_COLOR)
     canvas.drawString(
         document.leftMargin,
