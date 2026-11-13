@@ -896,17 +896,42 @@ if "user_id" in st.session_state:
         st.rerun()
 
     st.stop()
+st.markdown(
+    """
+    <style>
+    /* Только панель входа и регистрации. */
+    .st-key-travelmind_auth_panel [role="tablist"] button,
+    .st-key-travelmind_auth_panel [role="tablist"] button * {
+        color: #F8FAFC !important;
+        -webkit-text-fill-color: #F8FAFC !important;
+        opacity: 1 !important;
+    }
 
+    /* Заголовки, подписи полей и пояснения внутри форм. */
+    .st-key-travelmind_auth_panel [role="tabpanel"] h4,
+    .st-key-travelmind_auth_panel [role="tabpanel"] label,
+    .st-key-travelmind_auth_panel [role="tabpanel"] label *,
+    .st-key-travelmind_auth_panel [data-testid="stCaptionContainer"],
+    .st-key-travelmind_auth_panel [data-testid="stCaptionContainer"] * {
+        color: #E8F0FA !important;
+        -webkit-text-fill-color: #E8F0FA !important;
+        opacity: 1 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 # ==========================================================
 # ВХОД И РЕГИСТРАЦИЯ
 # ==========================================================
 
-tab_login, tab_register = st.tabs(
-    [
-        "Вход",
-        "Регистрация",
-    ]
-)
+with st.container(key="travelmind_auth_panel"):
+    tab_login, tab_register = st.tabs(
+        [
+            "Вход",
+            "Регистрация",
+        ]
+    )
 
 with tab_login:
     st.markdown("#### С возвращением")
