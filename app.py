@@ -764,6 +764,28 @@ h3 {
         animation: none !important;
     }
 }
+/* Светлый текст вкладок «Вход / Регистрация» */
+[data-testid="stTabs"] button[role="tab"],
+[data-testid="stTabs"] button[role="tab"] *,
+.stTabs button[role="tab"],
+.stTabs button[role="tab"] *,
+.stTabs [data-baseweb="tab"],
+.stTabs [data-baseweb="tab"] * {
+    color: #F3F7FC !important;
+    -webkit-text-fill-color: #F3F7FC !important;
+    opacity: 1 !important;
+}
+
+/* Активная вкладка остаётся чисто белой */
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"],
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] *,
+.stTabs button[role="tab"][aria-selected="true"],
+.stTabs button[role="tab"][aria-selected="true"] *,
+.stTabs [data-baseweb="tab"][aria-selected="true"],
+.stTabs [data-baseweb="tab"][aria-selected="true"] * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
 </style>
 """
 
