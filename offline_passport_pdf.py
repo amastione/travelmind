@@ -81,8 +81,8 @@ def _register_cyrillic_font() -> tuple[str, str]:
     """
     Подключает DejaVu Sans с поддержкой кириллицы.
 
-    Сначала проверяет системные пути Streamlit Cloud.
-    Если шрифта там нет, использует DejaVu Sans из matplotlib.
+    Шрифты должны находиться в assets/fonts/ либо быть доступны
+    в системных путях сервера.
     """
     regular_paths = [
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
@@ -105,35 +105,11 @@ def _register_cyrillic_font() -> tuple[str, str]:
         None,
     )
 
-    # Streamlit Cloud может не иметь системного DejaVu.
-    # matplotlib поставляется со своим набором шрифтов DejaVu Sans.
     if not regular_path or not bold_path:
-        try:
-            from matplotlib import font_manager
-
-            regular_path = Path(
-                font_manager.findfont(
-                    "DejaVu Sans",
-                    fallback_to_default=False,
-                )
-            )
-
-            bold_path = Path(
-                font_manager.findfont(
-                    "DejaVu Sans",
-                    weight="bold",
-                    fallback_to_default=False,
-                )
-            )
-        except Exception as error:
-            raise RuntimeError(
-                "Не найден шрифт с поддержкой кириллицы для PDF. "
-                "Проверьте, что matplotlib добавлен в requirements.txt."
-            ) from error
-
-    if not regular_path.exists() or not bold_path.exists():
         raise RuntimeError(
-            "Не удалось найти файлы DejaVu Sans для PDF."
+            "Не найден шрифт для русского текста в PDF. "
+            "Добавьте DejaVuSans.ttf и DejaVuSans-Bold.ttf "
+            "в папку assets/fonts/."
         )
 
     regular_name = "TravelMindDejaVu"
