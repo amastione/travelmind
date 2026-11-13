@@ -81,8 +81,8 @@ def _register_cyrillic_font() -> tuple[str, str]:
     """
     Подключает DejaVu Sans с поддержкой кириллицы.
 
-    На Streamlit Cloud этот шрифт обычно расположен в одном из
-    перечисленных системных путей.
+    Сначала проверяет системные пути Streamlit Cloud.
+    Если шрифта там нет, использует DejaVu Sans из matplotlib.
     """
     regular_paths = [
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
@@ -105,11 +105,35 @@ def _register_cyrillic_font() -> tuple[str, str]:
         None,
     )
 
+    # Streamlit Cloud может не иметь системного DejaVu.
+    # matplotlib поставляется со своим набором шрифтов DejaVu Sans.
     if not regular_path or not bold_path:
+        try:
+            from matplotlib import font_manager
+
+            regular_path = Path(
+                font_manager.findfont(
+                    "DejaVu Sans",
+                    fallback_to_default=False,
+                )
+            )
+
+            bold_path = Path(
+                font_manager.findfont(
+                    "DejaVu Sans",
+                    weight="bold",
+                    fallback_to_default=False,
+                )
+            )
+        except Exception as error:
+            raise RuntimeError(
+                "Не найден шрифт с поддержкой кириллицы для PDF. "
+                "Проверьте, что matplotlib добавлен в requirements.txt."
+            ) from error
+
+    if not regular_path.exists() or not bold_path.exists():
         raise RuntimeError(
-            "Не найден шрифт DejaVu Sans для кириллицы. "
-            "Добавьте файлы DejaVuSans.ttf и DejaVuSans-Bold.ttf "
-            "в папку assets/fonts/."
+            "Не удалось найти файлы DejaVu Sans для PDF."
         )
 
     regular_name = "TravelMindDejaVu"
@@ -118,10 +142,14 @@ def _register_cyrillic_font() -> tuple[str, str]:
     registered = pdfmetrics.getRegisteredFontNames()
 
     if regular_name not in registered:
-        pdfmetrics.registerFont(TTFont(regular_name, str(regular_path)))
+        pdfmetrics.registerFont(
+            TTFont(regular_name, str(regular_path))
+        )
 
     if bold_name not in registered:
-        pdfmetrics.registerFont(TTFont(bold_name, str(bold_path)))
+        pdfmetrics.registerFont(
+            TTFont(bold_name, str(bold_path))
+        )
 
     return regular_name, bold_name
 
