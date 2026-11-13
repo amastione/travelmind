@@ -6,7 +6,8 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from html import escape
+from html import escape, unescape
+import re
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -143,15 +144,61 @@ def _paragraph(
     style: ParagraphStyle,
 ) -> Paragraph:
     """
-    Экранирует текст, сохраняя только используемые нами
-    теги жирного начертания и переноса строки.
-    """
-    safe_text = escape(_text(text, ""), quote=False)
+    Безопасно готовит текст для ReportLab.
 
-    safe_text = safe_text.replace("&lt;b&gt;", "<b>")
-    safe_text = safe_text.replace("&lt;/b&gt;", "</b>")
-    safe_text = safe_text.replace("&lt;br/&gt;", "<br/>")
-    safe_text = safe_text.replace("&lt;br&gt;", "<br/>")
+    Поддерживаются только:
+    - <b>текст</b> для жирного начертания;
+    - <br>, <br/>, <br /> для переноса строки.
+
+    Остальные HTML-теги не выводятся в PDF.
+    """
+    raw_text = _text(text, "")
+
+    # Иногда в сохранённых данных теги могут быть экранированы:
+    # &lt;br&gt; или даже &amp;lt;br&amp;gt;.
+    # Двух проходов достаточно для ранее сформированных данных.
+    raw_text = unescape(unescape(raw_text))
+
+    # Заменяем допустимые теги временными маркерами.
+    raw_text = re.sub(
+        r"<\s*br\s*/?\s*>",
+        "__TM_LINE_BREAK__",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+    raw_text = re.sub(
+        r"<\s*b\s*>",
+        "__TM_BOLD_OPEN__",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+    raw_text = re.sub(
+        r"<\s*/\s*b\s*>",
+        "__TM_BOLD_CLOSE__",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+
+    # Удаляем любые прочие HTML-подобные теги из старых данных.
+    raw_text = re.sub(r"</?[^>]+>", "", raw_text)
+
+    # Экранируем обычный текст, чтобы ReportLab не интерпретировал
+    # случайные символы как собственную разметку.
+    safe_text = escape(raw_text, quote=False)
+
+    # Возвращаем только разрешённую разметку ReportLab.
+    safe_text = safe_text.replace(
+        "__TM_LINE_BREAK__",
+        "<br/>",
+    )
+    safe_text = safe_text.replace(
+        "__TM_BOLD_OPEN__",
+        "<b>",
+    )
+    safe_text = safe_text.replace(
+        "__TM_BOLD_CLOSE__",
+        "</b>",
+    )
     safe_text = safe_text.replace("\n", "<br/>")
 
     return Paragraph(safe_text, style)
