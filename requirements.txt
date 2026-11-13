@@ -6,3 +6,4 @@ folium
 streamlit-folium
 requests
 streamlit-searchbox
+reportlab==4.2.5
