@@ -308,7 +308,7 @@ h3 {
     border: 1px solid transparent !important;
     border-radius: 13px !important;
     background: transparent !important;
-    color: #E2EAF5 !important;
+    color: #F1F5F9 !important;
     font-size: 1rem !important;
     font-weight: 750 !important;
     letter-spacing: -0.01rem !important;
