@@ -20,6 +20,7 @@ import site_access
 import weather
 import history
 import hashlib
+from offline_passport_pdf import build_offline_passport_pdf
 
 def checklist_item_key(
     trip_id: int,
@@ -2648,7 +2649,47 @@ with metric_4:
 # ==========================================================
 # ВКЛАДКИ
 # ==========================================================
+# ==========================================================
+# ОФЛАЙН-ПАСПОРТ ПОЕЗДКИ PDF
+# ==========================================================
+try:
+    passport_checklist_sections = get_preparation_checklist(data)
 
+    passport_checklist_statuses = db.get_checklist_statuses(
+        trip_id,
+        user_id,
+    )
+
+    passport_expenses = db.get_expenses(trip_id)
+
+    offline_passport_pdf = build_offline_passport_pdf(
+        trip=trip,
+        data=data,
+        expenses=passport_expenses,
+        checklist_sections=passport_checklist_sections,
+        checklist_statuses=passport_checklist_statuses,
+        checklist_key_builder=checklist_item_key,
+    )
+
+    st.download_button(
+        "⬇ Скачать офлайн-паспорт поездки (PDF)",
+        data=offline_passport_pdf,
+        file_name=f"travelmind_offline_passport_{trip_id}.pdf",
+        mime="application/pdf",
+        key=f"download_offline_passport_{trip_id}",
+        use_container_width=True,
+    )
+
+except Exception as error:
+    st.warning(
+        "Не удалось подготовить офлайн-паспорт PDF. "
+        f"Техническая причина: {str(error)[:220]}"
+    )
+
+st.caption(
+    "PDF содержит маршрут, бюджет, чек-лист подготовки и поля "
+    "для экстренных контактов. AI при создании файла не вызывается."
+)
 (
     tab_route,
     tab_live,
