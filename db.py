@@ -76,6 +76,22 @@ CREATE TABLE IF NOT EXISTS trip_activity_visits (
     PRIMARY KEY (trip_id, activity_key),
     FOREIGN KEY(trip_id) REFERENCES trips(id)
 );
+
+
+CREATE TABLE IF NOT EXISTS trip_personal_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    title_key TEXT NOT NULL,
+    is_completed INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(trip_id, title_key),
+    FOREIGN KEY(trip_id) REFERENCES trips(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_personal_items_trip_id
+ON trip_personal_items(trip_id);
 """
 """
 """
@@ -285,6 +301,10 @@ def delete_trip(trip_id: int, user_id: int):
         )
         connection.execute(
             "DELETE FROM trip_activity_visits WHERE trip_id = ?",
+            (trip_id,),
+        )
+        connection.execute(
+            "DELETE FROM trip_personal_items WHERE trip_id = ?",
             (trip_id,),
         )
         connection.execute(
@@ -780,6 +800,177 @@ def reset_checklist(
             WHERE trip_id = ?
             """,
             (trip_id,),
+        )
+# ==========================================================
+# ЛИЧНЫЕ ВЕЩИ ПОЛЬЗОВАТЕЛЯ
+# ==========================================================
+
+def _personal_item_title_key(title: str) -> str:
+    """
+    Нормализует название для поиска дубликатов.
+
+    Например, « Зарядка  », «зарядка» и «ЗАРЯДКА»
+    будут считаться одной и той же вещью.
+    """
+    return " ".join(str(title or "").casefold().split())
+
+
+def get_personal_items(
+    trip_id: int,
+    user_id: int,
+):
+    """Возвращает личные вещи конкретной поездки текущего пользователя."""
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        return connection.execute(
+            """
+            SELECT *
+            FROM trip_personal_items
+            WHERE trip_id = ?
+            ORDER BY is_completed ASC, created_at ASC, id ASC
+            """,
+            (trip_id,),
+        ).fetchall()
+
+
+def add_personal_item(
+    trip_id: int,
+    user_id: int,
+    title: str,
+):
+    """
+    Добавляет личную вещь в список поездки.
+
+    Возвращает ID добавленной записи.
+    """
+    clean_title = " ".join(str(title or "").split())
+    title_key = _personal_item_title_key(clean_title)
+
+    if not clean_title:
+        raise ValueError("Введите название вещи.")
+
+    if len(clean_title) > 160:
+        raise ValueError(
+            "Название вещи не должно быть длиннее 160 символов."
+        )
+
+    with _conn() as connection:
+        trip = connection.execute(
+            """
+            SELECT id
+            FROM trips
+            WHERE id = ? AND user_id = ?
+            """,
+            (trip_id, user_id),
+        ).fetchone()
+
+        if not trip:
+            raise ValueError("Поездка не найдена или недоступна.")
+
+        duplicate = connection.execute(
+            """
+            SELECT id
+            FROM trip_personal_items
+            WHERE trip_id = ? AND title_key = ?
+            """,
+            (trip_id, title_key),
+        ).fetchone()
+
+        if duplicate:
+            raise ValueError("Такая вещь уже добавлена в список.")
+
+        cursor = connection.execute(
+            """
+            INSERT INTO trip_personal_items(
+                trip_id,
+                title,
+                title_key,
+                is_completed
+            )
+            VALUES (?, ?, ?, 0)
+            """,
+            (trip_id, clean_title, title_key),
+        )
+
+        return cursor.lastrowid
+
+
+def set_personal_item_status(
+    item_id: int,
+    trip_id: int,
+    user_id: int,
+    is_completed: bool,
+):
+    """Изменяет отметку личной вещи с проверкой владельца поездки."""
+    with _conn() as connection:
+        item = connection.execute(
+            """
+            SELECT trip_personal_items.id
+            FROM trip_personal_items
+            INNER JOIN trips
+                ON trips.id = trip_personal_items.trip_id
+            WHERE trip_personal_items.id = ?
+              AND trip_personal_items.trip_id = ?
+              AND trips.user_id = ?
+            """,
+            (item_id, trip_id, user_id),
+        ).fetchone()
+
+        if not item:
+            raise ValueError("Вещь не найдена или недоступна.")
+
+        connection.execute(
+            """
+            UPDATE trip_personal_items
+            SET
+                is_completed = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (int(bool(is_completed)), item_id),
+        )
+
+
+def delete_personal_item(
+    item_id: int,
+    trip_id: int,
+    user_id: int,
+):
+    """Удаляет личную вещь с проверкой владельца поездки."""
+    with _conn() as connection:
+        item = connection.execute(
+            """
+            SELECT trip_personal_items.id
+            FROM trip_personal_items
+            INNER JOIN trips
+                ON trips.id = trip_personal_items.trip_id
+            WHERE trip_personal_items.id = ?
+              AND trip_personal_items.trip_id = ?
+              AND trips.user_id = ?
+            """,
+            (item_id, trip_id, user_id),
+        ).fetchone()
+
+        if not item:
+            raise ValueError("Вещь не найдена или недоступна.")
+
+        connection.execute(
+            """
+            DELETE FROM trip_personal_items
+            WHERE id = ?
+            """,
+            (item_id,),
         )
 # ==========================================================
 # РЕЖИМ «Я В ПОЕЗДКЕ»: ПОСЕЩЕНИЕ АКТИВНОСТЕЙ
