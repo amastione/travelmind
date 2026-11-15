@@ -93,8 +93,6 @@ CREATE TABLE IF NOT EXISTS trip_personal_items (
 CREATE INDEX IF NOT EXISTS idx_personal_items_trip_id
 ON trip_personal_items(trip_id);
 """
-"""
-"""
 
 @contextmanager
 def _conn():
