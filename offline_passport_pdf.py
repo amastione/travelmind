@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 from html import escape, unescape
 import re
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -369,6 +371,100 @@ def build_offline_passport_pdf(
         ),
     }
 
+        # ==========================================================
+    # ВИЗУАЛЬНЫЙ СТИЛЬ ПУТЕВОДИТЕЛЯ
+    # ==========================================================
+    styles["section"].fontSize = 16
+    styles["section"].leading = 21
+    styles["section"].spaceBefore = 10
+    styles["section"].spaceAfter = 8
+    styles["section"].keepWithNext = True
+
+    styles["day"].fontSize = 12
+    styles["day"].leading = 17
+    styles["day"].spaceBefore = 8
+    styles["day"].spaceAfter = 7
+    styles["day"].keepWithNext = True
+
+    styles["normal"].fontSize = 9.5
+    styles["normal"].leading = 15
+
+    styles["table_cell"].fontSize = 8.5
+    styles["table_cell"].leading = 12.5
+
+    styles["table_cell_bold"].fontSize = 8.5
+    styles["table_cell_bold"].leading = 12.5
+
+    styles["hero_label"] = ParagraphStyle(
+        "PassportHeroLabel",
+        fontName=bold_font,
+        fontSize=8,
+        leading=12,
+        textColor=colors.HexColor("#67E8F9"),
+        spaceAfter=9,
+    )
+
+    styles["hero_title"] = ParagraphStyle(
+        "PassportHeroTitle",
+        fontName=bold_font,
+        fontSize=21,
+        leading=28,
+        textColor=colors.white,
+        spaceAfter=10,
+    )
+
+    styles["hero_location"] = ParagraphStyle(
+        "PassportHeroLocation",
+        fontName=regular_font,
+        fontSize=10,
+        leading=15,
+        textColor=colors.HexColor("#CBD5E1"),
+    )
+
+    styles["metric_label"] = ParagraphStyle(
+        "PassportMetricLabel",
+        fontName=regular_font,
+        fontSize=8,
+        leading=12,
+        textColor=MUTED_COLOR,
+        spaceAfter=5,
+    )
+
+    styles["metric_value"] = ParagraphStyle(
+        "PassportMetricValue",
+        fontName=bold_font,
+        fontSize=10,
+        leading=15,
+        textColor=DARK_BLUE,
+    )
+
+    styles["activity_title"] = ParagraphStyle(
+        "PassportActivityTitle",
+        fontName=bold_font,
+        fontSize=10.5,
+        leading=15,
+        textColor=DARK_BLUE,
+        spaceAfter=5,
+    )
+
+    styles["activity_time"] = ParagraphStyle(
+        "PassportActivityTime",
+        fontName=bold_font,
+        fontSize=10,
+        leading=15,
+        textColor=CYAN,
+        alignment=TA_CENTER,
+    )
+
+    styles["activity_note"] = ParagraphStyle(
+        "PassportActivityNote",
+        fontName=regular_font,
+        fontSize=8.5,
+        leading=12.5,
+        textColor=CYAN,
+        spaceBefore=5,
+    )
+
     currency = _text(_value(trip, "currency", "RUB"), "RUB")
     trip_id = _value(trip, "id", 0)
 
@@ -414,96 +510,193 @@ def build_offline_passport_pdf(
     story = []
 
     # ==========================================================
-    # 1. ОБЛОЖКА
+    # 1. ФИРМЕННАЯ ШАПКА
     # ==========================================================
-    story.extend(
+    content_width = document.width
+
+    hero_content = []
+
+    logo_path = (
+        Path(__file__).resolve().parent
+        / "assets"
+        / "brand"
+        / "travelmind_logo.png"
+    )
+
+    if logo_path.is_file():
+        try:
+            image_width, image_height = ImageReader(
+                str(logo_path)
+            ).getSize()
+
+            if image_width > 0 and image_height > 0:
+                scale = min(
+                    175 / image_width,
+                    50 / image_height,
+                )
+
+                logo = Image(
+                    str(logo_path),
+                    width=image_width * scale,
+                    height=image_height * scale,
+                    mask="auto",
+                )
+                logo.hAlign = "LEFT"
+
+                hero_content.append(logo)
+                hero_content.append(Spacer(1, 12))
+
+        except Exception:
+            # Повреждённый или недоступный логотип
+            # не должен блокировать экспорт поездки.
+            hero_content.append(
+                _paragraph("TravelMind", styles["hero_title"])
+            )
+
+    else:
+        hero_content.append(
+            _paragraph("TravelMind", styles["hero_title"])
+        )
+
+    hero_content.extend(
         [
-            Spacer(1, 0.7 * cm),
-            Paragraph("TravelMind", styles["title"]),
-            Paragraph("Офлайн-паспорт поездки", styles["subtitle"]),
+            _paragraph(
+                "ВАШ ПЕРСОНАЛЬНЫЙ ПУТЕВОДИТЕЛЬ",
+                styles["hero_label"],
+            ),
+            _paragraph(title, styles["hero_title"]),
+            _paragraph(destination, styles["hero_location"]),
         ]
     )
 
-    cover_rows = [
-        [
-            _paragraph("<b>Поездка</b>", styles["table_cell_bold"]),
-            _paragraph(title, styles["table_cell"]),
-        ],
-        [
-            _paragraph("<b>Направление</b>", styles["table_cell_bold"]),
-            _paragraph(destination, styles["table_cell"]),
-        ],
-        [
-            _paragraph("<b>Даты</b>", styles["table_cell_bold"]),
-            _paragraph(f"{start_date} — {end_date}", styles["table_cell"]),
-        ],
-        [
-            _paragraph("<b>Путешественники</b>", styles["table_cell_bold"]),
-            _paragraph(str(people), styles["table_cell"]),
-        ],
-        [
-            _paragraph("<b>Плановый бюджет</b>", styles["table_cell_bold"]),
-            _paragraph(
-                _format_money(total_budget, currency),
-                styles["table_cell"],
-            ),
-        ],
-        [
-            _paragraph("<b>Сформировано</b>", styles["table_cell_bold"]),
-            _paragraph(
-                date.today().strftime("%d.%m.%Y"),
-                styles["table_cell"],
-            ),
-        ],
-    ]
-
-    cover_table = Table(
-        cover_rows,
-        colWidths=[4.3 * cm, 12.2 * cm],
+    hero_table = Table(
+        [[hero_content]],
+        colWidths=[content_width],
     )
-    cover_table.setStyle(
+    hero_table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (0, -1), LIGHT_CYAN),
-                ("BACKGROUND", (1, 0), (1, -1), colors.white),
-                ("GRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 9),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 9),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                (
+                    "BACKGROUND",
+                    (0, 0),
+                    (-1, -1),
+                    colors.HexColor("#102238"),
+                ),
+                ("LINEBEFORE", (0, 0), (0, -1), 4, CYAN),
+                ("LEFTPADDING", (0, 0), (-1, -1), 20),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 20),
+                ("TOPPADDING", (0, 0), (-1, -1), 18),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]
         )
     )
-    story.append(cover_table)
-    story.append(Spacer(1, 0.35 * cm))
+
+    story.append(hero_table)
+    story.append(Spacer(1, 12))
+
+    def metric_cell(label, value):
+        return [
+            _paragraph(label, styles["metric_label"]),
+            _paragraph(value, styles["metric_value"]),
+        ]
+
+    metrics = Table(
+        [[
+            metric_cell(
+                "ДАТЫ ПОЕЗДКИ",
+                f"{start_date}\n{end_date}",
+            ),
+            metric_cell(
+                "ПУТЕШЕСТВЕННИКИ",
+                str(people),
+            ),
+            metric_cell(
+                "ПЛАНОВЫЙ БЮДЖЕТ",
+                _format_money(total_budget, currency),
+            ),
+        ]],
+        colWidths=[
+            content_width * 0.40,
+            content_width * 0.25,
+            content_width * 0.35,
+        ],
+    )
+    metrics.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BLUE),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+                (
+                    "LINEAFTER",
+                    (0, 0),
+                    (1, 0),
+                    0.5,
+                    BORDER_COLOR,
+                ),
+            ]
+        )
+    )
+
+    story.append(metrics)
+    story.append(Spacer(1, 9))
+
+    story.append(
+        _paragraph(
+            "Сохраните этот документ на телефон перед выездом. "
+            "Адреса и план доступны без интернета; "
+            "карты и внешние ссылки могут требовать подключения.",
+            styles["small"],
+        )
+    )
+    story.append(Spacer(1, 9))
 
     warning_table = Table(
         [[
             _paragraph(
-                "⚠️ Этот документ предназначен для использования "
-                "без интернета. Перед выездом проверьте официальные "
-                "расписания, цены, бронирования, погоду, дорожную "
-                "обстановку и требования к посещению мест.",
+                "Перед дорогой проверьте расписания, цены, "
+                "бронирования, прогноз погоды и условия посещения. "
+                "Рекомендации в маршруте не подтверждают "
+                "наличие билетов или брони.",
                 styles["warning"],
             )
         ]],
-        colWidths=[16.5 * cm],
+        colWidths=[content_width],
     )
     warning_table.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, -1), WARNING_BG),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#F5D76E")),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                (
+                    "LINEBEFORE",
+                    (0, 0),
+                    (0, -1),
+                    3,
+                    colors.HexColor("#D6A43B"),
+                ),
+                ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
                 ("TOPPADDING", (0, 0), (-1, -1), 9),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
             ]
         )
     )
-    story.append(warning_table)
 
+    story.append(warning_table)
+    story.append(Spacer(1, 6))
+    story.append(
+        _paragraph(
+            "Версия для дороги · Сформировано "
+            + date.today().strftime("%d.%m.%Y"),
+            styles["small"],
+        )
+    )
+
+    
     # ==========================================================
     # 2. БЫСТРЫЙ ПЛАН
     # ==========================================================
@@ -640,57 +833,171 @@ def build_offline_passport_pdf(
             if lat not in (None, "") and lon not in (None, ""):
                 coordinates = f"{lat}, {lon}"
 
-            activity_lines = []
-
-            header = (
-                f"<b>{activity_index}. {activity_title}</b>"
-                + (f" · {activity_time}" if activity_time else "")
-            )
-            activity_lines.append(header)
+            # Отдельная колонка времени и основная карточка.
+            activity_content = [
+                _paragraph(
+                    activity_title,
+                    styles["activity_title"],
+                )
+            ]
 
             if activity_location:
-                activity_lines.append(
-                    f"<b>Место:</b> {activity_location}"
+                activity_content.append(
+                    _paragraph(
+                        activity_location,
+                        styles["small"],
+                    )
+                )
+                activity_content.append(Spacer(1, 5))
+
+            if activity_description:
+                activity_content.append(
+                    _paragraph(
+                        activity_description,
+                        styles["normal"],
+                    )
                 )
 
             if coordinates:
-                activity_lines.append(
-                    f"<b>Координаты:</b> {coordinates}"
+                activity_content.append(Spacer(1, 5))
+                activity_content.append(
+                    _paragraph(
+                        f"Координаты: {coordinates}",
+                        styles["small"],
+                    )
                 )
 
-            if activity_cost > 0:
-                activity_lines.append(
-                    f"<b>Ориентировочная стоимость:</b> "
-                    f"{_format_money(activity_cost, currency)}"
+            if activity.get("cost") not in (None, ""):
+                activity_content.append(Spacer(1, 6))
+                activity_content.append(
+                    _paragraph(
+                        "Ориентировочная стоимость: "
+                        + _format_money(
+                            activity_cost,
+                            currency,
+                        ),
+                        styles["activity_note"],
+                    )
                 )
-
-            if activity_description:
-                activity_lines.append(activity_description)
 
             if activity_tip:
-                activity_lines.append(
-                    f"<b>Важно:</b> {activity_tip}"
+                activity_content.append(Spacer(1, 7))
+
+                note_width = document.width - 2.5 * cm - 24
+
+                note_table = Table(
+                    [[
+                        _paragraph(
+                            "ПЕРЕД ПОСЕЩЕНИЕМ\n" + activity_tip,
+                            styles["activity_note"],
+                        )
+                    ]],
+                    colWidths=[note_width],
                 )
 
+                note_table.setStyle(
+                    TableStyle(
+                        [
+                            (
+                                "BACKGROUND",
+                                (0, 0),
+                                (-1, -1),
+                                LIGHT_CYAN,
+                            ),
+                            (
+                                "LINEBEFORE",
+                                (0, 0),
+                                (0, -1),
+                                2,
+                                CYAN,
+                            ),
+                            (
+                                "LEFTPADDING",
+                                (0, 0),
+                                (-1, -1),
+                                9,
+                            ),
+                            (
+                                "RIGHTPADDING",
+                                (0, 0),
+                                (-1, -1),
+                                9,
+                            ),
+                            (
+                                "TOPPADDING",
+                                (0, 0),
+                                (-1, -1),
+                                6,
+                            ),
+                            (
+                                "BOTTOMPADDING",
+                                (0, 0),
+                                (-1, -1),
+                                7,
+                            ),
+                        ]
+                    )
+                )
+
+                activity_content.append(note_table)
+
             activity_table = Table(
-                [[_paragraph("<br/>".join(activity_lines), styles["normal"])]],
-                colWidths=[16.5 * cm],
+                [[
+                    _paragraph(
+                        activity_time or f"{activity_index:02d}",
+                        styles["activity_time"],
+                    ),
+                    activity_content,
+                ]],
+                colWidths=[
+                    2.5 * cm,
+                    document.width - 2.5 * cm,
+                ],
+                splitInRow=1,
             )
+
             activity_table.setStyle(
                 TableStyle(
                     [
-                        ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BLUE),
-                        ("BOX", (0, 0), (-1, -1), 0.4, BORDER_COLOR),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 9),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 9),
-                        ("TOPPADDING", (0, 0), (-1, -1), 7),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                        (
+                            "BACKGROUND",
+                            (0, 0),
+                            (0, -1),
+                            LIGHT_CYAN,
+                        ),
+                        (
+                            "BACKGROUND",
+                            (1, 0),
+                            (1, -1),
+                            colors.white,
+                        ),
+                        (
+                            "LINEBEFORE",
+                            (1, 0),
+                            (1, -1),
+                            1,
+                            BORDER_COLOR,
+                        ),
+                        (
+                            "LINEBELOW",
+                            (0, 0),
+                            (-1, -1),
+                            0.4,
+                            BORDER_COLOR,
+                        ),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (0, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (0, -1), 6),
+                        ("LEFTPADDING", (1, 0), (1, -1), 12),
+                        ("RIGHTPADDING", (1, 0), (1, -1), 12),
+                        ("TOPPADDING", (0, 0), (-1, -1), 12),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
                     ]
                 )
             )
 
-            story.append(KeepTogether(activity_table))
-            story.append(Spacer(1, 0.11 * cm))
+            story.append(activity_table)
+            story.append(Spacer(1, 9))
 
     # ==========================================================
     # 4. ПРОЖИВАНИЕ
