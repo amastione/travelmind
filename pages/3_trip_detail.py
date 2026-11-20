@@ -3185,54 +3185,54 @@ with tab_live:
         
                         status_icon = "✅" if item["visited"] else icon
         
-                # Непосещённые места раскрыты, посещённые —
-                # автоматически сворачиваются после сохранения отметки.
-                with st.expander(
-                    f"{status_icon} {item_index}. {title} · {time_text}",
-                    expanded=not item["visited"],
-                ):
-                    if location:
-                        st.write(f"📍 {location}")
-
-                    if description:
-                        st.write(description)
-
-                    raw_cost = activity.get("cost")
-
-                    if raw_cost is not None:
-                        st.caption(
-                            "По плану: ~"
-                            + format_money(raw_cost, curr)
-                        )
-
-                    if tip:
-                        st.info(f"💡 {tip}")
-
-                    st.link_button(
-                        "⌖ Открыть место в картах",
-                        build_live_map_url(
-                            activity,
-                            destination,
-                        ),
-                        use_container_width=True,
-                    )
-
-                    st.checkbox(
-                        "✓ Посетили",
-                        key=item["widget_key"],
-                        on_change=save_live_activity_visit,
-                        args=(
-                            trip_id,
-                            user_id,
-                            item["activity_key"],
-                            item["widget_key"],
-                        ),
-                    )
+                        # Непосещённые места раскрыты, посещённые —
+                        # автоматически сворачиваются после сохранения отметки.
+                        with st.expander(
+                            f"{status_icon} {item_index}. {title} · {time_text}",
+                            expanded=not item["visited"],
+                        ):
+                            if location:
+                                st.write(f"📍 {location}")
         
-                    st.caption(
-                        "✓ Отметки посещения сохраняются отдельно "
-                        "от чек-листа подготовки и расходов."
-                    )
+                            if description:
+                                st.write(description)
+        
+                            raw_cost = activity.get("cost")
+        
+                            if raw_cost is not None:
+                                st.caption(
+                                    "По плану: ~"
+                                    + format_money(raw_cost, curr)
+                                )
+        
+                            if tip:
+                                st.info(f"💡 {tip}")
+        
+                            st.link_button(
+                                "⌖ Открыть место в картах",
+                                build_live_map_url(
+                                    activity,
+                                    destination,
+                                ),
+                                use_container_width=True,
+                            )
+        
+                            st.checkbox(
+                                "✓ Посетили",
+                                key=item["widget_key"],
+                                on_change=save_live_activity_visit,
+                                args=(
+                                    trip_id,
+                                    user_id,
+                                    item["activity_key"],
+                                    item["widget_key"],
+                                ),
+                            )
+                
+                            st.caption(
+                                "✓ Отметки посещения сохраняются отдельно "
+                                "от чек-листа подготовки и расходов."
+                            )
 with tab_map:
     st.markdown(
         '<div class="tm-section-title">⌖ Карта маршрута</div>',
