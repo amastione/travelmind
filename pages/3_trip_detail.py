@@ -5446,7 +5446,7 @@ with tab_tips:
     if packing:
         with st.expander(
             "🎒 Что взять с собой",
-            expanded=True,
+            expanded=False,
         ):
             st.caption(
                 "Список сформирован AI с учётом сезона "
