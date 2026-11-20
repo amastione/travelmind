@@ -5468,7 +5468,7 @@ with tab_tips:
                     on_change=save_checklist_checkbox,
                     args=(trip_id, user_id, item_key),
                 )
-                        st.divider()
+            st.divider()
 
             st.markdown("##### 🧳 Мои вещи")
 
