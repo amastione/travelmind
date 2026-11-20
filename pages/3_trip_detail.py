@@ -2739,6 +2739,7 @@ st.caption(
     tab_map,
     tab_weather,
     tab_budget,
+    tab_preparation,
     tab_tips,
     tab_edit,
     tab_ai,
@@ -2749,6 +2750,7 @@ st.caption(
         "🗺️  Карта поездки",
         "☀️  Погода",
         "💰  Бюджет и расходы",
+        "✅  Подготовка",
         "✦  Советы",
         "💬  Изменить с AI",
         "⌘  Данные AI",
@@ -5321,247 +5323,247 @@ with tab_tips:
                 unsafe_allow_html=True,
             )
 
-
-    # ======================================================
-    # ЧЕК-ЛИСТ ПОДГОТОВКИ К ПОЕЗДКЕ
-    # ======================================================
-
-    st.subheader("✅ Подготовка к поездке")
-
-    st.caption(
-        "Отмечайте выполненные пункты. Чек-лист составлен на основе "
-        "маршрута, проживания и рекомендаций TravelMind."
-    )
-
-    checklist_sections = get_preparation_checklist(data)
-    packing = data.get("packing") or []
-
-    all_checklist_items = []
-
-    for section_title, section_items in checklist_sections:
-        for item_text in section_items:
+    with tab_preparation:
+        # ======================================================
+        # ЧЕК-ЛИСТ ПОДГОТОВКИ К ПОЕЗДКЕ
+        # ======================================================
+    
+        st.subheader("✅ Подготовка к поездке")
+    
+        st.caption(
+            "Отмечайте выполненные пункты. Чек-лист составлен на основе "
+            "маршрута, проживания и рекомендаций TravelMind."
+        )
+    
+        checklist_sections = get_preparation_checklist(data)
+        packing = data.get("packing") or []
+    
+        all_checklist_items = []
+    
+        for section_title, section_items in checklist_sections:
+            for item_text in section_items:
+                all_checklist_items.append(
+                    (section_title, text_value(item_text))
+                )
+    
+        for item_text in packing:
             all_checklist_items.append(
-                (section_title, text_value(item_text))
+                ("Что взять с собой", text_value(item_text))
             )
-
-    for item_text in packing:
-        all_checklist_items.append(
-            ("Что взять с собой", text_value(item_text))
-        )
-
-    saved_checklist_statuses = db.get_checklist_statuses(
-        trip_id=trip_id,
-        user_id=user_id,
-    )
-
-    for section_title, item_text in all_checklist_items:
-        item_key = checklist_item_key(
+    
+        saved_checklist_statuses = db.get_checklist_statuses(
             trip_id=trip_id,
-            section=section_title,
-            item_text=item_text,
+            user_id=user_id,
         )
-
-        if item_key not in st.session_state:
-            st.session_state[item_key] = saved_checklist_statuses.get(
-                item_key,
-                False,
-            )
-
-    completed_count = sum(
-        1
-        for section_title, item_text in all_checklist_items
-        if st.session_state.get(
-            checklist_item_key(
+    
+        for section_title, item_text in all_checklist_items:
+            item_key = checklist_item_key(
                 trip_id=trip_id,
                 section=section_title,
                 item_text=item_text,
-            ),
-            False,
-        )
-    )
-
-    total_count = len(all_checklist_items)
-
-    progress_value = (
-        completed_count / total_count
-        if total_count > 0
-        else 0
-    )
-
-    progress_percent = int(progress_value * 100)
-
-    progress_col, reset_col = st.columns([4, 1])
-
-    with progress_col:
-        st.markdown(
-            f"**Готово: {completed_count} из {total_count} · "
-            f"{progress_percent}%**"
-        )
-        st.progress(progress_value)
-
-    with reset_col:
-        with st.container(key="reset_checklist_container"):
-            if st.button(
-                "↺ Сбросить",
-                key=f"reset_checklist_{trip_id}",
-                help="Снять все отметки чек-листа этой поездки",
-                use_container_width=True,
-            ):
-                db.reset_checklist(
-                    trip_id=trip_id,
-                    user_id=user_id,
+            )
+    
+            if item_key not in st.session_state:
+                st.session_state[item_key] = saved_checklist_statuses.get(
+                    item_key,
+                    False,
                 )
+    
+        completed_count = sum(
+            1
+            for section_title, item_text in all_checklist_items
+            if st.session_state.get(
+                checklist_item_key(
+                    trip_id=trip_id,
+                    section=section_title,
+                    item_text=item_text,
+                ),
+                False,
+            )
+        )
+    
+        total_count = len(all_checklist_items)
+    
+        progress_value = (
+            completed_count / total_count
+            if total_count > 0
+            else 0
+        )
+    
+        progress_percent = int(progress_value * 100)
+    
+        progress_col, reset_col = st.columns([4, 1])
 
-                for section_title, item_text in all_checklist_items:
+        with progress_col:
+            st.markdown(
+                f"**Готово: {completed_count} из {total_count} · "
+                f"{progress_percent}%**"
+            )
+            st.progress(progress_value)
+
+        with reset_col:
+            with st.container(key="reset_checklist_container"):
+                if st.button(
+                    "↺ Сбросить",
+                    key=f"reset_checklist_{trip_id}",
+                    help="Снять все отметки чек-листа этой поездки",
+                    use_container_width=True,
+                ):
+                    db.reset_checklist(
+                        trip_id=trip_id,
+                        user_id=user_id,
+                    )
+    
+                    for section_title, item_text in all_checklist_items:
+                        item_key = checklist_item_key(
+                            trip_id=trip_id,
+                            section=section_title,
+                            item_text=item_text,
+                        )
+                        st.session_state[item_key] = False
+    
+                    st.rerun()
+
+        for section_title, section_items in checklist_sections:
+            with st.expander(
+                f"📌 {section_title}",
+                expanded=False,
+            ):
+                for item_text in section_items:
+                    safe_item_text = text_value(item_text)
+
                     item_key = checklist_item_key(
                         trip_id=trip_id,
                         section=section_title,
-                        item_text=item_text,
+                        item_text=safe_item_text,
                     )
-                    st.session_state[item_key] = False
-
-                st.rerun()
-
-    for section_title, section_items in checklist_sections:
-        with st.expander(
-            f"📌 {section_title}",
-            expanded=False,
-        ):
-            for item_text in section_items:
-                safe_item_text = text_value(item_text)
-
-                item_key = checklist_item_key(
-                    trip_id=trip_id,
-                    section=section_title,
-                    item_text=safe_item_text,
-                )
-
-                st.checkbox(
-                    safe_item_text,
-                    key=item_key,
-                    on_change=save_checklist_checkbox,
-                    args=(trip_id, user_id, item_key),
-                )
-
-    if packing:
-        with st.expander(
-            "🎒 Что взять с собой",
-            expanded=False,
-        ):
-            st.caption(
-                "Список сформирован AI с учётом сезона "
-                "и выбранного формата путешествия."
-            )
-
-            for item_text in packing:
-                safe_item_text = text_value(item_text)
-
-                item_key = checklist_item_key(
-                    trip_id=trip_id,
-                    section="Что взять с собой",
-                    item_text=safe_item_text,
-                )
-
-                st.checkbox(
-                    safe_item_text,
-                    key=item_key,
-                    on_change=save_checklist_checkbox,
-                    args=(trip_id, user_id, item_key),
-                )
-            st.divider()
-
-            st.markdown("##### 🧳 Мои вещи")
-
-            st.caption(
-                "Добавьте вещи, которые нужны именно вам."
-            )
-
-            with st.form(
-                key=f"personal_item_form_{trip_id}",
-                clear_on_submit=True,
+    
+                    st.checkbox(
+                        safe_item_text,
+                        key=item_key,
+                        on_change=save_checklist_checkbox,
+                        args=(trip_id, user_id, item_key),
+                    )
+    
+        if packing:
+            with st.expander(
+                "🎒 Что взять с собой",
+                expanded=False,
             ):
-                new_personal_item = st.text_input(
-                    "Новая личная вещь",
-                    placeholder="Например: зарядка для часов",
-                    max_chars=160,
-                    key=f"new_personal_item_{trip_id}",
-                    label_visibility="collapsed",
+                st.caption(
+                    "Список сформирован AI с учётом сезона "
+                    "и выбранного формата путешествия."
                 )
-
-                add_personal_item_clicked = st.form_submit_button(
-                    "＋ Добавить вещь",
-                    use_container_width=True,
-                )
-
-            if add_personal_item_clicked:
-                try:
-                    db.add_personal_item(
+    
+                for item_text in packing:
+                    safe_item_text = text_value(item_text)
+    
+                    item_key = checklist_item_key(
                         trip_id=trip_id,
-                        user_id=user_id,
-                        title=new_personal_item,
+                        section="Что взять с собой",
+                        item_text=safe_item_text,
                     )
-                    st.rerun()
-                except ValueError as error:
-                    st.warning(str(error))
-
-            personal_items = db.get_personal_items(
-                trip_id=trip_id,
-                user_id=user_id,
-            )
-
-            if personal_items:
-                for personal_item in personal_items:
-                    item_id = int(personal_item["id"])
-                    checkbox_key = (
-                        f"personal_item_completed_{trip_id}_{item_id}"
+    
+                    st.checkbox(
+                        safe_item_text,
+                        key=item_key,
+                        on_change=save_checklist_checkbox,
+                        args=(trip_id, user_id, item_key),
                     )
-
-                    left_column, delete_column = st.columns(
-                        [0.88, 0.12],
-                        vertical_alignment="center",
+                st.divider()
+    
+                st.markdown("##### 🧳 Мои вещи")
+    
+                st.caption(
+                    "Добавьте вещи, которые нужны именно вам."
+                )
+    
+                with st.form(
+                    key=f"personal_item_form_{trip_id}",
+                    clear_on_submit=True,
+                ):
+                    new_personal_item = st.text_input(
+                        "Новая личная вещь",
+                        placeholder="Например: зарядка для часов",
+                        max_chars=160,
+                        key=f"new_personal_item_{trip_id}",
+                        label_visibility="collapsed",
                     )
-
-                    with left_column:
-                        is_completed = st.checkbox(
-                            str(personal_item["title"]),
-                            value=bool(personal_item["is_completed"]),
-                            key=checkbox_key,
-                        )
-
-                    if is_completed != bool(
-                        personal_item["is_completed"]
-                    ):
-                        db.set_personal_item_status(
-                            item_id=item_id,
+    
+                    add_personal_item_clicked = st.form_submit_button(
+                        "＋ Добавить вещь",
+                        use_container_width=True,
+                    )
+    
+                if add_personal_item_clicked:
+                    try:
+                        db.add_personal_item(
                             trip_id=trip_id,
                             user_id=user_id,
-                            is_completed=is_completed,
+                            title=new_personal_item,
                         )
                         st.rerun()
-
-                    with delete_column:
-                        if st.button(
-                            "✕",
-                            key=(
-                                "delete_personal_item_"
-                                f"{trip_id}_{item_id}"
-                            ),
-                            help="Удалить вещь",
-                            type="tertiary",
-                            use_container_width=True,
+                    except ValueError as error:
+                        st.warning(str(error))
+    
+                personal_items = db.get_personal_items(
+                    trip_id=trip_id,
+                    user_id=user_id,
+                )
+    
+                if personal_items:
+                    for personal_item in personal_items:
+                        item_id = int(personal_item["id"])
+                        checkbox_key = (
+                            f"personal_item_completed_{trip_id}_{item_id}"
+                        )
+    
+                        left_column, delete_column = st.columns(
+                            [0.88, 0.12],
+                            vertical_alignment="center",
+                        )
+    
+                        with left_column:
+                            is_completed = st.checkbox(
+                                str(personal_item["title"]),
+                                value=bool(personal_item["is_completed"]),
+                                key=checkbox_key,
+                            )
+    
+                        if is_completed != bool(
+                            personal_item["is_completed"]
                         ):
-                            db.delete_personal_item(
+                            db.set_personal_item_status(
                                 item_id=item_id,
                                 trip_id=trip_id,
                                 user_id=user_id,
+                                is_completed=is_completed,
                             )
                             st.rerun()
-            else:
-                st.caption(
-                    "Личных вещей пока нет — добавьте нужное выше."
-                )
-
-    st.caption("✓ Отметки сохраняются для этой поездки.")
+    
+                        with delete_column:
+                            if st.button(
+                                "✕",
+                                key=(
+                                    "delete_personal_item_"
+                                    f"{trip_id}_{item_id}"
+                                ),
+                                help="Удалить вещь",
+                                type="tertiary",
+                                use_container_width=True,
+                            ):
+                                db.delete_personal_item(
+                                    item_id=item_id,
+                                    trip_id=trip_id,
+                                    user_id=user_id,
+                                )
+                                st.rerun()
+                else:
+                    st.caption(
+                        "Личных вещей пока нет — добавьте нужное выше."
+                    )
+    
+        st.caption("✓ Отметки сохраняются для этой поездки.")
 
 
     
