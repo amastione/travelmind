@@ -2015,6 +2015,40 @@ div[class*="st-key-replacement_options_"] .stButton > button:focus {
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
+
+/* Кнопка скачивания офлайн-паспорта */
+div[class*="st-key-download_offline_passport_"]
+[data-testid="stDownloadButton"] > button {
+    min-height: 46px !important;
+    border: 1px solid rgba(95, 222, 255, 0.60) !important;
+    border-radius: 12px !important;
+    background: #202b4a !important;
+    color: #f4f7ff !important;
+    font-weight: 700 !important;
+    font-size: 0.96rem !important;
+    box-shadow:
+        0 5px 18px rgba(23, 37, 76, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    transition: 0.2s ease !important;
+}
+
+div[class*="st-key-download_offline_passport_"]
+[data-testid="stDownloadButton"] > button:hover {
+    background: #293961 !important;
+    border-color: rgba(123, 235, 255, 0.95) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+    box-shadow:
+        0 8px 23px rgba(37, 86, 157, 0.34),
+        0 0 12px rgba(90, 218, 255, 0.14) !important;
+}
+
+div[class*="st-key-download_offline_passport_"]
+[data-testid="stDownloadButton"] > button:active {
+    transform: translateY(0) !important;
+    background: #1a2541 !important;
+}
+
 </style>
 """
 
