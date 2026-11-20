@@ -5425,7 +5425,7 @@ with tab_tips:
     for section_title, section_items in checklist_sections:
         with st.expander(
             f"📌 {section_title}",
-            expanded=True,
+            expanded=False,
         ):
             for item_text in section_items:
                 safe_item_text = text_value(item_text)
