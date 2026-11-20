@@ -980,8 +980,8 @@ with st.form("plan_form"):
         budget = st.number_input(
             "Общий бюджет",
             min_value=50,
-            value=1000,
-            step=50,
+            value=10000,
+            step=1000,
         )
 
     with column_4:
