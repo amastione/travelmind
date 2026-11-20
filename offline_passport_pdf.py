@@ -883,63 +883,14 @@ def build_offline_passport_pdf(
             if activity_tip:
                 activity_content.append(Spacer(1, 7))
 
-                note_width = document.width - 2.5 * cm - 24
-
-                note_table = Table(
-                    [[
-                        _paragraph(
-                            "ПЕРЕД ПОСЕЩЕНИЕМ\n" + activity_tip,
-                            styles["activity_note"],
-                        )
-                    ]],
-                    colWidths=[note_width],
-                )
-
-                note_table.setStyle(
-                    TableStyle(
-                        [
-                            (
-                                "BACKGROUND",
-                                (0, 0),
-                                (-1, -1),
-                                LIGHT_CYAN,
-                            ),
-                            (
-                                "LINEBEFORE",
-                                (0, 0),
-                                (0, -1),
-                                2,
-                                CYAN,
-                            ),
-                            (
-                                "LEFTPADDING",
-                                (0, 0),
-                                (-1, -1),
-                                9,
-                            ),
-                            (
-                                "RIGHTPADDING",
-                                (0, 0),
-                                (-1, -1),
-                                9,
-                            ),
-                            (
-                                "TOPPADDING",
-                                (0, 0),
-                                (-1, -1),
-                                6,
-                            ),
-                            (
-                                "BOTTOMPADDING",
-                                (0, 0),
-                                (-1, -1),
-                                7,
-                            ),
-                        ]
+                activity_content.append(
+                    _paragraph(
+                        "ПЕРЕД ПОСЕЩЕНИЕМ: " + activity_tip,
+                        styles["activity_note"],
                     )
                 )
-
-                activity_content.append(note_table)
+            
+            
 
             activity_table = Table(
                 [[
