@@ -2735,24 +2735,24 @@ st.caption(
 )
 (
     tab_route,
-    tab_live,
     tab_map,
     tab_weather,
     tab_budget,
     tab_preparation,
     tab_tips,
     tab_edit,
+    tab_live,
     tab_ai,
 ) = st.tabs(
     [
         "▦  Маршрут по дням",
-        "📱  Я в поездке",
         "🗺️  Карта поездки",
         "☀️  Погода",
         "💰  Бюджет и расходы",
         "✅  Подготовка",
         "✦  Советы",
         "💬  Изменить с AI",
+        "📱  Я в поездке",
         "⌘  Данные AI",
     ]
 )
