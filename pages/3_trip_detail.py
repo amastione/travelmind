@@ -3235,7 +3235,7 @@ with tab_live:
                             )
 with tab_map:
     st.markdown(
-        '<div class="tm-section-title">⌖ Карта маршрута</div>',
+        '<div class="tm-section-title">🗺️ Карта маршрута</div>',
         unsafe_allow_html=True,
     )
 
